@@ -373,8 +373,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Ghita PPT Converter'),
-                    subtitle: Text(l10n.versionInfo('1.6.0+1', '2026')),
-                    trailing: const Chip(label: Text('v1.6.0+1')),
+                    subtitle: Text(l10n.versionInfo('2.0.0-beta', '2026')),
+                    trailing: const Chip(label: Text('v2.0.0-beta')),
                   ),
                 ],
               ),
@@ -394,7 +394,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       // Collect all settings
       final backup = {
-        'version': '1.6.0+1',
+        'version': '2.0.0-beta',
         'exportedAt': DateTime.now().toIso8601String(),
         'themeMode':
             Provider.of<AppProvider>(context, listen: false).themeMode.name,

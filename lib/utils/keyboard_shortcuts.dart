@@ -35,6 +35,11 @@ enum ShortcutAction {
   copy,
   paste,
   cut,
+
+  // Format painter (Track 24)
+  copyFormat,
+  pasteFormat,
+  eyedropper,
   
   // Zoom
   zoomIn,
@@ -141,6 +146,23 @@ class AppShortcuts {
       LogicalKeyboardKey.keyX,
       control: true,
     ),
+
+    // Format painter (Track 24): Ctrl+Shift+C / Ctrl+Shift+V
+    ShortcutAction.copyFormat: const SingleActivator(
+      LogicalKeyboardKey.keyC,
+      control: true,
+      shift: true,
+    ),
+    ShortcutAction.pasteFormat: const SingleActivator(
+      LogicalKeyboardKey.keyV,
+      control: true,
+      shift: true,
+    ),
+    ShortcutAction.eyedropper: const SingleActivator(
+      LogicalKeyboardKey.keyI,
+      control: true,
+      shift: true,
+    ),
     
     // Zoom
     ShortcutAction.zoomIn: const SingleActivator(
@@ -209,6 +231,9 @@ class AppShortcuts {
       ShortcutAction.copy => 'Copy',
       ShortcutAction.paste => 'Paste',
       ShortcutAction.cut => 'Cut',
+      ShortcutAction.copyFormat => 'Copy Format',
+      ShortcutAction.pasteFormat => 'Paste Format',
+      ShortcutAction.eyedropper => 'Eyedropper',
       ShortcutAction.zoomIn => 'Zoom In',
       ShortcutAction.zoomOut => 'Zoom Out',
       ShortcutAction.zoomReset => 'Reset Zoom',

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../services/ai_html_guard.dart';
 import '../services/api_key_rotation_service.dart';
 import '../services/local_ai_detector_service.dart';
 import 'config_service.dart';
@@ -293,6 +294,42 @@ class AIProviderManager with ChangeNotifier {
   List<AIProviderConfig> get providers => _providers;
   AIProviderConfig? get selectedProvider => _selectedProvider;
 
+  /// Whether the AI should be told the deck's current context (Track 52,
+  /// OPT 37). Off by default — privacy by choice.
+  bool _useDeckContext = false;
+  bool get useDeckContext => _useDeckContext;
+  void setUseDeckContext(bool value) {
+    if (_useDeckContext == value) return;
+    _useDeckContext = value;
+    notifyListeners();
+  }
+
+  /// Build the deck-context block appended to the system prompt when
+  /// [useDeckContext] is on. Pure static so it is unit-testable.
+  static String buildDeckContextPrompt({
+    required String layoutType,
+    required String themeSummary,
+    required String uiLanguage,
+    String? currentSlideSummary,
+    String? deckOutline,
+  }) {
+    final buf = StringBuffer()
+      ..writeln('\n--- Deck context (follow it exactly) ---')
+      ..writeln('Current slide layout: $layoutType')
+      ..writeln('Theme: $themeSummary')
+      ..writeln('UI language: $uiLanguage');
+    if (currentSlideSummary != null && currentSlideSummary.trim().isNotEmpty) {
+      buf.writeln('Current slide content: ${currentSlideSummary.trim()}');
+    }
+    if (deckOutline != null && deckOutline.trim().isNotEmpty) {
+      buf.writeln('Deck outline: ${deckOutline.trim()}');
+    }
+    buf.writeln(
+        'Style your generated HTML to match this theme (colors/fonts/classes) '
+        'and keep it consistent with the deck.');
+    return buf.toString();
+  }
+
   @override
   void dispose() {
     _disposed = true;
@@ -410,25 +447,33 @@ class AIProviderManager with ChangeNotifier {
   // Health Monitoring (v1.2.0 — from EnhancedAIProviderManager)
   // ===========================================================================
 
+  /// OPT 29: many providers → poll less often (10 min), few → 5 min.
+  static Duration _healthInterval(int providerCount) =>
+      providerCount >= 4
+          ? const Duration(minutes: 10)
+          : const Duration(minutes: 5);
+
   void _startHealthMonitoring() {
     _healthTimer?.cancel();
-    _healthTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
-      if (_disposed) {
-        timer.cancel();
-        return;
-      }
-      _performHealthChecks();
-    });
+    _healthTimer = Timer.periodic(
+      _healthInterval(_providers.length),
+      (timer) {
+        if (_disposed) {
+          timer.cancel();
+          return;
+        }
+        _performHealthChecks();
+      },
+    );
   }
 
   Future<void> _performHealthChecks() async {
-    // Iterate a snapshot: addProvider/removeProvider during an await would
-    // otherwise throw ConcurrentModificationError mid-loop.
-    for (final provider in List.of(_providers)) {
-      if (_disposed) return; // v1.2.0: return, not just break
-      await testProviderPing(provider);
-      if (_disposed) return; // re-check after await
-    }
+    // Snapshot + parallel: a sequential loop would take N×timeout seconds
+    // with many providers; Future.wait bounds it to one timeout. Snapshot
+    // also avoids ConcurrentModificationError when a check removes a
+    // provider mid-flight.
+    final providers = List.of(_providers);
+    await Future.wait(providers.map((p) => testProviderPing(p)));
   }
 
   /// Test a provider's connection and update its health status.
@@ -469,9 +514,23 @@ class AIProviderManager with ChangeNotifier {
     }
   }
 
-  /// Scan for local AI services (Ollama, LM Studio, vLLM).
-  Future<List<LocalAIServiceInfo>> scanLocalAI() async {
-    return await _localDetector.scanLocalAIServices();
+  List<LocalAIServiceInfo>? _scanCache;
+  DateTime? _scanCacheAt;
+
+  /// OPT 28: cached local-AI scan — repeated calls within 5 minutes reuse
+  /// the previous result instead of re-probing localhost ports.
+  Future<List<LocalAIServiceInfo>> scanLocalAI({bool force = false}) async {
+    final now = DateTime.now();
+    if (!force &&
+        _scanCache != null &&
+        _scanCacheAt != null &&
+        now.difference(_scanCacheAt!) < const Duration(minutes: 5)) {
+      return _scanCache!;
+    }
+    final result = await _localDetector.scanLocalAIServices();
+    _scanCache = result;
+    _scanCacheAt = now;
+    return result;
   }
 
   // ===========================================================================
@@ -626,21 +685,32 @@ class AIProviderManager with ChangeNotifier {
   }
 
   /// Generate slide content with an optional custom system prompt.
-  Future<String> generateSlideContent(String prompt, {String? customPrompt}) async {
+  ///
+  /// Track 52: when [deckContext] is provided it is appended to the system
+  /// prompt so the model follows the deck's theme/layout; the returned HTML
+  /// is passed through [AIHtmlGuard.guard] to strip dangerous tags.
+  Future<String> generateSlideContent(String prompt,
+      {String? customPrompt, String? deckContext}) async {
     final provider = _ensureReady();
-    final sysPrompt = customPrompt ?? _systemPrompt;
+    var sysPrompt = customPrompt ?? _systemPrompt;
+    if (deckContext != null && deckContext.trim().isNotEmpty) {
+      sysPrompt = '$sysPrompt\n$deckContext';
+    }
     try {
+      final String html;
       switch (provider.formatType) {
         case 'openai':
         case 'custom':
-          return await _callOpenAI(provider, prompt, systemPrompt: sysPrompt);
+          html = await _callOpenAI(provider, prompt, systemPrompt: sysPrompt);
         case 'anthropic':
-          return await _callAnthropic(provider, prompt, systemPrompt: sysPrompt);
+          html = await _callAnthropic(provider, prompt,
+              systemPrompt: sysPrompt);
         case 'gemini':
-          return await _callGemini(provider, prompt, sysPrompt);
+          html = await _callGemini(provider, prompt, sysPrompt);
         default:
-          return await _callOpenAI(provider, prompt, systemPrompt: sysPrompt);
+          html = await _callOpenAI(provider, prompt, systemPrompt: sysPrompt);
       }
+      return AIHtmlGuard.guard(html).html;
     } catch (e) {
       throw Exception('Failed to generate slide content: $e');
     }

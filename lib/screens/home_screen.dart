@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'widgets/setup_show_dialog.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
@@ -50,6 +53,17 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _focusNode = FocusNode();
     _editorState = EditorState();
+    // Track 65 OPT 28: kick the local-AI scan only after the first frame so
+    // it never blocks the Home screen; the 5-minute cache inside
+    // AIProviderManager makes later callers reuse this result.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final aiManager =
+          Provider.of<AIProviderManager>(context, listen: false);
+      aiManager
+          .scanLocalAI()
+          .then((_) {}, onError: (Object _) {});
+    });
   }
 
   @override
@@ -487,6 +501,13 @@ class _HomeScreenState extends State<HomeScreen> {
                             zoomLevel: _editorState.zoomLevel,
                             onZoomChanged: (v) => _editorState.setZoom(v),
                             autoSaveStatus: ps.exportStatus ?? 'saved',
+                            language: context.l10n.localeName,
+                            // Track 63 (OPT 24): live word count + deck size.
+                            wordCount: ps.slides.isNotEmpty
+                                ? _countWords(
+                                    ps.slides[ps.currentSlideIndex].htmlContent)
+                                : 0,
+                            deckSizeBytes: _estimateDeckBytes(ps.slides),
                           ),
                         ),
                     ],
@@ -772,7 +793,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                    content: Text('GhitaPPT v1.6.0+1 — Office 365 Style')),
+                    content: Text('GhitaPPT v2.0.0-beta — Office 365 Style')),
               );
             },
             isDark: isDark,
@@ -780,6 +801,22 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
+  }
+
+  // === Status bar metrics (Track 63, OPT 24) ===
+  int _countWords(String html) {
+    final text = html.replaceAll(RegExp(r'<[^>]+>'), ' ');
+    final words = text.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty);
+    return words.length;
+  }
+
+  int _estimateDeckBytes(List<Slide> slides) {
+    try {
+      return utf8.encode(jsonEncode(slides.map((s) => s.toMap()).toList()))
+          .length;
+    } catch (_) {
+      return 0;
+    }
   }
 
   // === Navigation helpers ===
@@ -828,15 +865,30 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(context: context, builder: (_) => const ShortcutsHelpDialog());
   }
 
-  void _present(BuildContext context, PresentationState state,
-      {int startSlide = 0}) {
+  Future<void> _present(BuildContext context, PresentationState state,
+      {int startSlide = 0}) async {
     if (state.slides.isEmpty) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(context.l10n.noSlides)));
       return;
     }
+    // Track 36: Set Up Show dialog — mode, options, pen colour, custom show.
+    final result = await showSetupShowDialog(
+      context,
+      initial: state.setupShow,
+      customShows: state.customShows,
+      slideCount: state.slides.length,
+    );
+    if (result == null || !context.mounted) return;
+    state.setupShow = result.settings;
+    state.activeCustomShow = result.customShow;
     Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => PresentScreen(state: state, startSlide: startSlide),
+      builder: (_) => PresentScreen(
+        state: state,
+        startSlide: startSlide,
+        customShowOrder: result.customShow?.validIndices(state.slides.length),
+        setupShow: result.settings,
+      ),
     ));
   }
 

@@ -21,15 +21,35 @@ class EffectPreviewService {
 ''';
   }
 
-  /// Generate CSS for all effects (included once in the HTML deck).
-  static String generateAllEffectsCss({double duration = 0.5}) {
-    final buffer = StringBuffer();
-    for (final effect in SlideEffect.values) {
+  /// Generate CSS for exactly [effects] (Track 07, P2): only the effects
+  /// actually used in the deck are emitted, and identical keyframe bodies
+  /// are written once — every other class aliases the canonical
+  /// `@keyframes` name instead of duplicating it.
+  static String generateEffectsCss(
+    Iterable<SlideEffect> effects, {
+    double duration = 0.5,
+  }) {
+    final durationStr = '${duration}s';
+    final canonicalByBody = <String, String>{}; // keyframe body → name
+    final keyframes = <String>[];
+    final classes = <String>[];
+    for (final effect in effects) {
       if (effect == SlideEffect.none) continue;
-      buffer.write(generateEffectCss(effect, duration: duration));
+      final body = _keyframesForEffect(effect);
+      final className = _classNameForEffect(effect);
+      final canonical = canonicalByBody.putIfAbsent(body, () => className);
+      if (canonical == className) {
+        keyframes.add('@keyframes $className{$body}');
+      }
+      classes.add(
+          '.slide-transition-$className{animation:$canonical $durationStr ease forwards}');
     }
-    return buffer.toString();
+    return [...keyframes, ...classes].join('\n');
   }
+
+  /// Generate CSS for all effects (included once in the HTML deck).
+  static String generateAllEffectsCss({double duration = 0.5}) =>
+      generateEffectsCss(SlideEffect.values, duration: duration);
 
   /// Get the CSS class name for a slide's transition.
   static String getTransitionClass(SlideEffect? effect) {
@@ -162,11 +182,39 @@ class EffectPreviewService {
       case SlideEffect.flyOutLeft:
       case SlideEffect.flyOutRight:
       case SlideEffect.disappear:
-        return 'Exit';
-      case SlideEffect.arc:
+        return 'Exit';      case SlideEffect.arc:
       case SlideEffect.customPath:
         return 'Motion Path';
+      case SlideEffect.dissolve:
+      case SlideEffect.coverLeft:
+      case SlideEffect.coverRight:
+      case SlideEffect.coverUp:
+      case SlideEffect.coverDown:
+      case SlideEffect.uncoverLeft:
+      case SlideEffect.uncoverRight:
+      case SlideEffect.uncoverUp:
+      case SlideEffect.uncoverDown:
+      case SlideEffect.curtain:
+      case SlideEffect.cedar:
+      case SlideEffect.pageCurl:
+      case SlideEffect.ripple:
+      case SlideEffect.vortex:
+      case SlideEffect.shred:
+      case SlideEffect.diamond:
+      case SlideEffect.wedge:
+      case SlideEffect.newsflash:
+      case SlideEffect.ferris:
+      case SlideEffect.flip:
+      case SlideEffect.gallery:
+      case SlideEffect.honeycomb:
+      case SlideEffect.invert:
+      case SlideEffect.orbit:
+      case SlideEffect.origami:
+      case SlideEffect.reveal:
+        return 'Track 33';
     }
+
+
   }
 
   /// Get icon for effect category.

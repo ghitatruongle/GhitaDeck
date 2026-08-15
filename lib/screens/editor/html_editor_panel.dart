@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/presentation_state.dart';
+import '../../models/free_shape.dart';
+import '../../models/drawn_shape.dart';
 import '../../screens/widgets/slide_preview.dart';
 import '../../screens/widgets/wysiwyg_toolbar.dart';
+import '../../screens/widgets/audio_recorder_panel.dart';
+import '../../services/eyedropper_service.dart';
+import '../../services/wysiwyg_service.dart';
 import '../editor/editor_state.dart';
+import 'canvas_overlay.dart';
 
 /// Central editor panel containing the HTML editor, WYSIWYG toolbar,
 /// and live preview — the main content editing area.
@@ -15,6 +22,9 @@ class HtmlEditorPanel extends StatefulWidget {
 }
 
 class _HtmlEditorPanelState extends State<HtmlEditorPanel> {
+  String? _selectedFreeTextId;
+  String? _selectedShapeId;
+
   @override
   Widget build(BuildContext context) {
     final editorState = Provider.of<EditorState>(context);
@@ -35,7 +45,20 @@ class _HtmlEditorPanelState extends State<HtmlEditorPanel> {
           const Divider(height: 1),
 
           // WYSIWYG toolbar
-          WysiwygToolbar(onInsertTag: editorState.insertHtmlTag),
+          WysiwygToolbar(
+            onInsertTag: editorState.insertHtmlTag,
+            formatPainterArmed: editorState.formatPainterArmed,
+            onFormatPainter: () => _handleFormatPainter(context, editorState),
+            onEyedropper: () => _handleEyedropper(context),
+            onPickColor: (hex) => _applySelectionFormat(
+                editorState,
+                (h, s, e) =>
+                    WysiwygService.colorSelection(h, s, e, hex)),
+            onListNumbered: () => _applySelectionFormat(editorState,
+                (h, s, e) => WysiwygService.wrapSelection(h, s, e, '<ol>\n  <li>', '</li>\n</ol>')),
+            onQuote: () => _applySelectionFormat(editorState,
+                (h, s, e) => WysiwygService.wrapSelection(h, s, e, '<blockquote>', '</blockquote>')),
+          ),
 
           const Divider(height: 1),
 
@@ -294,9 +317,16 @@ class _HtmlEditorPanelState extends State<HtmlEditorPanel> {
                   child: Transform.scale(
                     scale: editorState.zoomLevel,
                     alignment: Alignment.topCenter,
-                    child: SlidePreview(
-                      title: editorState.titleController.text,
-                      html: editorState.previewHtml,
+                    child: Stack(
+                      children: [
+                        SlidePreview(
+                          title: editorState.titleController.text,
+                          html: editorState.previewHtml,
+                        ),
+                        // Track 17, P2/P7: free-form text overlay on the
+                        // preview — drag to move, resize handle, delete.
+                        _buildCanvasOverlay(context, editorState),
+                      ],
                     ),
                   ),
                 ),
@@ -305,10 +335,235 @@ class _HtmlEditorPanelState extends State<HtmlEditorPanel> {
     );
   }
 
+  Widget _buildCanvasOverlay(
+      BuildContext context, EditorState editorState) {
+    final presentationState = Provider.of<PresentationState>(context);
+    if (presentationState.slides.isEmpty) return const SizedBox.shrink();
+    final slide =
+        presentationState.slides[presentationState.currentSlideIndex];
+    final raw = slide.visualElements['freeTexts'];
+    final elements = raw is List
+        ? raw
+            .map((e) => e is Map<String, dynamic>
+                ? FreeTextShape.fromMap(e)
+                : (e is Map
+                    ? FreeTextShape.fromMap(Map<String, dynamic>.from(e))
+                    : null))
+            .whereType<FreeTextShape>()
+            .toList()
+        : <FreeTextShape>[];
+    // Track 21, P7: shapes overlay (visualElements['shapes']).
+    final rawShapes = slide.visualElements['shapes'];
+    final shapes = rawShapes is List
+        ? rawShapes
+            .map((e) => e is Map<String, dynamic>
+                ? DrawnShape.fromMap(e)
+                : (e is Map
+                    ? DrawnShape.fromMap(Map<String, dynamic>.from(e))
+                    : null))
+            .whereType<DrawnShape>()
+            .toList()
+        : <DrawnShape>[];
+    return Positioned.fill(
+      child: IgnorePointer(
+        ignoring: false,
+        child: CanvasOverlay(
+          elements: elements,
+          selectedId: _selectedFreeTextId,
+          onElementChanged: (updated) {
+            final idx = elements.indexWhere((e) => e.id == updated.id);
+            if (idx < 0) return;
+            final copy = List<FreeTextShape>.from(elements);
+            copy[idx] = updated;
+            // Drag/resize streams must not flood the undo history — the
+            // discrete dialog edits record their own snapshot (Track 17, P8).
+            presentationState.updateFreeTexts(copy, record: false);
+          },
+          onSelect: (id) => setState(() => _selectedFreeTextId = id),
+          onDelete: (id) {
+            presentationState.updateFreeTexts(
+              elements.where((e) => e.id != id).toList(),
+            );
+            setState(() => _selectedFreeTextId = null);
+          },
+          // Track 21, P7: shapes overlay.
+          drawnShapes: shapes,
+          selectedShapeId: _selectedShapeId,
+          selectedShapeIds: editorState.selectedShapeIds,
+          onShapeChanged: (updated) {
+            final idx = shapes.indexWhere((e) => e.id == updated.id);
+            if (idx < 0) return;
+            final copy = List<DrawnShape>.from(shapes);
+            copy[idx] = updated;
+            // Drag streams don't record history; discrete ops do (Track 21, P8).
+            _updateShapes(presentationState, copy, record: false);
+          },
+          // Track 21, P4: click selects (or shift-click toggles multi-select).
+          onShapeSelect: (id) {
+            final hw = HardwareKeyboard.instance;
+            final pressed = hw.logicalKeysPressed;
+            final shift = pressed.contains(LogicalKeyboardKey.shiftLeft) ||
+                pressed.contains(LogicalKeyboardKey.shiftRight);
+            editorState.selectShape(id, multi: shift);
+            setState(() => _selectedShapeId = id);
+          },
+          onShapeDelete: (id) {
+            _updateShapes(
+              presentationState,
+              shapes.where((e) => e.id != id).toList(),
+            );
+            editorState.clearShapeSelection();
+            setState(() => _selectedShapeId = null);
+          },
+          // Track 21, P4: scribble drawing mode.
+          scribbleMode: editorState.scribbleMode,
+          scribblePoints: editorState.scribblePoints,
+          onScribbleMove: (p) => editorState.addScribblePoint(p),
+          onScribbleEnd: () {
+            final pts = editorState.scribblePoints;
+            if (pts.length >= 3) {
+              _insertScribbleShape(presentationState, pts);
+            }
+            editorState.finishScribble();
+          },
+        ),
+      ),
+    );
+  }
+
+  /// Write the shapes list back into the current slide's visualElements.
+  /// Discrete operations (delete, dialog edit) record undo history; drag
+  /// streams pass [record] = false (Track 21, P8).
+  void _updateShapes(PresentationState state, List<DrawnShape> shapes,
+      {bool record = true}) {
+    state.updateShapes(shapes, record: record);
+  }
+
+  /// Track 21, P4: convert a scribble stroke (relative 0..1 canvas points)
+  /// into a freeform DrawnShape and insert it.
+  void _insertScribbleShape(
+      PresentationState state, List<Offset2D> points) {
+    // Normalise the stroke to its own bounding box.
+    var minX = 1.0, minY = 1.0, maxX = 0.0, maxY = 0.0;
+    for (final p in points) {
+      if (p.dx < minX) minX = p.dx;
+      if (p.dy < minY) minY = p.dy;
+      if (p.dx > maxX) maxX = p.dx;
+      if (p.dy > maxY) maxY = p.dy;
+    }
+    if (maxX - minX < 0.005 || maxY - minY < 0.005) return;
+    final rel = [
+      for (final p in points)
+        Offset2D((p.dx - minX) / (maxX - minX), (p.dy - minY) / (maxY - minY)),
+    ];
+    // Smooth: drop points closer than 1.5% of the box to the previous one.
+    final cleaned = <Offset2D>[rel.first];
+    for (final p in rel.skip(1)) {
+      final last = cleaned.last;
+      if ((p.dx - last.dx).abs() > 0.015 || (p.dy - last.dy).abs() > 0.015) {
+        cleaned.add(p);
+      }
+    }
+    if (cleaned.length < 3) return;
+    final shape = DrawnShape(
+      id: 'shape_${DateTime.now().millisecondsSinceEpoch}',
+      type: ShapeType.freeform,
+      x: minX * 100,
+      y: minY * 100,
+      w: (maxX - minX) * 100,
+      h: (maxY - minY) * 100,
+      fillColor: '#4472C4',
+      fillTransparency: 0.35,
+      strokeColor: '#4472C4',
+      strokeWidth: 2,
+      freeformPath: DrawnShape.pathFromPoints(cleaned, w: 100, h: 100),
+    );
+    state.upsertShape(shape);
+  }
+
+  /// Track 24: Format Painter capture/paste. When armed the next click pastes
+  /// Apply a WysiwygService format operation to the HTML source selection,
+  /// keeping the selection range on the new text (Track 63, OPT 15).
+  void _applySelectionFormat(
+    EditorState editorState,
+    FormatResult Function(String html, int s, int e) op,
+  ) {
+    final controller = editorState.htmlController;
+    final sel = controller.selection;
+    if (!sel.isValid || sel.isCollapsed || sel.start < 0 ||
+        sel.end > controller.text.length) {
+      return;
+    }
+    final res = op(controller.text, sel.start, sel.end);
+    controller.value = TextEditingValue(
+      text: res.html,
+      selection: TextSelection(
+        baseOffset: res.start.clamp(0, res.html.length),
+        extentOffset: res.end.clamp(0, res.html.length),
+      ),
+    );
+  }
+
+  /// onto the current text selection or the selected shape; otherwise it
+  /// captures the current selection's format.
+  void _handleFormatPainter(
+      BuildContext context, EditorState editorState) {
+    if (editorState.formatPainterArmed) {
+      final pasted = editorState.pasteFormatToSelection();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(pasted
+                ? 'Format pasted'
+                : 'Select some text first, or select a shape to format'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } else {
+      editorState.captureFormat();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Format captured — select the target and paste'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  /// Track 24: capture the colour under the cursor via the Windows GDI API
+  /// and copy the hex value to the clipboard.
+  Future<void> _handleEyedropper(BuildContext context) async {
+    final color = EyedropperService.pickAtCursor();
+    if (color == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not capture the colour (Windows only)'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+    await Clipboard.setData(ClipboardData(text: color));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Colour $color copied to clipboard'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   Widget _buildNotesPanel(
       BuildContext context, EditorState editorState, ThemeData theme) {
+    final presentationState = Provider.of<PresentationState>(context);
     return Container(
-      height: 80,
+      height: 150,
       padding: const EdgeInsets.all(6),
       color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.15),
       child: Column(
@@ -350,6 +605,9 @@ class _HtmlEditorPanelState extends State<HtmlEditorPanel> {
               ),
             ),
           ),
+          // Track 13, P1: per-slide narration recorder next to the notes box.
+          const Divider(height: 1),
+          AudioRecorderPanel(slideIndex: presentationState.currentSlideIndex),
         ],
       ),
     );

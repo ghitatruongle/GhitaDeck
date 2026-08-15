@@ -56,7 +56,11 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PresentationState()),
         ChangeNotifierProvider(create: (_) {
           final manager = AIProviderManager();
-          manager.loadProviders();
+          // Track 65 OPT 30: heavy init (secure-storage reads) happens after
+          // the first frame so startup is never blocked on provider config.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            manager.loadProviders();
+          });
           return manager;
         }),
         ChangeNotifierProvider(create: (_) => ShortcutsProvider()),

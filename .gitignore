@@ -18,6 +18,7 @@
 
 # Tooling / local agent session data
 .zcode/
+.freebuff/
 .fvm/
 
 # Temporary root-level folders (not part of the app)

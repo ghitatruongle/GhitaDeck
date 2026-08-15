@@ -40,6 +40,32 @@ class EffectHelpers {
       case SlideEffect.disappear: return 'Disappear';
       case SlideEffect.arc: return 'Arc';
       case SlideEffect.customPath: return 'Custom Path';
+      case SlideEffect.dissolve: return 'Dissolve';
+      case SlideEffect.coverLeft: return 'Cover Left';
+      case SlideEffect.coverRight: return 'Cover Right';
+      case SlideEffect.coverUp: return 'Cover Up';
+      case SlideEffect.coverDown: return 'Cover Down';
+      case SlideEffect.uncoverLeft: return 'Uncover Left';
+      case SlideEffect.uncoverRight: return 'Uncover Right';
+      case SlideEffect.uncoverUp: return 'Uncover Up';
+      case SlideEffect.uncoverDown: return 'Uncover Down';
+      case SlideEffect.curtain: return 'Curtain';
+      case SlideEffect.cedar: return 'Cedar';
+      case SlideEffect.pageCurl: return 'Page Curl';
+      case SlideEffect.ripple: return 'Ripple';
+      case SlideEffect.vortex: return 'Vortex';
+      case SlideEffect.shred: return 'Shred';
+      case SlideEffect.diamond: return 'Diamond';
+      case SlideEffect.wedge: return 'Wedge';
+      case SlideEffect.newsflash: return 'Newsflash';
+      case SlideEffect.ferris: return 'Ferris';
+      case SlideEffect.flip: return 'Flip';
+      case SlideEffect.gallery: return 'Gallery';
+      case SlideEffect.honeycomb: return 'Honeycomb';
+      case SlideEffect.invert: return 'Invert';
+      case SlideEffect.orbit: return 'Orbit';
+      case SlideEffect.origami: return 'Origami';
+      case SlideEffect.reveal: return 'Reveal';
     }
   }
 }

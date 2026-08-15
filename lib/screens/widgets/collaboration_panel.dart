@@ -40,13 +40,31 @@ class _CollaborationPanelState extends State<CollaborationPanel> {
   void _onEvent(CollaborationEvent event) {
     if (!mounted) return;
     setState(() {});
+    final l = context.l10n;
     if (event.type == CollaborationEventType.syncConflict) {
+      final data = (event.data as Map?)?.cast<String, dynamic>() ?? const {};
+      final owner = data['lockOwner']?.toString();
+      final message = owner != null && owner.isNotEmpty
+          ? l.collabLockedBy(owner)
+          : l.collaborationConflict;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.collaborationConflict)),
+        SnackBar(content: Text(message)),
       );
     } else if (event.type == CollaborationEventType.authenticationFailed) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.collaborationAuthFailed)),
+        SnackBar(content: Text(l.collaborationAuthFailed)),
+      );
+    } else if (event.type == CollaborationEventType.readOnlyRejected) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l.collabViewModeNotice)),
+      );
+    } else if (event.type == CollaborationEventType.connectionLost) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l.collabConnectionLost)),
+      );
+    } else if (event.type == CollaborationEventType.reconnected) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l.collabReconnected)),
       );
     }
   }
@@ -242,6 +260,12 @@ class _CollaborationPanelState extends State<CollaborationPanel> {
               style: theme.textTheme.titleMedium,
             ),
             Text(context.l10n.collaborationRevision(service.revision)),
+            if (service.isViewer)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(context.l10n.collabViewModeNotice,
+                    style: TextStyle(color: theme.colorScheme.error)),
+              ),
             if (service.isHosting) ...[
               Text(context.l10n
                   .collaborationParticipants(service.collaborators.length)),
@@ -250,7 +274,60 @@ class _CollaborationPanelState extends State<CollaborationPanel> {
                 QrImageView(data: shareUrl, size: 150),
                 const SizedBox(height: 8),
                 _copyableValue(theme, shareUrl),
+                const SizedBox(height: 8),
+                Text(context.l10n.collabViewLink,
+                    style: theme.textTheme.labelMedium),
+                const SizedBox(height: 4),
+                _copyableValue(theme, service.getShareViewUrl() ?? ''),
               ],
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton.icon(
+                    onPressed: () => setState(() =>
+                        service.setSessionLocked(!service.sessionLocked)),
+                    icon: Icon(service.sessionLocked
+                        ? Icons.lock_open
+                        : Icons.lock_outline),
+                    label: Text(service.sessionLocked
+                        ? context.l10n.collabUnlockSession
+                        : context.l10n.collabLockSession),
+                  ),
+                ],
+              ),
+            ],
+            if (service.collaborators.isNotEmpty) ...[
+              const Divider(height: 16),
+              Text(context.l10n.collaborationParticipants(
+                  service.collaborators.length)),
+              const SizedBox(height: 4),
+              for (final c in service.collaborators)
+                ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    backgroundColor: _parseColor(c.color),
+                    child: Text(c.name.isNotEmpty
+                        ? c.name[0].toUpperCase()
+                        : '?'),
+                  ),
+                  title: Text(c.name),
+                  subtitle: Text(
+                      '${_roleLabel(context, c.role.name)}'
+                      '${_presenceSlideLabel(service, c)}',
+                      style: theme.textTheme.bodySmall),
+                  trailing: service.isHosting && c.role != CollaborationRole.host
+                      ? IconButton(
+                          tooltip: context.l10n.collabKick,
+                          icon: const Icon(Icons.person_remove_outlined),
+                          onPressed: () async {
+                            await service.kickCollaborator(c.id);
+                            if (mounted) setState(() {});
+                          },
+                        )
+                      : null,
+                ),
             ],
             const SizedBox(height: 12),
             SizedBox(
@@ -268,6 +345,46 @@ class _CollaborationPanelState extends State<CollaborationPanel> {
       ),
     );
   }
+
+  Color _parseColor(String hex) {
+    final clean = hex.replaceAll('#', '');
+    final v = int.tryParse(
+            clean.length >= 6 ? clean.substring(0, 6) : 'FF9800',
+            radix: 16) ??
+        0xFF9800;
+    return Color(0xFF000000 | v);
+  }
+
+  String _roleLabel(BuildContext context, String role) => switch (role) {
+        'host' => context.l10n.collabRoleHost,
+        'viewer' => context.l10n.collabRoleViewer,
+        _ => context.l10n.collabRoleEditor,
+      };
+
+  /// T47 P3: "editing slide X" presence hint from the live cursor feed.
+  String _presenceSlideLabel(CollaborationService service, CollaboratorInfo c) {
+    if (service.isHosting) {
+      for (final entry in service.presence) {
+        if (entry['name'] == c.name && entry['slideIndex'] is int) {
+          return ' · ${context.l10n.collabLockSlide} ${(entry['slideIndex'] as int) + 1}';
+        }
+      }
+      return '';
+    }
+    // Clients can't see the presence map directly; fetch it lazily.
+    _fetchPresenceOnce(service);
+    return '';
+  }
+
+  Future<void> _fetchPresenceOnce(CollaborationService service) async {
+    if (_presenceFetched) return;
+    _presenceFetched = true;
+    final data = await service.fetchPresence();
+    if (!mounted || data.isEmpty) return;
+    setState(() {});
+  }
+
+  bool _presenceFetched = false;
 
   Widget _copyableValue(ThemeData theme, String value) {
     return Container(

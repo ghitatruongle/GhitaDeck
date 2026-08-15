@@ -1,8 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/presentation_state.dart';
 import '../../screens/widgets/slide_preview.dart';
 import '../../l10n/l10n.dart';
+import '../../services/thumbnail_service.dart';
 import '../editor/editor_state.dart';
 
 /// Left panel showing slide thumbnails with drag-to-reorder,
@@ -439,9 +442,43 @@ class _SlideThumbnailCard extends StatelessWidget {
     );
   }
 
+  /// LRU-ish cache: re-rendering on every rebuild janks scrolling (Track 64).
+  static final Map<int, Uint8List> _thumbCache = {};
+  static const int _thumbCacheMax = 60;
+
+  Uint8List? _cachedThumb() {
+    final key = slide.hashCode;
+    final hit = _thumbCache[key];
+    if (hit != null) return hit;
+    final bytes = ThumbnailService.renderThumbnail(slide);
+    if (bytes != null) {
+      _thumbCache[key] = bytes;
+      if (_thumbCache.length > _thumbCacheMax) {
+        _thumbCache.remove(_thumbCache.keys.first);
+      }
+    }
+    return bytes;
+  }
+
   Widget _buildMiniThumbnail(BuildContext context) {
     final html = slide.htmlContent;
     final theme = Theme.of(context);
+
+    // Track 64: real rendered thumbnail when available; fall back to the
+    // layout placeholder so the list never blocks or shows empty boxes.
+    final thumb = _cachedThumb();
+    if (thumb != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(2),
+        child: Image.memory(
+          thumb,
+          gaplessPlayback: true,
+          fit: BoxFit.contain,
+          width: double.infinity,
+          height: 72,
+        ),
+      );
+    }
 
     // Simple text-based thumbnail preview
     return Padding(

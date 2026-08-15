@@ -685,4 +685,154 @@ void main() {
       expect(PPTGenerator.cssFontSizeToSz('abc'), isNull);
     });
   });
+
+  animationTimingTests();
+  transitionTrack33Tests();
+}
+
+// ---- Track 32: per-object animation timing export ----------------------
+
+void animationTimingTests() {
+  group('Track 32 — p:timing export', () {
+    test('slide with animation emits p:timing + animEffect', () async {
+      final parts = await generateParts([
+        {
+          'title': 'S1',
+          'htmlContent': '<h1>Hi</h1>',
+          'visualElements': {
+            'shapes': [
+              {
+                'id': 'a1',
+                'type': 'rect',
+                'x': 10,
+                'y': 10,
+                'w': 50,
+                'h': 30,
+                'zOrder': 0,
+              },
+            ],
+            'animations': [
+              {
+                'shapeId': 'sh_a1',
+                'effect': 'fadeIn',
+                'group': 'entrance',
+                'delay': 0,
+                'duration': 0.5,
+                'repeat': 0,
+                'autoReverse': false,
+                'start': 'onClick',
+              },
+            ],
+          },
+        },
+      ]);
+      final slideXml = parts['ppt/slides/slide1.xml'] ?? '';
+      expect(slideXml, contains('<p:timing>'));
+      expect(slideXml, contains('<p:seq concurrent="1" nextAc="seek">'));
+      expect(slideXml, contains('<p:animEffect transition="in" filter="fade">'));
+      expect(slideXml, contains('nodeType="clickEffect"'));
+    });
+
+    test('deck without animations has no p:timing rác', () async {
+      final parts = await generateParts([
+        {'title': 'S1', 'htmlContent': '<h1>Hi</h1>', 'effect': 'fade'},
+      ]);
+      final slideXml = parts['ppt/slides/slide1.xml'] ?? '';
+      expect(slideXml, isNot(contains('<p:animEffect')));
+    });
+  });
+}
+
+// ---- Track 33: new transitions (ISO + p14) + duration + sound ----------
+
+void transitionTrack33Tests() {
+  group('Track 33 — new transitions export', () {
+    Future<String> slideXmlFor(SlideEffect effect) async {
+      final parts = await generateParts([
+        {'title': 'S1', 'htmlContent': '<h1>Hi</h1>', 'effect': effect.name},
+      ]);
+      return parts['ppt/slides/slide1.xml'] ?? '';
+    }
+
+    test('dissolve maps to ISO p:dissolve', () async {
+      final xml = await slideXmlFor(SlideEffect.dissolve);
+      expect(xml, contains('<p:dissolve/>'));
+    });
+
+    test('cover maps with direction subtype', () async {
+      final xml = await slideXmlFor(SlideEffect.coverLeft);
+      expect(xml, contains('<p:cover dir="l"/>'));
+    });
+
+    test('diamond/wedge/newsflash are ISO transitions', () async {
+      expect(await slideXmlFor(SlideEffect.diamond), contains('<p:diamond/>'));
+      expect(await slideXmlFor(SlideEffect.wedge), contains('<p:wedge/>'));
+      expect(await slideXmlFor(SlideEffect.newsflash), contains('<p:newsflash/>'));
+    });
+
+    test('p14-only effects declare the p14 namespace', () async {
+      for (final e in [
+        SlideEffect.curtain,
+        SlideEffect.ferris,
+        SlideEffect.flip,
+        SlideEffect.gallery,
+        SlideEffect.honeycomb,
+        SlideEffect.invert,
+        SlideEffect.orbit,
+        SlideEffect.pageCurl,
+        SlideEffect.ripple,
+        SlideEffect.shred,
+        SlideEffect.vortex,
+        SlideEffect.origami,
+        SlideEffect.reveal,
+      ]) {
+        final xml = await slideXmlFor(e);
+        expect(xml, contains('xmlns:p14='),
+            reason: '${e.name} must declare p14');
+        expect(xml, contains('<p14:${e.name}/>'));
+      }
+    });
+
+    test('cedar falls back to fade with a warning', () async {
+      PPTGenerator.transitionWarnings.clear();
+      final xml = await slideXmlFor(SlideEffect.cedar);
+      expect(xml, contains('<p:fade/>'));
+      expect(PPTGenerator.transitionWarnings, isNotEmpty);
+      expect(PPTGenerator.transitionWarnings.single, contains('Cedar'));
+    });
+
+    test('legacy effects keep their type/subtype (regression)', () async {
+      expect(await slideXmlFor(SlideEffect.pushRight), contains('<p:push dir="r"/>'));
+      expect(await slideXmlFor(SlideEffect.splitIn), contains('<p:split dir="in"/>'));
+      expect(await slideXmlFor(SlideEffect.clock), contains('<p:wheel/>'));
+    });
+  });
+
+  group('Track 33 — duration & auto-advance', () {
+    test('per-slide duration changes spd bucket', () async {
+      final parts = await generateParts([
+        {
+          'title': 'S1',
+          'htmlContent': '<h1>Hi</h1>',
+          'effect': 'fade',
+          'transitionDurationMs': 2500,
+        },
+      ]);
+      final xml = parts['ppt/slides/slide1.xml'] ?? '';
+      expect(xml, contains('spd="slow"'));
+    });
+
+    test('per-slide auto-advance overrides deck-wide', () async {
+      final parts = await generateParts([
+        {
+          'title': 'S1',
+          'htmlContent': '<h1>Hi</h1>',
+          'effect': 'fade',
+          'autoAdvanceMs': 1500,
+        },
+      ]);
+      final xml = parts['ppt/slides/slide1.xml'] ?? '';
+      expect(xml, contains('advTm="1500"'));
+    });
+  });
 }

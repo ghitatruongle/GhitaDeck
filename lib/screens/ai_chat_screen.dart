@@ -3,8 +3,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/l10n.dart';
 import '../providers/ai_provider_manager.dart';
 import '../providers/presentation_state.dart';
+import '../services/copilot_service.dart';
+import '../services/deck_translation_service.dart';
 
 class AiChatScreen extends StatefulWidget {
   final AIProviderManager aiProviderManager;
@@ -325,7 +328,62 @@ class _AiChatScreenState extends State<AiChatScreen> {
                   ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+
+          // Quick chips (Track 55, FEAT 88/89)
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              ActionChip(
+                avatar: const Icon(Icons.auto_awesome, size: 14),
+                label: Text(context.l10n.copilotCreateDeck),
+                onPressed: _isGenerating
+                    ? null
+                    : () => _quickCreateDeck(),
+              ),
+              ActionChip(
+                avatar: const Icon(Icons.subject, size: 14),
+                label: Text(context.l10n.copilotSummarize),
+                onPressed:
+                    _isGenerating ? null : () => _quickSummarizeDeck(),
+              ),
+              ActionChip(
+                avatar: const Icon(Icons.help_outline, size: 14),
+                label: Text(context.l10n.copilotAskDeck),
+                onPressed: _isGenerating ? null : () => _quickAskDeck(),
+              ),
+              ActionChip(
+                avatar: const Icon(Icons.translate, size: 14),
+                label: Text(context.l10n.translateDeck),
+                onPressed: _isGenerating ? null : () => _quickTranslate(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // AI context toggle (Track 52, OPT 37) — privacy by choice.
+          Row(
+            children: [
+              const SizedBox(width: 4),
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: Checkbox(
+                  value: widget.aiProviderManager.useDeckContext,
+                  onChanged: (v) =>
+                      widget.aiProviderManager.setUseDeckContext(v ?? false),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  context.l10n.aiContextToggle,
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
 
           // Input section
           TextField(
@@ -477,6 +535,228 @@ class _AiChatScreenState extends State<AiChatScreen> {
       if (mounted) {
         _addMessage({'role': 'assistant', 'content': 'Error: ${e.toString()}'});
         if (mounted) setState(() => _isGenerating = false);
+      }
+    }
+  }
+
+  // ---- Quick actions (Track 55, FEAT 88/89) ----
+
+  /// "Tạo bài thuyết trình" — ask for a topic, then build N slides.
+  Future<void> _quickCreateDeck() async {
+    final controller = TextEditingController(text: 'AI & Productivity');
+    final count = await showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(ctx.l10n.copilotCreateDeck),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: 'Topic',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text('How many slides? (3–12)', style: TextStyle(fontSize: 12)),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, 6),
+            child: const Text('Generate 6 slides'),
+          ),
+        ],
+      ),
+    );
+    if (count == null || !mounted) return;
+    final topic = controller.text.trim();
+    if (topic.isEmpty) return;
+    _outlineMode = true;
+    await _generateWithOutline(topic);
+  }
+
+  /// "Tóm tắt deck" — send the deck outline to the AI and add a summary
+  /// slide at the end.
+  Future<void> _quickSummarizeDeck() async {
+    final state = Provider.of<PresentationState>(context, listen: false);
+    final slides = state.slides;
+    if (slides.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Deck is empty — add slides first.')));
+      }
+      return;
+    }
+    final prompt = CopilotService.buildDeckSummaryPrompt([
+      for (final s in slides) {'title': s.title, 'htmlContent': s.htmlContent}
+    ]);
+    _addMessage({'role': 'user', 'content': 'Summarize my deck'});
+    setState(() => _isGenerating = true);
+    try {
+      final html = await widget.aiProviderManager.generateSlideContent(prompt,
+          customPrompt:
+              'Return a concise 5-line summary as HTML (<h1>Summary</h1><ul><li>…).');
+      state.addSlide(Slide(
+        title: 'Summary',
+        htmlContent: html,
+      ));
+      if (mounted) {
+        _addMessage({'role': 'assistant', 'content': 'Summary slide added.'});
+      }
+    } catch (e) {
+      if (mounted) {
+        _addMessage({'role': 'assistant', 'content': 'Error: $e'});
+      }
+    } finally {
+      if (mounted) setState(() => _isGenerating = false);
+    }
+  }
+
+  /// "Hỏi về deck" — Q&A against the deck index.
+  Future<void> _quickAskDeck() async {
+    final state = Provider.of<PresentationState>(context, listen: false);
+    final slides = state.slides;
+    if (slides.isEmpty) return;
+    final controller = TextEditingController();
+    final question = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(ctx.l10n.copilotAskDeck),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            hintText: 'e.g. Which slide talks about budgets?',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+              child: const Text('Ask')),
+        ],
+      ),
+    );
+    if (question == null || question.isEmpty || !mounted) return;
+
+    final index = CopilotService.buildDeckIndex([
+      for (final s in slides) {'title': s.title, 'htmlContent': s.htmlContent}
+    ]);
+    final hits = CopilotService.searchDeckIndex(index, question);
+    final contextText = hits.isEmpty
+        ? '(no direct matches — the deck has ${slides.length} slides)'
+        : hits
+            .take(4)
+            .map((i) => '#${i + 1}: ${index[i]['title']} — '
+                '${index[i]['text'].toString().substring(0, index[i]['text'].toString().length.clamp(0, 160))}')
+            .join('\n');
+    _addMessage({'role': 'user', 'content': question});
+    setState(() => _isGenerating = true);
+    try {
+      final answer = await widget.aiProviderManager.generateSlideContent(
+        'Answer the question using ONLY these slide excerpts. '
+        'Mention the slide number(s).\n\n$contextText\n\nQuestion: $question',
+        customPrompt: 'Return a short HTML answer (<p> only).',
+      );
+      if (mounted) _addMessage({'role': 'assistant', 'content': answer});
+    } catch (e) {
+      if (mounted) _addMessage({'role': 'assistant', 'content': 'Error: $e'});
+    } finally {
+      if (mounted) setState(() => _isGenerating = false);
+    }
+  }
+
+  /// "Dịch toàn deck" (Track 56, FEAT 91) — translate every slide keeping
+  /// HTML structure, with per-slide apply/cancel.
+  Future<void> _quickTranslate() async {
+    final state = Provider.of<PresentationState>(context, listen: false);
+    final slides = state.slides;
+    if (slides.isEmpty) return;
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content:
+              Text('Translation uses the AI provider — one prompt per slide.')));
+    }
+    final target = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text(ctx.l10n.translateDeck),
+        children: [
+          for (final lang in DeckTranslationService.supportedLanguages)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, lang),
+              child: Text(DeckTranslationService.languageNames[lang] ?? lang),
+            ),
+        ],
+      ),
+    );
+    if (target == null || !mounted) return;
+
+    setState(() => _isGenerating = true);
+    final translated = <int, String>{};
+    var done = 0;
+    for (var i = 0; i < slides.length; i++) {
+      final slide = slides[i];
+      final prompt = DeckTranslationService.buildTranslationPrompt(
+          slide.htmlContent, target);
+      try {
+        final html = await widget.aiProviderManager.generateSlideContent(prompt,
+            customPrompt: 'Translate HTML keeping tags/classes unchanged.');
+        translated[i] = html;
+        done++;
+        if (mounted) {
+          setState(() {
+            _isGenerating = false; // re-enabled below per batch
+          });
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text('$done/${slides.length} translated…')));
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Slide ${i + 1} error: $e')));
+          break;
+        }
+      }
+      // Keep UI responsive between slides.
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+    if (mounted) setState(() => _isGenerating = false);
+
+    if (translated.isEmpty || !mounted) return;
+    final applyAll = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Apply translations?'),
+        content:
+            Text('${translated.length} slide(s) translated. Apply all?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Apply all')),
+        ],
+      ),
+    );
+    if (applyAll == true && mounted) {
+      for (final entry in translated.entries) {
+        final i = entry.key;
+        final original = slides[i];
+        state.updateSlide(
+            i, original.copyWith(htmlContent: entry.value));
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Deck translated.')));
       }
     }
   }

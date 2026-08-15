@@ -14,11 +14,17 @@ if ($SmokeLaunch) { $SmokeInstall = $true }
 $versionLine = Get-Content -LiteralPath $PubspecPath |
     Where-Object { $_ -match '^version:\s*(\S+)\s*$' } |
     Select-Object -First 1
-if (-not $versionLine -or $versionLine -notmatch '^version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)\s*$') {
+if (-not $versionLine -or $versionLine -notmatch '^version:\s*(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+(\d+))?\s*$') {
     throw "pubspec.yaml version is missing or invalid."
 }
-$displayVersion = "$($Matches[1]).$($Matches[2]).$($Matches[3])+$($Matches[4])"
-$numericVersion = "$($Matches[1]).$($Matches[2]).$($Matches[3]).$($Matches[4])"
+$major = $Matches[1]
+$minor = $Matches[2]
+$patch = $Matches[3]
+$pre = $Matches[4]
+$build = if ($Matches[5]) { $Matches[5] } else { '0' }
+$suffix = if ($pre) { "-$pre" } else { '' }
+$displayVersion = "$major.$minor.$patch$suffix+$build"
+$numericVersion = "$major.$minor.$patch.$build"
 $installerName = "GhitaPPT-Setup-$displayVersion.exe"
 $installerPath = Join-Path $OutputDir $installerName
 $checksumPath = Join-Path $OutputDir "GhitaPPT-Setup-$displayVersion.sha256"

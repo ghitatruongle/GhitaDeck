@@ -8,6 +8,10 @@ class StatusBar extends StatelessWidget {
   final double zoomLevel;
   final ValueChanged<double> onZoomChanged;
   final String? autoSaveStatus;
+  final String language;
+  /// Track 63 (OPT 24): word count of the current slide + deck size in KB.
+  final int? wordCount;
+  final int? deckSizeBytes;
 
   const StatusBar({
     super.key,
@@ -15,7 +19,10 @@ class StatusBar extends StatelessWidget {
     required this.totalSlides,
     required this.zoomLevel,
     required this.onZoomChanged,
+    required this.language,
     this.autoSaveStatus,
+    this.wordCount,
+    this.deckSizeBytes,
   });
 
   @override
@@ -53,7 +60,31 @@ class StatusBar extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(width: 16),
+            // Word count + deck size (Track 63, OPT 24).
+            if (wordCount != null) ...[
+              Icon(Icons.notes, size: 12, color: theme.colorScheme.outline),
+              const SizedBox(width: 4),
+              Text(
+                '$wordCount từ',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(width: 12),
+            ],
+            if (deckSizeBytes != null) ...[
+              Icon(Icons.data_usage, size: 12, color: theme.colorScheme.outline),
+              const SizedBox(width: 4),
+              Text(
+                '${(deckSizeBytes! / 1024).toStringAsFixed(deckSizeBytes! >= 1024 * 1024 ? 1 : 0)} KB',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(width: 16),
+            ],
 
             // Language indicator
             Container(

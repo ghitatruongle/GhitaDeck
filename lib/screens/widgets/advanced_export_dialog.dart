@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/export_options.dart';
+import '../../models/ppt_theme_setting.dart';
 import '../../providers/presentation_state.dart';
+import '../../providers/theme_provider.dart';
 import '../../l10n/l10n.dart';
+import 'm6_export_dialog.dart';
 
 /// Advanced export dialog with options for selected slides, aspect ratio, quality
 class AdvancedExportDialog extends StatefulWidget {
@@ -18,6 +21,11 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
   ExportQuality _quality = ExportQuality.medium;
   bool _includeNotes = true;
   bool _includeBackgrounds = true;
+  bool _fitContent = true;
+  PdfPaperSize _pdfPaperSize = PdfPaperSize.matchSlide;
+  PdfMarginPreset _pdfMarginPreset = PdfMarginPreset.standard;
+  bool _pdfScaleToFit = true;
+  bool _includeHiddenSlides = false;
   bool _allSlides = true;
   final Set<int> _selectedSlideIndices = {};
   bool _isExporting = false;
@@ -116,6 +124,20 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
                       setState(() => _includeBackgrounds = v ?? true),
                   contentPadding: EdgeInsets.zero,
                 ),
+                CheckboxListTile(
+                  dense: true,
+                  title: Text(context.l10n.fitContent),
+                  subtitle: Text(context.l10n.fitContentDescription),
+                  value: _fitContent,
+                  onChanged: (v) => setState(() => _fitContent = v ?? true),
+                  contentPadding: EdgeInsets.zero,
+                ),
+                if (_format == PresentationExportFormat.pdf) ...[
+                  const SizedBox(height: 12),
+                  _buildSectionTitle(context, context.l10n.pdfPaperSize),
+                  const SizedBox(height: 8),
+                  _buildPdfOptions(context),
+                ],
                 const SizedBox(height: 8),
 
                 // Slide selection
@@ -193,6 +215,22 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
             onPressed: _isExporting ? null : () => Navigator.pop(context),
             child: Text(context.l10n.cancel),
           ),
+          // Milestone 6 tools (T41–T45): video/GIF, slide images, print,
+          // extended formats (.potx/.ppsx/.odp/.ppt) and package/security.
+          OutlinedButton.icon(
+            icon: const Icon(Icons.apps, size: 18),
+            label: Text(context.l10n.m6Title),
+            onPressed: _isExporting
+                ? null
+                : () => showDialog<void>(
+                      context: context,
+                      builder: (_) => M6ExportDialog(
+                        slides: presentationState.slides
+                            .map((s) => s.toMap())
+                            .toList(),
+                      ),
+                    ),
+          ),
           FilledButton.icon(
             icon: _isExporting
                 ? const SizedBox(
@@ -223,6 +261,84 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
     );
   }
 
+  /// PDF-only options (Track 06): paper size, margins, scale-to-fit and
+  /// hidden-slide inclusion.
+  Widget _buildPdfOptions(BuildContext context) {
+    final l = context.l10n;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: PdfPaperSize.values.map((size) {
+            return ChoiceChip(
+              label: Text(switch (size) {
+                PdfPaperSize.matchSlide => l.pdfPaperMatchSlide,
+                PdfPaperSize.a4 => l.pdfPaperA4,
+                PdfPaperSize.letter => l.pdfPaperLetter,
+              }),
+              selected: _pdfPaperSize == size,
+              onSelected: (_) => setState(() => _pdfPaperSize = size),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<PdfMarginPreset>(
+          initialValue: _pdfMarginPreset,
+          decoration: InputDecoration(
+            labelText: l.pdfMargins,
+            isDense: true,
+            border: const OutlineInputBorder(),
+          ),
+          items: PdfMarginPreset.values.map((preset) {
+            return DropdownMenuItem(
+              value: preset,
+              child: Text(switch (preset) {
+                PdfMarginPreset.compact => l.pdfMarginCompact,
+                PdfMarginPreset.standard => l.pdfMarginStandard,
+                PdfMarginPreset.wide => l.pdfMarginWide,
+              }),
+            );
+          }).toList(),
+          onChanged: (v) => setState(() => _pdfMarginPreset = v ?? _pdfMarginPreset),
+        ),
+        const SizedBox(height: 8),
+        CheckboxListTile(
+          dense: true,
+          title: Text(l.pdfScaleToFit),
+          value: _pdfScaleToFit,
+          onChanged: (v) => setState(() => _pdfScaleToFit = v ?? true),
+          contentPadding: EdgeInsets.zero,
+        ),
+        CheckboxListTile(
+          dense: true,
+          title: Text(l.includeHiddenSlides),
+          value: _includeHiddenSlides,
+          onChanged: (v) =>
+              setState(() => _includeHiddenSlides = v ?? false),
+          contentPadding: EdgeInsets.zero,
+        ),
+      ],
+    );
+  }
+
+  /// Build the PPTX theme from the user's theme settings — only when they
+  /// actually customized the theme (the untouched Office Blue preset exports
+  /// exactly like v1.6.3).
+  static PptThemeSetting? _userPptTheme(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    if (themeProvider.presetTheme == PresetTheme.officeBlue) return null;
+    String hex(Color color) => color.toARGB32().toRadixString(16).padLeft(8, '0')
+        .substring(2)
+        .toUpperCase();
+    return PptThemeSetting(
+      accent1: hex(themeProvider.primaryColor),
+      accent2: hex(themeProvider.accentColor),
+      fontMinor: themeProvider.fontFamily,
+    );
+  }
+
   Future<void> _performExport(
       BuildContext context, PresentationState presentationState) async {
     if (!_allSlides && _selectedSlideIndices.isEmpty) {
@@ -246,6 +362,18 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
         quality: _quality,
         includeNotes: _includeNotes,
         includeBackgrounds: _includeBackgrounds,
+        fitContent: _fitContent,
+        // Track 02/04: the user's customized theme (colors + font) lands in
+        // the PPTX theme part. The untouched Office Blue preset keeps the
+        // v1.6.3 defaults byte-for-byte (no theme attached).
+        theme: _userPptTheme(context),
+        pdfPaperSize: _pdfPaperSize,
+        pdfMarginPreset: _pdfMarginPreset,
+        pdfScaleToFit: _pdfScaleToFit,
+        includeHiddenSlides: _includeHiddenSlides,
+        // Track 07, P9: deck player strings follow the app locale.
+        htmlPlayerLocale:
+            Localizations.localeOf(context).languageCode == 'vi' ? 'vi' : 'en',
         allSlides: _allSlides,
         selectedSlideIndices: indices,
       );

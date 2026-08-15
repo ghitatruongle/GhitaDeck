@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../l10n/l10n.dart';
+import '../models/ppt_theme_setting.dart';
 import '../providers/theme_provider.dart';
 import '../theme/office_colors.dart';
 
@@ -96,6 +98,10 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
             _buildSectionTitle(context, 'Typography'),
             const SizedBox(height: 12),
             _buildFontSelector(themeProvider),
+            const SizedBox(height: 24),
+
+            // Export theme preview (Track 04, P8)
+            _buildExportThemePreview(themeProvider),
             const SizedBox(height: 24),
 
             // Preview Section
@@ -286,6 +292,93 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
           onPressed: () => _pickColor(context, color, onColorChanged),
         ),
       ],
+    );
+  }
+
+  // ---- Export theme preview (Track 04) ----
+
+  /// Compact preview of the theme that will be written into exported PPTX
+  /// files: the clrScheme swatches and the major/minor fonts.
+  Widget _buildExportThemePreview(ThemeProvider provider) {
+    String hex(Color color) => color.toARGB32().toRadixString(16).padLeft(8, '0')
+        .substring(2)
+        .toUpperCase();
+    // Mirrors the export mapping in AdvancedExportDialog: primary → accent1,
+    // accent → accent2; the untouched Office Blue preset keeps the Office
+    // defaults.
+    final exportTheme = provider.presetTheme == PresetTheme.officeBlue
+        ? PptThemeSetting.office
+        : PptThemeSetting(
+            accent1: hex(provider.primaryColor),
+            accent2: hex(provider.accentColor),
+            fontMinor: provider.fontFamily,
+          );
+    final swatches = <(String, String)>[
+      ('accent1', exportTheme.accent1),
+      ('accent2', exportTheme.accent2),
+      ('accent3', exportTheme.accent3),
+      ('accent4', exportTheme.accent4),
+      ('accent5', exportTheme.accent5),
+      ('accent6', exportTheme.accent6),
+      ('hlink', exportTheme.hlink),
+      ('folHlink', exportTheme.folHlink),
+    ];
+    Color fromHex(String value) => Color(int.parse('FF$value', radix: 16));
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              context.l10n.exportThemePreview,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final (label, value) in swatches)
+                  Tooltip(
+                    message: '$label #$value',
+                    child: Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: fromHex(value),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outlineVariant,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'majorFont: ${exportTheme.fontMajor}',
+              style: TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            Text(
+              'minorFont: ${exportTheme.fontMinor}',
+              style: TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

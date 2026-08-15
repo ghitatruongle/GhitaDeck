@@ -6,6 +6,14 @@ class WysiwygToolbar extends StatelessWidget {
   final VoidCallback? onInsertTable;
   final VoidCallback? onInsertCallout;
   final VoidCallback? onInsertCode;
+  final VoidCallback? onFormatPainter;
+  final VoidCallback? onEyedropper;
+  /// Track 63 (OPT 15): apply a color to the selected text (WysiwygService).
+  final void Function(String hexColor)? onPickColor;
+  /// Track 63 (OPT 15): wrap the selection in a numbered list / quote.
+  final VoidCallback? onListNumbered;
+  final VoidCallback? onQuote;
+  final bool formatPainterArmed;
 
   const WysiwygToolbar({
     super.key,
@@ -13,6 +21,12 @@ class WysiwygToolbar extends StatelessWidget {
     this.onInsertTable,
     this.onInsertCallout,
     this.onInsertCode,
+    this.onFormatPainter,
+    this.onEyedropper,
+    this.onPickColor,
+    this.onListNumbered,
+    this.onQuote,
+    this.formatPainterArmed = false,
   });
 
   @override
@@ -62,6 +76,31 @@ class WysiwygToolbar extends StatelessWidget {
             onPressed: () => onInsertTag('<ul>\n  <li>', '</li>\n</ul>'),
           ),
           IconButton(
+            icon: const Icon(Icons.format_list_numbered, size: 18),
+            tooltip: 'Danh sách Đánh số',
+            onPressed: onListNumbered ??
+                () => onInsertTag('<ol>\n  <li>', '</li>\n</ol>'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.format_quote, size: 18),
+            tooltip: 'Chèn Trích dẫn (Quote)',
+            onPressed: onQuote ??
+                () => onInsertTag('<blockquote>', '</blockquote>'),
+          ),
+          if (onPickColor != null)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.palette_outlined, size: 18),
+              tooltip: 'Màu chữ (Color)',
+              onSelected: onPickColor,
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'e53935', child: Text('Đỏ')),
+                PopupMenuItem(value: '1e88e5', child: Text('Xanh dương')),
+                PopupMenuItem(value: '43a047', child: Text('Xanh lá')),
+                PopupMenuItem(value: 'fb8c00', child: Text('Cam')),
+                PopupMenuItem(value: '000000', child: Text('Đen')),
+              ],
+            ),
+          IconButton(
             icon: const Icon(Icons.table_chart_outlined, size: 18),
             tooltip: 'Chèn Bảng',
             onPressed: onInsertTable ??
@@ -87,6 +126,22 @@ class WysiwygToolbar extends StatelessWidget {
                       '<pre><code style="background: #1e1e1e; color: #d4d4d4; padding: 12px; border-radius: 8px; display: block;">\n',
                       '\n</code></pre>',
                     ),
+          ),
+          const SizedBox(width: 4),
+          // Track 24: Format Painter + Eyedropper.
+          IconButton(
+            icon: Icon(
+              formatPainterArmed ? Icons.format_paint : Icons.format_paint_outlined,
+              size: 18,
+              color: formatPainterArmed ? Colors.blue.shade700 : null,
+            ),
+            tooltip: 'Format Painter (Ctrl+Shift+C / Ctrl+Shift+V)',
+            onPressed: onFormatPainter,
+          ),
+          IconButton(
+            icon: const Icon(Icons.colorize, size: 18),
+            tooltip: 'Eyedropper (lấy màu tại con trỏ)',
+            onPressed: onEyedropper,
           ),
         ],
       ),

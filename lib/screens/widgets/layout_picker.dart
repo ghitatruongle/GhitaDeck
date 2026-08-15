@@ -6,7 +6,18 @@ import '../../models/slide_layout.dart';
 class LayoutPicker extends StatelessWidget {
   final ValueChanged<SlideLayoutType> onLayoutSelected;
 
-  const LayoutPicker({super.key, required this.onLayoutSelected});
+  /// Optional localizer for layout names (Track 05, P9); defaults to the
+  /// built-in English names.
+  final String Function(SlideLayoutType type)? nameOf;
+
+  const LayoutPicker({
+    super.key,
+    required this.onLayoutSelected,
+    this.nameOf,
+  });
+
+  String _name(SlideLayoutType type) =>
+      (nameOf ?? (t) => SlideLayout.getByType(t).name)(type);
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +53,7 @@ class LayoutPicker extends StatelessWidget {
                 final layout = SlideLayout.layouts[index];
                 return _LayoutCard(
                   layout: layout,
+                  name: _name(layout.type),
                   onTap: () {
                     onLayoutSelected(layout.type);
                     Navigator.pop(context);
@@ -60,8 +72,10 @@ class LayoutPicker extends StatelessWidget {
   static Future<void> show(
     BuildContext context,
     Offset position,
-    ValueChanged<SlideLayoutType> onLayoutSelected,
-  ) async {
+    ValueChanged<SlideLayoutType> onLayoutSelected, {
+    String Function(SlideLayoutType type)? nameOf,
+  }) async {
+    final localName = nameOf ?? (type) => SlideLayout.getByType(type).name;
     final result = await showMenu<SlideLayoutType>(
       context: context,
       position: RelativeRect.fromLTRB(
@@ -94,7 +108,7 @@ class LayoutPicker extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        layout.name,
+                        localName(layout.type),
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
@@ -124,12 +138,16 @@ class LayoutPicker extends StatelessWidget {
   /// Show as a dialog.
   static Future<void> showAsDialog(
     BuildContext context,
-    ValueChanged<SlideLayoutType> onLayoutSelected,
-  ) async {
+    ValueChanged<SlideLayoutType> onLayoutSelected, {
+    String Function(SlideLayoutType type)? nameOf,
+  }) async {
     await showDialog(
       context: context,
       builder: (context) => Dialog(
-        child: LayoutPicker(onLayoutSelected: onLayoutSelected),
+        child: LayoutPicker(
+          onLayoutSelected: onLayoutSelected,
+          nameOf: nameOf,
+        ),
       ),
     );
   }
@@ -137,9 +155,14 @@ class LayoutPicker extends StatelessWidget {
 
 class _LayoutCard extends StatelessWidget {
   final SlideLayout layout;
+  final String name;
   final VoidCallback onTap;
 
-  const _LayoutCard({required this.layout, required this.onTap});
+  const _LayoutCard({
+    required this.layout,
+    required this.name,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -177,7 +200,7 @@ class _LayoutCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Text(
-                layout.name,
+                name,
                 style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w500),
                 textAlign: TextAlign.center,
                 maxLines: 1,

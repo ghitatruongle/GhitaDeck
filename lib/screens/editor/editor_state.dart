@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:provider/provider.dart';
 import '../../providers/presentation_state.dart';
+import '../../models/drawn_shape.dart';
 import '../../models/slide_template.dart';
+import '../../services/format_painter_service.dart';
 import '../../utils/effect_helpers.dart';
 import '../../utils/error_mapper.dart';
 
@@ -29,6 +31,106 @@ class EditorState with ChangeNotifier {
   bool _showNotes = false;
   bool _showPreview = true;
   int _selectedSlideIndex = -1;
+
+  // ---- Shape selection & scribble (Track 21, P4) ----
+  Set<String> _selectedShapeIds = {};
+  bool _scribbleMode = false;
+  List<Offset2D> _scribblePoints = [];
+
+  Set<String> get selectedShapeIds => _selectedShapeIds;
+  bool get scribbleMode => _scribbleMode;
+  List<Offset2D> get scribblePoints => _scribblePoints;
+
+  /// Replace the shape selection (single click) or toggle a member
+  /// (shift/multi click).
+  void selectShape(String id, {bool multi = false}) {
+    if (multi) {
+      final next = Set<String>.of(_selectedShapeIds);
+      if (!next.add(id)) next.remove(id);
+      _selectedShapeIds = next;
+    } else {
+      _selectedShapeIds = {id};
+    }
+    notifyListeners();
+  }
+
+  void clearShapeSelection() {
+    if (_selectedShapeIds.isEmpty) return;
+    _selectedShapeIds = {};
+    notifyListeners();
+  }
+
+  void setScribbleMode(bool value) {
+    _scribbleMode = value;
+    if (!value) _scribblePoints = [];
+    notifyListeners();
+  }
+
+  void addScribblePoint(Offset2D p) {
+    _scribblePoints = [..._scribblePoints, p];
+    notifyListeners();
+  }
+
+  void finishScribble() {
+    _scribblePoints = [];
+    _scribbleMode = false;
+    notifyListeners();
+  }
+
+  // ---- Format Painter (Track 24) ----
+  final FormatPainterService _formatPainter = FormatPainterService();
+
+  FormatPainterService get formatPainter => _formatPainter;
+  bool get formatPainterArmed => _formatPainter.isArmed;
+
+  /// Capture the format of the current text selection (or a selected shape
+  /// when [selectedShape] is provided). Ctrl+Shift+C.
+  void captureFormat({DrawnShape? selectedShape}) {
+    if (selectedShape != null) {
+      _formatPainter.capture(FormatSnapshot.fromShape(selectedShape));
+    } else {
+      final text = htmlController.text;
+      final sel = htmlController.selection;
+      final fragment = (sel.isValid && sel.start < sel.end && sel.end <= text.length)
+          ? text.substring(sel.start, sel.end)
+          : text;
+      _formatPainter.capture(FormatSnapshot.fromHtmlFragment(fragment));
+    }
+    notifyListeners();
+  }
+
+  /// Apply the captured format to the current text selection. Returns false
+  /// when there is no armed snapshot or nothing selected. Ctrl+Shift+V.
+  bool pasteFormatToSelection() {
+    final snap = _formatPainter.use();
+    if (snap == null) return false;
+    final text = htmlController.text;
+    final sel = htmlController.selection;
+    if (!sel.isValid || sel.start >= sel.end || sel.end > text.length) {
+      return false;
+    }
+    final selected = text.substring(sel.start, sel.end);
+    final wrapped = snap.applyToSelection(selected);
+    htmlController.text = text.replaceRange(sel.start, sel.end, wrapped);
+    htmlController.selection =
+        TextSelection.collapsed(offset: sel.start + wrapped.length);
+    _schedulePreviewUpdate();
+    notifyListeners();
+    return true;
+  }
+
+  /// Apply the captured format to a DrawnShape. Returns the updated shape or
+  /// null when no snapshot is armed.
+  DrawnShape? pasteFormatToShape(DrawnShape shape) {
+    final snap = _formatPainter.use();
+    if (snap == null) return null;
+    return snap.applyToShape(shape);
+  }
+
+  void clearFormatPainter() {
+    _formatPainter.clear();
+    notifyListeners();
+  }
 
   // ---- Getters ----
   int? get editingIndex => _editingIndex;
@@ -159,7 +261,12 @@ class EditorState with ChangeNotifier {
   /// Validate and sanitize HTML. Returns error message on failure, null on success.
   String? validateAndSanitizeHtml(String rawHtml) {
     if (rawHtml.isEmpty) return 'HTML content cannot be empty.';
-    if (rawHtml.length > 100000) return 'HTML content is too long (max 100KB).';
+    // Track 12, P2: the length cap applies to *text content* only — base64
+    // payloads inside data: URIs (images, Track 11/12 videos) are exempt, so
+    // a slide carrying a multi-MB embedded video still passes validation.
+    if (_textContentLength(rawHtml) > 100000) {
+      return 'HTML content is too long (max 100KB).';
+    }
 
     final sanitizedHtml = rawHtml
         .replaceAll(
@@ -176,6 +283,19 @@ class EditorState with ChangeNotifier {
     }
     _lastSanitizedHtml = sanitizedHtml;
     return null; // null = no error
+  }
+
+  /// Length of [rawHtml] with every base64 payload (data:…;base64,…)
+  /// collapsed to a fixed placeholder, so media bytes don't count against
+  /// the text cap.
+  static int _textContentLength(String rawHtml) {
+    const placeholder = 'data:payload';
+    return rawHtml
+        .replaceAllMapped(
+          RegExp(r'data:[^;]+;base64,[A-Za-z0-9+/=\s]+', caseSensitive: false),
+          (_) => placeholder,
+        )
+        .length;
   }
 
   /// Get the last sanitized HTML (call after validateAndSanitizeHtml returns null).

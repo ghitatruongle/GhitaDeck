@@ -1,6 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'ai_provider_manager.dart';
 
@@ -11,6 +15,11 @@ class ConfigService {
   static const String _effectKey = 'presentation_slide_effect';
   static const String _autoAdvanceKey = 'presentation_auto_advance';
   static const String _autoAdvanceSecondsKey = 'presentation_auto_advance_seconds';
+
+  /// Track 65 OPT 27: slide payloads larger than this spill to a file next
+  /// to the app data; SharedPreferences keeps only a pointer.
+  static const int _largeDeckThreshold = 1 << 20; // 1 MB
+  static const String _slidesFilePointerKey = 'presentation_slides_file_pointer';
 
   // Secure storage only for secrets (API keys).
   // Non-secret preferences remain in SharedPreferences.
@@ -78,17 +87,63 @@ class ConfigService {
 
   // ---- Slides & theme (non-secret) ----
 
-  Future<void> saveSlides(List<Map<String, dynamic>> slides, String effectName) async {
+  /// Track 65 OPT 27: decks whose serialized slides exceed 1 MB are spilled
+  /// to `<docs>/GhitaPPT/decks/presentation_slides.json`; SharedPreferences
+  /// then holds only a file pointer (and a legacy inline key is removed).
+  /// Load is backward compatible with decks saved inline before this change.
+  Future<void> saveSlides(List<Map<String, dynamic>> slides, String effectName,
+      [String? deckMeta]) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_slidesKey, jsonEncode(slides));
+    final jsonStr = jsonEncode(slides);
+    if (utf8.encode(jsonStr).length > _largeDeckThreshold) {
+      final dir = await getApplicationDocumentsDirectory();
+      final decksDir = Directory(p.join(dir.path, 'GhitaPPT', 'decks'));
+      await decksDir.create(recursive: true);
+      final file = File(p.join(decksDir.path, 'presentation_slides.json'));
+      await file.writeAsString(jsonStr, flush: true);
+      await prefs.setString(_slidesFilePointerKey, file.path);
+      await prefs.remove(_slidesKey);
+    } else {
+      await prefs.setString(_slidesKey, jsonStr);
+      await prefs.remove(_slidesFilePointerKey);
+    }
     await prefs.setString(_effectKey, effectName);
+    if (deckMeta != null) {
+      await prefs.setString('presentation_deck_meta', deckMeta);
+    }
   }
 
   Future<Map<String, dynamic>> loadSlides() async {
     final prefs = await SharedPreferences.getInstance();
-    final jsonStr = prefs.getString(_slidesKey);
     final effectName = prefs.getString(_effectKey) ?? 'none';
+    final deckMeta = prefs.getString('presentation_deck_meta') ?? '';
     List<Map<String, dynamic>> slides = [];
+
+    // Large-deck pointer file first (Track 65 OPT 27).
+    final pointer = prefs.getString(_slidesFilePointerKey);
+    if (pointer != null && pointer.isNotEmpty) {
+      try {
+        final file = File(pointer);
+        if (await file.exists()) {
+          final content = await file.readAsString();
+          final List<dynamic> list = json.decode(content);
+          slides =
+              list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        } else {
+          debugPrint('ConfigService: spilled deck file missing: $pointer');
+        }
+      } catch (e) {
+        debugPrint('Error loading spilled slides: $e');
+      }
+      return {
+        'slides': slides,
+        'slide_effect': effectName,
+        'deckMeta': deckMeta,
+      };
+    }
+
+    // Legacy inline storage.
+    final jsonStr = prefs.getString(_slidesKey);
     if (jsonStr != null && jsonStr.isNotEmpty) {
       try {
         final List<dynamic> list = json.decode(jsonStr);
@@ -97,7 +152,7 @@ class ConfigService {
         debugPrint('Error loading slides: $e');
       }
     }
-    return {'slides': slides, 'slide_effect': effectName};
+    return {'slides': slides, 'slide_effect': effectName, 'deckMeta': deckMeta};
   }
 
   // ---- Auto advance ("Timing") ----

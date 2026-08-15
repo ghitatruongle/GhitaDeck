@@ -19,15 +19,23 @@ function Read-ProjectVersion {
     $versionLine = Get-Content -LiteralPath $PubspecPath |
         Where-Object { $_ -match '^version:\s*(\S+)\s*$' } |
         Select-Object -First 1
-    if (-not $versionLine -or $versionLine -notmatch '^version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)\s*$') {
-        throw "pubspec.yaml must contain a Flutter version in MAJOR.MINOR.PATCH+BUILD format."
+    if (-not $versionLine -or $versionLine -notmatch '^version:\s*(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+(\d+))?\s*$') {
+        throw "pubspec.yaml must contain a Flutter version in MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD] format."
     }
 
+    $major = $Matches[1]
+    $minor = $Matches[2]
+    $patch = $Matches[3]
+    $pre = $Matches[4]
+    $build = if ($Matches[5]) { $Matches[5] } else { '0' }
+    $core = "$major.$minor.$patch"
+    $suffix = if ($pre) { "-$pre" } else { '' }
+
     return [pscustomobject]@{
-        Display = "$($Matches[1]).$($Matches[2]).$($Matches[3])+$($Matches[4])"
-        Core = "$($Matches[1]).$($Matches[2]).$($Matches[3])"
-        Build = $Matches[4]
-        Numeric = "$($Matches[1]).$($Matches[2]).$($Matches[3]).$($Matches[4])"
+        Display = "$core$suffix+$build"
+        Core = $core
+        Build = $build
+        Numeric = "$core.$build"
     }
 }
 

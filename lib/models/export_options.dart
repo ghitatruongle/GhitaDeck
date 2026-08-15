@@ -1,3 +1,5 @@
+import 'ppt_theme_setting.dart';
+
 /// Output format for a presentation export.
 enum PresentationExportFormat {
   pptx('PowerPoint (.pptx)', 'pptx'),
@@ -78,6 +80,30 @@ enum ExportQuality {
   const ExportQuality(this.label, this.imageMaxWidth);
 }
 
+/// PDF page size (Track 06, P2). [matchSlide] keeps the v1.6.3 behavior: one
+/// page exactly the size of the slide.
+enum PdfPaperSize {
+  matchSlide('Match slide'),
+  a4('A4'),
+  letter('Letter');
+
+  final String label;
+
+  const PdfPaperSize(this.label);
+}
+
+/// PDF page-margin presets in points (Track 06, P3).
+enum PdfMarginPreset {
+  compact('Compact', 24),
+  standard('Standard', 48),
+  wide('Wide', 72);
+
+  final String label;
+  final double points;
+
+  const PdfMarginPreset(this.label, this.points);
+}
+
 /// A complete, format-independent export request.
 ///
 /// The caller may select all slides or an explicit set of zero-based indices.
@@ -90,6 +116,13 @@ class ExportOptions {
     this.quality = ExportQuality.medium,
     this.includeNotes = true,
     this.includeBackgrounds = true,
+    this.fitContent = true,
+    this.theme,
+    this.pdfPaperSize = PdfPaperSize.matchSlide,
+    this.pdfMarginPreset = PdfMarginPreset.standard,
+    this.pdfScaleToFit = true,
+    this.includeHiddenSlides = false,
+    this.htmlPlayerLocale = 'en',
     this.allSlides = true,
     this.selectedSlideIndices = const [],
   });
@@ -99,6 +132,28 @@ class ExportOptions {
   final ExportQuality quality;
   final bool includeNotes;
   final bool includeBackgrounds;
+
+  /// PPTX only: shrink overflowing text so the whole deck fits its slides.
+  final bool fitContent;
+
+  /// PPTX only: user theme (colors + fonts) written into the theme part;
+  /// null keeps the v1.6.3 Office defaults.
+  final PptThemeSetting? theme;
+
+  /// PDF only: page size (default = match slide, the v1.6.3 behavior).
+  final PdfPaperSize pdfPaperSize;
+
+  /// PDF only: page margins in points (default Standard = the legacy inset).
+  final PdfMarginPreset pdfMarginPreset;
+
+  /// PDF only: scale the slide to fit page size minus margins.
+  final bool pdfScaleToFit;
+
+  /// PDF only: keep slides marked hidden in the exported document.
+  final bool includeHiddenSlides;
+
+  /// HTML only: player control strings locale ('en' | 'vi', Track 07, P9).
+  final String htmlPlayerLocale;
   final bool allSlides;
   final List<int> selectedSlideIndices;
 

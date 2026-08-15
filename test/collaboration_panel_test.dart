@@ -19,6 +19,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Collaboration'), findsOneWidget);
+    // Track 12: the toolbar scrolls horizontally now (more insert buttons);
+    // bring the collaboration button into view before tapping.
+    await tester.ensureVisible(find.text('Collaboration'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Collaboration'));
     await tester.pumpAndSettle();
     expect(find.byType(CollaborationPanel), findsOneWidget);

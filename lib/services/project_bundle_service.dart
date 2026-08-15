@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import '../models/slide.dart';
 
 /// Service for packing and unpacking `.ghita` project bundle files.
@@ -9,9 +11,17 @@ import '../models/slide.dart';
 /// - `manifest.json` (metadata, title, author, version, ratio)
 /// - `slides.json` (slides content, notes, effects, tags)
 /// - `history.json` (version snapshot history)
-/// - `media/` (embedded offline assets)
+/// - `media/` (embedded offline assets — Track 13: narration audio)
 class ProjectBundleService {
+  /// One binary asset to embed under `media/` (Track 13, P8).
+  static const String mediaDir = 'media';
+
   /// Packs a presentation into a `.ghita` bundle file at [targetPath].
+  ///
+  /// [mediaFiles] (name → bytes) are embedded under `media/`; slides that
+  /// reference one of those names via `audioPath` travel as
+  /// `media/<name>` + `audioEmbedded: true` so the bundle is self-contained
+  /// and opens on another machine.
   Future<bool> saveProjectBundle({
     required String targetPath,
     required List<Slide> slides,
@@ -20,6 +30,7 @@ class ProjectBundleService {
     String aspectRatio = '16:9',
     Map<String, dynamic>? extraManifest,
     List<Map<String, dynamic>>? historySnapshots,
+    List<MapEntry<String, Uint8List>>? mediaFiles,
   }) async {
     try {
       final archive = Archive();
@@ -27,19 +38,32 @@ class ProjectBundleService {
       // 1. Manifest
       final manifestMap = {
         'appName': 'Ghita PowerPoint Converter',
-        'version': '1.6.0+1',
+        'version': '2.0.0-beta',
         'title': title,
         'author': author,
         'aspectRatio': aspectRatio,
         'createdAt': DateTime.now().toIso8601String(),
         'slideCount': slides.length,
+        if (mediaFiles != null && mediaFiles.isNotEmpty)
+          'mediaCount': mediaFiles.length,
         if (extraManifest != null) ...extraManifest,
       };
       final manifestBytes = utf8.encode(jsonEncode(manifestMap));
       archive.addFile(ArchiveFile('manifest.json', manifestBytes.length, manifestBytes));
 
-      // 2. Slides
-      final slidesList = slides.map((s) => s.toMap()).toList();
+      // 2. Slides (audioPath rewritten to the bundle-relative media name)
+      final slidesList = slides.map((s) {
+        var map = s.toMap();
+        final audioPath = map['audioPath'];
+        if (audioPath is String && audioPath.isNotEmpty) {
+          final name = p.basename(audioPath);
+          if (mediaFiles?.any((e) => e.key == name) ?? false) {
+            map['audioPath'] = '$mediaDir/$name';
+            map['audioEmbedded'] = true;
+          }
+        }
+        return map;
+      }).toList();
       final slidesBytes = utf8.encode(jsonEncode(slidesList));
       archive.addFile(ArchiveFile('slides.json', slidesBytes.length, slidesBytes));
 
@@ -48,7 +72,13 @@ class ProjectBundleService {
       final historyBytes = utf8.encode(jsonEncode(historyList));
       archive.addFile(ArchiveFile('history.json', historyBytes.length, historyBytes));
 
-      // 4. Encode ZIP & Write File
+      // 4. Embedded media (Track 13, P8)
+      for (final entry in mediaFiles ?? const <MapEntry<String, Uint8List>>[]) {
+        archive.addFile(
+            ArchiveFile('$mediaDir/${entry.key}', entry.value.length, entry.value));
+      }
+
+      // 5. Encode ZIP & Write File
       final encoder = ZipEncoder();
       final zipBytes = encoder.encode(archive);
       if (zipBytes != null) {
@@ -67,8 +97,13 @@ class ProjectBundleService {
     return false;
   }
 
-  /// Unpacks and loads a `.ghita` bundle file from [sourcePath].
-  Future<Map<String, dynamic>?> loadProjectBundle(String sourcePath) async {
+  /// Unpacks and loads a `.ghita` bundle file from [sourcePath]. Media
+  /// entries are extracted to [extractDir] (default: the app documents
+  /// `GhitaPPT/audio/` dir); tests inject a temp dir.
+  Future<Map<String, dynamic>?> loadProjectBundle(
+    String sourcePath, {
+    String? extractDir,
+  }) async {
     try {
       final file = File(sourcePath);
       if (!await file.exists()) return null;
@@ -79,6 +114,9 @@ class ProjectBundleService {
       Map<String, dynamic>? manifest;
       List<Slide> slides = [];
       List<Map<String, dynamic>> history = [];
+      // Track 13, P8: media entries are extracted to the narration dir so
+      // slides referencing `media/<name>` resolve to a real local file.
+      final mediaFiles = <String, String>{};
 
       for (final archiveFile in archive) {
         if (archiveFile.isFile) {
@@ -97,8 +135,40 @@ class ProjectBundleService {
             history = rawList
                 .map((e) => Map<String, dynamic>.from(e as Map))
                 .toList();
+          } else if (archiveFile.name.startsWith('$mediaDir/')) {
+            final name = p.basename(archiveFile.name);
+            String dirPath = extractDir ?? '';
+            if (dirPath.isEmpty) {
+              final dir = await getApplicationDocumentsDirectory();
+              dirPath = p.join(dir.path, 'GhitaPPT', 'audio');
+            }
+            final audioDir = Directory(dirPath);
+            if (!await audioDir.exists()) {
+              await audioDir.create(recursive: true);
+            }
+            final outPath = p.join(audioDir.path, name);
+            await File(outPath).writeAsBytes(
+                archiveFile.content as List<int>, flush: true);
+            mediaFiles[name] = outPath;
           }
         }
+      }
+
+      // Rewrite slides whose audioPath is a bundle-relative media reference
+      // to the extracted local file (keeps audioEmbedded so a later save
+      // re-embeds them).
+      if (mediaFiles.isNotEmpty) {
+        slides = slides.map((slide) {
+          final audioPath = slide.audioPath;
+          if (audioPath.startsWith('$mediaDir/')) {
+            final name = p.basename(audioPath);
+            final local = mediaFiles[name];
+            if (local != null) {
+              return slide.copyWith(audioPath: local, audioEmbedded: true);
+            }
+          }
+          return slide;
+        }).toList();
       }
 
       return {
@@ -106,6 +176,7 @@ class ProjectBundleService {
         'slides': slides,
         'history': history,
         'filePath': sourcePath,
+        'mediaFiles': mediaFiles,
       };
     } catch (e) {
       debugPrint('ProjectBundleService Error loading bundle: $e');

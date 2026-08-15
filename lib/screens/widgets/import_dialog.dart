@@ -1,10 +1,13 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import '../../services/document_importer_service.dart';
+
+import '../../services/advanced_import_service.dart';
 import '../../models/slide.dart';
 import '../../utils/error_mapper.dart';
 
-/// Import Dialog — v1.2.0
-/// Import slides from Markdown text or web URL.
+/// Import Dialog — v1.2.0 + Track 66 (M10)
+/// Import slides from advanced Markdown (tables/lists/code/images), web URL,
+/// or files (.docx / .pptx / .pdf) with a live preview before applying.
 class ImportDialog extends StatefulWidget {
   final void Function(List<Slide> slides)? onImportSlides;
 
@@ -17,10 +20,10 @@ class ImportDialog extends StatefulWidget {
 class _ImportDialogState extends State<ImportDialog> {
   final _markdownController = TextEditingController();
   final _urlController = TextEditingController();
-  final DocumentImporterService _importer = DocumentImporterService();
   bool _isLoading = false;
   List<Slide>? _previewSlides;
   String _importMode = 'markdown';
+  String? _fileName;
 
   @override
   void dispose() {
@@ -35,7 +38,8 @@ class _ImportDialogState extends State<ImportDialog> {
 
     setState(() => _isLoading = true);
     try {
-      final slides = _importer.parseMarkdownToSlides(text);
+      // Track 66: advanced markdown — tables, nested lists, code, images, `---`.
+      final slides = AdvancedImportService.parseMarkdown(text);
       setState(() {
         _previewSlides = slides;
         _isLoading = false;
@@ -54,8 +58,49 @@ class _ImportDialogState extends State<ImportDialog> {
 
     setState(() => _isLoading = true);
     try {
-      final slides = await _importer.importFromWebUrl(url);
+      // Track 66: rich web import — title + H1–H3 + paragraphs + lists + images.
+      final slides = await AdvancedImportService.importWebRich(url);
       if (!mounted) return; // dialog may have been closed mid-fetch
+      setState(() {
+        _previewSlides = slides;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ErrorMapper.showErrorSnackBar(context, e);
+    }
+  }
+
+  Future<void> _pickFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['docx', 'pptx', 'pdf'],
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+    final file = result.files.first;
+    final bytes = file.bytes;
+    if (bytes == null) {
+      if (mounted) {
+        ErrorMapper.showErrorSnackBar(
+            context, StateError('Không đọc được nội dung file'));
+      }
+      return;
+    }
+    final ext = (file.extension ?? '').toLowerCase();
+    setState(() {
+      _isLoading = true;
+      _fileName = file.name;
+    });
+    try {
+      final slides = switch (ext) {
+        'docx' => AdvancedImportService.importDocx(bytes),
+        'pptx' => AdvancedImportService.importPptx(bytes),
+        'pdf' => AdvancedImportService.importPdf(bytes),
+        _ => throw StateError('Định dạng không hỗ trợ: .$ext'),
+      };
+      if (!mounted) return;
       setState(() {
         _previewSlides = slides;
         _isLoading = false;
@@ -73,7 +118,7 @@ class _ImportDialogState extends State<ImportDialog> {
 
     return Dialog(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 600, maxHeight: 600),
+        constraints: const BoxConstraints(maxWidth: 620, maxHeight: 620),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -98,6 +143,7 @@ class _ImportDialogState extends State<ImportDialog> {
               child: SegmentedButton<String>(
                 segments: const [
                   ButtonSegment(value: 'markdown', label: Text('Markdown'), icon: Icon(Icons.article)),
+                  ButtonSegment(value: 'file', label: Text('File'), icon: Icon(Icons.insert_drive_file)),
                   ButtonSegment(value: 'url', label: Text('Web URL'), icon: Icon(Icons.link)),
                 ],
                 selected: {_importMode},
@@ -117,7 +163,8 @@ class _ImportDialogState extends State<ImportDialog> {
                               expands: true,
                               decoration: const InputDecoration(
                                 labelText: 'Markdown Content',
-                                hintText: '# Slide 1\n- Point A\n- Point B\n\n# Slide 2\nParagraph text...',
+                                hintText:
+                                    '# Slide 1\n- Point A\n- Point B\n\n| Cột 1 | Cột 2 |\n| --- | --- |\n| A | B |\n\n---\n\n# Slide 2\nParagraph, code block, image…',
                                 border: OutlineInputBorder(),
                                 alignLabelWithHint: true,
                               ),
@@ -135,28 +182,58 @@ class _ImportDialogState extends State<ImportDialog> {
                           ),
                         ],
                       )
-                    : Column(
-                        children: [
-                          TextField(
-                            controller: _urlController,
-                            decoration: const InputDecoration(
-                              labelText: 'Web URL',
-                              hintText: 'https://example.com/article',
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.link),
-                            ),
+                    : _importMode == 'file'
+                        ? Column(
+                            children: [
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: theme.colorScheme.outlineVariant),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Column(
+                                  children: [
+                                    const Icon(Icons.upload_file, size: 40),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      _fileName ?? 'Chọn file .docx / .pptx / .pdf',
+                                      style: theme.textTheme.bodyMedium,
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    ElevatedButton.icon(
+                                      icon: const Icon(Icons.folder_open),
+                                      label: const Text('Chọn File'),
+                                      onPressed: _isLoading ? null : _pickFile,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          )
+                        : Column(
+                            children: [
+                              TextField(
+                                controller: _urlController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Web URL',
+                                  hintText: 'https://example.com/article',
+                                  border: OutlineInputBorder(),
+                                  prefixIcon: Icon(Icons.link),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  icon: const Icon(Icons.download),
+                                  label: const Text('Fetch & Convert'),
+                                  onPressed: _isLoading ? null : _importFromUrl,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
-                              icon: const Icon(Icons.download),
-                              label: const Text('Fetch & Convert'),
-                              onPressed: _isLoading ? null : _importFromUrl,
-                            ),
-                          ),
-                        ],
-                      ),
               ),
             ),
             // Preview
@@ -213,6 +290,10 @@ class _ImportDialogState extends State<ImportDialog> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
+                  if (_isLoading) ...[
+                    const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                    const SizedBox(width: 12),
+                  ],
                   TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy')),
                   const SizedBox(width: 12),
                   ElevatedButton(

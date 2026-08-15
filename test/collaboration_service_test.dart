@@ -99,10 +99,14 @@ void main() {
 
       clientSlides = [
         _slide('Client changed', '<h1>Revision 3</h1>'),
+        _slide('Second slide', '<p>More content</p>'),
       ];
       client.notifyDocumentChanged();
-      await _waitUntil(() =>
-          hostSlides.length == 1 && hostSlides.first['title'] == 'Client changed');
+      // Delta sync semantics: the client changed slide 0; the untouched
+      // slide 1 keeps its content (the merge is per-slide, not full replace).
+      await _waitUntil(() => hostSlides.first['title'] == 'Client changed');
+      expect(hostSlides.length, 2);
+      expect(hostSlides[1]['title'], 'Second slide');
       expect(host.revision, greaterThanOrEqualTo(3));
     });
 

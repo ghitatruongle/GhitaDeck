@@ -4,6 +4,7 @@ import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ghita_ppt_converter/models/export_options.dart';
 import 'package:ghita_ppt_converter/services/export_isolate.dart';
+import 'package:ghita_ppt_converter/services/export_primitives.dart';
 
 /// End-to-end checks for the background-isolate export pipeline.
 ///
@@ -27,6 +28,70 @@ void main() {
               '<tr><td>1</td><td>2</td></tr></table>',
         },
       ];
+
+  test('reports monotonic per-slide progress through the worker', () async {
+    final dir = await Directory.systemTemp.createTemp('ghita_ppt_prog_');
+    final progress = <ExportProgress>[];
+    try {
+      await runPptExportInIsolate(
+        sampleSlides(),
+        '${dir.path}/prog.pptx',
+        onProgress: progress.add,
+      );
+      expect(progress, isNotEmpty);
+      for (var i = 1; i < progress.length; i++) {
+        expect(
+            progress[i].fraction, greaterThanOrEqualTo(progress[i - 1].fraction));
+      }
+      expect(progress.last.fraction, 1.0);
+      expect(
+          progress.where((p) => p.stage == 'slides').map((p) => p.slideIndex),
+          containsAllInOrder([0, 1]));
+    } finally {
+      await dir.delete(recursive: true);
+    }
+  });
+
+  test('cancel mid-job through the worker, then the worker keeps working',
+      () async {
+    final dir = await Directory.systemTemp.createTemp('ghita_ppt_cancel_');
+    final token = ExportCancelToken();
+    try {
+      // A large deck guarantees the worker is still mid-build when the
+      // cancel message lands (progress messaging latency is ~ms, the build
+      // takes hundreds of ms), so the abort is deterministic.
+      final bigDeck = List<Map<String, dynamic>>.generate(
+        150,
+        (i) => {
+          'title': 'Slide $i',
+          'htmlContent':
+              '<h2>Phụ đề $i</h2><p>Nội dung phong phú $i với tiếng Việt.</p>'
+                  '<ul><li>Mục một</li><li>Mục hai</li><li>Mục ba</li></ul>'
+                  '<table><tr><th>A</th><th>B</th></tr>'
+                  '<tr><td>1</td><td>2</td></tr></table>',
+        },
+      );
+      await expectLater(
+        runPptExportInIsolate(
+          bigDeck,
+          '${dir.path}/cancelled.pptx',
+          onProgress: (p) {
+            if (p.slideIndex == 3) token.cancel();
+          },
+          cancelToken: token,
+        ),
+        throwsA(isA<ExportCancelledException>()),
+      );
+      expect(token.isCancelled, isTrue);
+      expect(File('${dir.path}/cancelled.pptx').existsSync(), isFalse);
+      // The worker isolate survives a cancelled job.
+      final path = await runPptExportInIsolate(sampleSlides(), '${dir.path}/ok.pptx');
+      expect(File(path).existsSync(), isTrue);
+      expect(File('${dir.path}/ok.pptx').lengthSync(), greaterThan(0));
+    } finally {
+      await dir.delete(recursive: true);
+    }
+  });
 
   test('runPptExportInIsolate builds a valid OOXML package', () async {
     final dir = await Directory.systemTemp.createTemp('ghita_ppt_iso_');

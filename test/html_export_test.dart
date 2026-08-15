@@ -183,5 +183,43 @@ void main() {
       expect(content, isNot(contains('#slide-0 { background-color:')));
       expect(content, isNot(contains('id="notesBtn"')));
     });
+
+    test('reuses identical decks from the in-session hash cache', () async {
+      HtmlExportService.clearDeckCache();
+      const deck = [
+        {
+          'title': 'Cached deck',
+          'htmlContent': '<p>Same content twice</p>',
+        }
+      ];
+      final p1 = '${Directory.systemTemp.path}/cached_a.html';
+      final p2 = '${Directory.systemTemp.path}/cached_b.html';
+      final first = await service.exportToHtmlPath(deck, p1);
+      final second = await service.exportToHtmlPath(deck, p2);
+
+      expect(first, p1);
+      expect(second, p2);
+      // Identical input → served from the cache, byte-identical output.
+      expect(HtmlExportService.deckCacheHits, 1);
+      expect(HtmlExportService.deckCacheMisses, 1);
+      expect(
+        File(p1).readAsStringSync(),
+        File(p2).readAsStringSync(),
+      );
+
+      // A different deck is a cache miss and builds fresh.
+      HtmlExportService.clearDeckCache();
+      await service.exportToHtmlPath(
+        [
+          {
+            'title': 'Different',
+            'htmlContent': '<p>Changed</p>',
+          }
+        ],
+        '${Directory.systemTemp.path}/cached_c.html',
+      );
+      expect(HtmlExportService.deckCacheMisses, 1);
+      expect(HtmlExportService.deckCacheHits, 0);
+    });
   });
 }

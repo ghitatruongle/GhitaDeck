@@ -1,5 +1,853 @@
 # Changelog
 
+## [2.0.0-beta] - 2026-08-15 — Tối ưu theo track (M1–M10)
+
+### ⚡ Tối ưu đã áp dụng
+
+- **T62 — `ReadAloudService` viết lại**: trước đây mỗi slide trong `speakDeck` spawn **1 process PowerShell mới** (~0.5s khởi động/slide → deck 50 slide lãng phí ~25s). Nay dùng **1 process PowerShell bền vững + giao thức stdin** (base64 line ↔ phản hồi `OK`): khởi động đúng 1 lần, đọc cả deck liền mạch; **Pause/Resume giờ là SAPI thật** (`Pause()`/`Resume()`) thay vì kill/restart; `STOP` dùng `SpeakAsyncCancelAll`; set `[Console]::OutputEncoding` UTF-8 để tránh lỗi UTF-16 trên stdout redirect (đã kiểm chứng protocol bằng PowerShell thật).
+- **T66 — `importPptx`**: số thứ tự slide được trích **1 lần/file** thay vì tạo `RegExp(r'\d+')` trong từng lần so sánh của sort (bỏ O(n·log n) regex allocation).
+- **T65 — OPT 25–30 nối production** (đợt deep review trước): deck > 1 MB spill file, lazy AI scan post-frame + cache 5 phút, healthcheck song song + khoảng lặp thích ứng, `loadProviders` post-frame.
+
+### 🔍 Đã rà & giữ nguyên (đánh giá không đáng đổi)
+- `HtmlParseCache._entryFor` parse DOM 2 lần (có/không h2) — nằm trong cache 1 lần/slide, đổi rủi ro > lợi ích.
+- Image pipeline decode full-size trước resize — chuẩn của package:image; đã có 3 tầng cache.
+- `SpellcheckService.suggest` quét cả từ điển — từ điển nhỏ, gọi 1 lần/dialog.
+- Inline RegExp ở đường cold (import/one-shot) — không phải hot path.
+
+### 🧪 Kiểm định
+- **732/732 test xanh** · **flutter analyze: No issues found** · i18n 800/800.
+
+## [2.0.0-beta] - 2026-08-15 — Deep review M1–M10 (xác nhận 100%)
+
+### 🐛 Bug thật sửa trong đợt rà soát chuyên sâu
+
+- **`AIPipelineService.repairJsonArray`** — 2 lỗi: (1) mảng cắt ngang với dấu phẩy cuối (`[{...}, {...},`) sinh JSON lỗi `FormatException` — giờ strip dấu phẩy cuối trước khi đóng; (2) object `{` chưa đóng bị đóng bằng `]` sai loại — giờ dùng stack mở-ngoặc và đóng **bằng đúng ký tự khớp** (`{`→`}`, `[`→`]`), đồng thời tính lại stack sau khi truncate.
+- **`AdvancedImportService` (T66)** — bảng markdown có pipe trong inline code (`` `x|y` ``) bị tách thành 3 cột sai — `_splitTableRow` mới phân biệt pipe trong backtick.
+- **`SpellcheckService.checkText` (T57)** — entity HTML (`&amp;` → từ "amp") bị tokenize thành từ sai — entity được che bằng khoảng trắng cùng độ dài (offset giữ nguyên cho UI highlight).
+
+### 🚀 T65 — các phase OPT 25–30 chưa nối production giờ đã nối đầy đủ
+
+- **OPT 27 — deck lớn**: `ConfigService.saveSlides` trước đây luôn ghi toàn bộ slides JSON vào SharedPreferences; nay payload > 1 MB được **spill ra file** `<docs>/GhitaPPT/decks/presentation_slides.json`, SharedPreferences chỉ giữ con trỏ (backward compatible với deck cũ). `SmartDraftManager` cũng spill draft > 1 MB sang `*.slides.json` + purge cả 2 file.
+- **OPT 28 — lazy AI scan**: `scanLocalAI` cache kết quả 5 phút; Home kick scan **sau post-frame** — không bao giờ chặn màn hình đầu.
+- **OPT 29 — healthcheck song song + thích ứng**: `_performHealthChecks` chạy **song song** (`Future.wait`) thay vì tuần tự N×timeout; khoảng lặp tự động 10 phút khi ≥ 4 provider, 5 phút khi ít hơn.
+- **OPT 30 — lazy provider**: `AIProviderManager.loadProviders()` (đọc secure storage) chuyển sang post-frame — không chạy trong build đầu.
+
+### 🧹 Chất lượng
+- `dart fix --apply` + sửa tay: **flutter analyze giờ "No issues found"** — 0 error/warning/info (trước: 25 info).
+- `xml` chuyển từ dev_dependencies → dependencies (dùng trong lib/, hết `depend_on_referenced_packages`).
+- Regression tests mới: `test/deep_review_regression_test.dart` (10 test) chốt các bug trên + test spill ConfigService.
+
+### 🧪 Kiểm định cuối
+- **732/732 test xanh** · **flutter analyze 0 lỗi** (No issues found) · **i18n 800/800** EN = VI · `tool/l10n_audit.dart` CLEAN.
+- Xác minh 67/67 track: mọi `File chính` trong ROADMAP tồn tại (7 mục rename/wildcard đã đối chiếu thủ công).
+
+## [2.0.0-beta] - 2026-08-15 — Milestone 10: Release — Editor UX & Tối ưu (T63–T67)
+
+### ✨ Tính năng mới
+
+**T63 — Editor UX nâng cấp (OPT 13–19, 24)**
+- **`WysiwygService`** (`lib/services/wysiwyg_service.dart`): `wrapSelection`/`toggleWrap`/`colorSelection` — bọc `<b>/<i>/<u>/<ol>/<blockquote>` và **span màu quanh đúng text đang chọn** (không đụng tag), trả lại selection mới; `classify` phân loại block cho highlight.
+- **Live preview debounce 500ms** khi gõ (đã có sẵn, giữ nút Update cho trường hợp tắt) + **Status bar mở rộng (OPT 24)**: số từ slide hiện tại + dung lượng deck (KB) cạnh slide x/y, zoom %, trạng thái lưu.
+- **WYSIWYG toolbar nâng cấp**: thêm nút Màu chữ (palette → span color), Danh sách đánh số, Trích dẫn — hoạt động trên selection qua `WysiwygService`.
+
+**T64 — Preview & Thumbnail thật (OPT 20)**
+- **`ThumbnailService`** (`lib/services/thumbnail_service.dart`): `renderThumbnail` render slide thật qua `SlideFrameRenderer` → PNG (160×90), `renderBatch` hàng đợi **4 slide/lần** giới hạn RAM, `placeholderB64` theo layoutType khi render lỗi.
+- **Slide list render thumbnail thật**: cache LRU 60 ảnh, decode nền (không giật khi cuộn), fallback layout placeholder — không bao giờ treo.
+
+**T65 — Lưu trữ & Khởi động (OPT 25–30)**
+- **`HistoryStorageService`** (`lib/services/history_storage_service.dart`): snapshot nén **gzip** (`archive`), **diff** chỉ slide thay đổi, `CoalescingRecorder` gộp 5s gõ liên tục thành 1 snapshot — undo 30 snapshot không rớt RAM.
+
+**T66 — Import nâng cao (OPT 44, 45)**
+- **`AdvancedImportService`** (`lib/services/advanced_import_service.dart`): Markdown đầy đủ — **bảng `| cột |`**, danh sách lồng, khối code giữ dạng, ảnh, phân slide bằng `---`; **.docx** heading → slide; **.pptx** shape text/bullet/ảnh → HTML (chart/smartart → placeholder); **PDF** trang = slide (tối đa 30); **web giàu** — title + H1–H3 + đoạn + list + ảnh (tối đa 5).
+- **`ImportDialog` nâng cấp**: 3 nguồn Markdown/File/Web URL + preview trước khi áp + nút Import trên toolbar editor.
+
+**T67 — Dọn code chết & l10n hoàn chỉnh (OPT 48, 49)**
+- **`tool/l10n_audit.dart`**: script kiểm tra `.arb` EN/VI đồng bộ (hard gate) + quét chuỗi tiếng Việt lẫn trong UI (bỏ qua file locale-aware) — **800/800 key khớp, CLEAN**.
+- Gỡ import rác, dọn dead code dọc theo quá trình rà soát; `flutter analyze` 0 lỗi.
+
+### 🧪 Kiểm định
+- **722/722 test xanh** (701 + **21 test mới** M10) · **flutter analyze 0 lỗi** · **i18n 800/800** EN = VI.
+- Tool: `dart run tool/l10n_audit.dart` (điểm cổng chất lượng l10n cho release).
+
+## [2.0.0-beta] - 2026-08-15 — Milestone 9: Năng suất & Trợ năng (T57–T62)
+
+### ✨ Tính năng mới
+
+**T57 — Chính tả, Thesaurus, Tìm/Thay thế (FEAT 92, 93, 94)**
+- **`SpellcheckService`** (`lib/services/spellcheck_service.dart`): từ điển EN + VI nhúng (tĩnh, offline), tokenize có vị trí để highlight, gợi ý sửa bằng **Levenshtein** (≤2, tối đa 8) — "recieve" → "receive"; grammar cục bộ (viết hoa đầu câu, khoảng trắng kép, khoảng trắng trước dấu câu) + `fixGrammar`; thesaurus EN mini (~45 từ, mở rộng AI tùy chọn ở UI).
+- **`SearchService`** (`lib/services/search_service.dart`): tìm theo title + text mọi slide (option case-sensitive/whole-word, trả vị trí), **Replace chỉ trong text node** — không đụng tag/attribute, đếm số chỗ đã thay.
+- **UI**: `SpellcheckDialog` (quét slide hiện tại, gợi ý từng lỗi + Ignore + Apply fixes) + `FindReplaceDialog` (Ctrl+F, Replace all, nhảy tới slide kết quả); 2 nút toolbar.
+
+**T58 — Accessibility Checker (FEAT 95)**
+- **`AccessibilityService`** (`lib/services/accessibility_service.dart`): 3 kiểm tự động — **thiếu alt text** cho ảnh, **tương phản WCAG AA** (4.5:1, đề xuất màu tối hơn đạt chuẩn), **thứ tự đọc** (thiếu h1 / nội dung trước tiêu đề); `applyFix` 1 chạm (alt từ title slide, contrast theo màu gợi ý); xuất báo cáo dạng text.
+- **`AccessibilityPanel`** (`lib/screens/widgets/m9_productivity_dialogs.dart`): bảng lỗi theo slide + nút Fix + Export report.
+
+**T59 — Template online & Studio hoàn thiện (FEAT 96 + OPT 46, 47)**
+- **Tham số hóa template** (`template_service.dart`): `applyTheme` thay `{primary}`/`{accent}`/`{font}` — đổi theme → template tự biến đổi; `templateFromDeck` tạo template từ slide 1 + mã hóa màu deck thành placeholder.
+- **Yêu thích + user templates**: `loadFavorites`/`toggleFavorite` (SharedPreferences), `saveUserTemplate`/`deleteUserTemplate` lưu template tự tạo.
+- **Kho template online (FEAT 96)**: URL cấu hình JSON (mặc định tắt), `fetchOnlineTemplates` có timeout; đăng tải server riêng để sau.
+
+**T60 — Ribbon/QAT tùy biến & Chế độ xem (FEAT 97, 99)**
+- **`RibbonConfigService`** (`lib/services/ribbon_config_service.dart`): model tab→group→command (id chuẩn hóa theo `ShortcutAction` + lệnh thêm), default 6 tab khớp ribbon hiện tại; lưu SharedPreferences; export/import JSON (lọc command lạ); QAT riêng (`defaultQat`: save/undo/redo/export/print).
+- **`RibbonCustomizeDialog`** (`lib/screens/widgets/ribbon_customize_dialog.dart`): 2 cột Available ↔ QAT, thêm/xóa tab riêng, Reset; nút toolbar.
+- **Views (FEAT 99)**: menu 4 chế độ — Normal / Slide Sorter / Notes (dialog sửa ghi chú slide hiện tại, sync `slide.notes`) / Reading (PresentScreen trong cửa sổ app).
+
+**T61 — Add-ins & VBA (FEAT 98)**
+- **`AddinService`** (`lib/services/addin_service.dart`): add-in JSON trong thư mục `addins/` (bên cạnh app, override cho test); **chặn add-in remote** (`source: http…` bị bỏ); bật/tắt + uninstall qua SharedPreferences; 3 handler mẫu (`transform`, `kpi` — thêm slide tóm tắt KPI từ số liệu, `append_title`); lỗi add-in bị nuốt — không crash app.
+- **`VbaService`** (`lib/services/vba_service.dart`): không chạy VBA — phát hiện `.pptm`/`vbaProject` + cảnh báo macro; **JSON macro script** record/playback (add_slide, update_slide, remove_slide, set_bg) — tương đương VBA di động.
+- **`AddinManagerDialog`**: danh sách add-in, switch bật/tắt, Run, install từ JSON, uninstall.
+
+**T62 — Đọc to & Điều hướng bàn phím (FEAT 100)**
+- **`ReadAloudService`** (`lib/services/read_aloud_service.dart`): Windows TTS (System.Speech qua PowerShell, base64 tránh vỡ tiếng Việt, chọn giọng theo locale vi-VN/en-US), rate chậm/vừa/nhanh, pause/resume/stop, đọc toàn deck từ slide hiện tại.
+- **`ReadAloudBar`**: thanh dock dưới toolbar — trạng thái "Reading slide N/total", pause/resume/stop, tốc độ.
+
+### 🧪 Kiểm định M9
+- **701/701 test xanh** (+34 test mới cho M9), **analyze 0 lỗi**, i18n **791/791** EN=VI (+12 key).
+
+## [2.0.0-beta] - 2026-08-15 — Milestone 8: AI hiểu ngữ cảnh, Designer & Copilot (T51–T56)
+
+### ✨ Tính năng mới
+
+**T51 — Reuse Slides & Compare/Merge (FEAT 85, 86)**
+- **`ReuseSlideService`** (`lib/services/reuse_slide_service.dart`): parse `.ghita` bundle (chuẩn hóa `html`→`htmlContent`), tách slide từ text/HTML (`---`, `h1`/`h2`); `useCurrentTheme` viết lại HTML về baseline `<h1>/<p>/<ul>` theo đúng theme (đi bộ text nodes theo thứ tự, giữ ngữ cảnh tag — li giữ list, h1 đầu thành tiêu đề, heading sau hạ cấp thành đoạn).
+- **`CompareMergeService`** (`lib/services/compare_merge_service.dart`): diff từng vị trí slide (added/removed/changed/same + đếm từ thêm/xóa multi-set), merge theo lựa chọn A/B/both mỗi vị trí, báo cáo dạng văn bản.
+- **`ReuseCompareDialog`** (`lib/screens/widgets/reuse_compare_dialog.dart`): 2 tab — chèn slide (giữ định dạng gốc / dùng theme hiện tại) và so sánh/trộn 2 phiên bản; nút toolbar "Tái sử dụng slide".
+
+**T52 — AI hiểu ngữ cảnh & validate đầu ra (OPT 37, 38)**
+- **Deck context vào system prompt** (`ai_provider_manager.dart`): `buildDeckContextPrompt` (layout hiện tại, theme primary/accent/font, ngôn ngữ UI, tóm tắt slide đang chọn, outline deck) — bật/tắt qua checkbox "AI dùng ngữ cảnh deck" (riêng tư theo lựa chọn).
+- **`AIHtmlGuard`** (`lib/services/ai_html_guard.dart`): strip `script/iframe/object/embed/link/meta/base/form/input/button/select/textarea`, event handler, `javascript:` URL, `@import`; giới hạn 100KB với tự-rút-gọn (bỏ class trùng) + truncate đóng tag; cân bằng tag + sửa tag đóng lạc; `generateSlideContent` luôn chạy qua guard.
+
+**T53 — AI pipeline bền vững & tiết kiệm (OPT 39–43)**
+- **`AIPipelineService`** (`lib/services/ai_pipeline_service.dart`): `repairJsonArray` (cân bằng ngoặc/quote, xử lý code fence, cắt tại điểm đóng hợp lệ — checkpoint giữ slide đã xong khi cắt mạng giữa chừng), `parseIncremental` (stream render slide 1 sớm — OPT 40), `estimateTokens` (đếm token ước tính phiên, CJK riêng), `trimHistoryByTokens` (giới hạn chat history theo token, giữ bản mới nhất, báo dropped).
+
+**T54 — Designer / Design Ideas (FEAT 87)**
+- **`DesignerService`** (`lib/services/designer_service.dart`): phát hiện nội dung (title, list dài, KPI numbers, bảng, ảnh, quote) + 6+ quy tắc layout local — 2 cột, KPI cards, hero image, table focus, quote, accent band + clean baseline (max 5 gợi ý); `applyAccentVariant` (đổi màu accent không đụng grayscale), `applyDarkVariant` (dark mode — thứ tự thay màu đúng: text trước, nền trắng sau).
+- **`DesignerPanel`** (`lib/screens/widgets/designer_panel.dart`): dock phải, thumbnail gợi ý, chọn accent/dark, áp 1 chạm + nút "Hoàn tác thiết kế"; nút toolbar "Designer".
+
+**T55 — Copilot Creator (FEAT 88, 89)**
+- **`CopilotService`** (`lib/services/copilot_service.dart`): `slidesFromDocument` (chia slide theo heading hoặc chunk ~80 từ, giữ ý chính, cap maxSlides — nền tảng Word/PDF/Markdown), `fetchUrlText` (scrape URL), `buildDeckIndex` + `searchDeckIndex` (Q&A theo deck — index title+text, tìm theo token overlap), `buildDeckSummaryPrompt` (tóm tắt 5 dòng), `buildExpandPrompt` (soạn thảo tiếp).
+- **Chat UI** (`ai_chat_screen.dart`): 4 chip nhanh — Tạo presentation / Tóm tắt deck (chèn slide "Summary" cuối) / Hỏi về deck (kèm link slide) / Dịch toàn deck; toggle ngữ cảnh deck.
+
+**T56 — Dictation & Dịch toàn deck (FEAT 90, 91)**
+- **`DictationService`** (`lib/services/dictation_service.dart`): bọc SubtitleService (SAPI Windows) + auto-stop sau 2s im lặng, probe locale EN/VI (fallback EN kèm cảnh báo khi máy thiếu tiếng Việt), `pushManualPhrase` cho test/recognizer ngoài.
+- **`DeckTranslationService`** (`lib/services/deck_translation_service.dart`): `textNodes`/`applyTranslations` — dịch CHỈ text node, giữ nguyên tag/class/attribute; 8 ngôn ngữ; `buildTranslationPrompt` hướng dẫn model giữ cấu trúc.
+- **Toolbar**: nút mic "Đọc chính tả" (pulse đỏ khi nghe) — text vào slide hiện tại; dịch từng slide qua AI với progress + áp hàng loạt/cancel.
+
+### 🧪 Kiểm định M8
+- **667/667 test xanh** (+36 test mới cho M8), **analyze 0 lỗi**, i18n **779/779** EN=VI (+26 key).
+
+## [2.0.0-beta] - 2026-08-15 — Milestone 7: Cộng tác & Cloud (T46–T50)
+
+### ✨ Tính năng mới
+
+**T46 — Hạ tầng cộng tác LAN nâng cấp (OPT 32, 34, 35, 36)**
+- **Delta sync thay full snapshot** (`collaboration_service.dart`): client chỉ gửi các slide đã thay đổi (`{index, slide}`) kèm `baseRevision`; server merge theo từng slide và giữ `_slideRevisions` per-slide — 2 editor sửa 2 slide khác nhau không xung đột, slide không đụng giữ nguyên. Legacy full-snapshot vẫn được chấp nhận (regression).
+- **Gzip payload**: middleware nén mọi JSON response khi client gửi `Accept-Encoding: gzip` + sửa đúng `Content-Length` (dart:io client tắt `autoUncompress` để tránh giải nén 2 lần); deck lặp text 80 đoạn >20KB → stream <2KB (test đo ratio).
+- **View token ngắn (8 char)** tách khỏi edit token (32 char) — nền tảng cho link xem chỉ-đọc T49.
+- **Auto re-connect backoff 1→2→4→8s** khi poll thất bại; `_pollFailures` reset khi nối lại; adaptive poll: fast 250ms sau edit + heartbeat 900ms; emit `connectionLost`/`reconnected`.
+- **Cấu hình động** (`updateSessionConfig`): max collaborators (1–100) & max slides (1–1000) chỉnh được.
+- **Conflict UI data**: 409 kèm `conflicts: [{index, name, color, at}]` (ai đổi slide nào lúc nào).
+
+**T47 — Co-authoring thời gian thực (FEAT 80)**
+- **Presence + cursor**: POST `/presence` (throttle 100ms client) + GET `/presence` (danh sách collaborator + slideIndex + x/y); badge "đang sửa slide N" trong CollaborationPanel.
+- **Soft lock**: POST `/lock` acquire/release per-slide; sync trùng slide bị lock → 409 `slide_locked` kèm owner; client hiện "đang được {name} sửa".
+- **Merge theo slide**: `_lastWriters` map (index → name/color/at) + `_syncLog` (cap 200) qua GET `/history`; `fetchHistory()` public.
+- **Moderation**: host `kickCollaborator` (xóa token + presence + locks, emit userLeft), `setSessionLocked` từ chối join mới; 403 `session_locked`.
+- **Viewer bị server chặn**: sync từ viewer → 403 `read_only` → client emit `readOnlyRejected` (UI "Chế độ xem").
+
+**T48 — Comments & Mentions (FEAT 81)**
+- **`Comment` model** (`lib/models/comment.dart`): id/slideIndex/text/author/createdAt/resolved/replyTo/anchor, JSON round-trip + malformed-safe.
+- **`CommentService`** (`lib/services/comment_service.dart`): CRUD trên slide map (key `comments`) — tự chảy qua collaboration delta + .ghita bundle; `mentionsIn` @-mention regex (hỗ trợ tiếng Việt `\p{L}`); `filterMentionsToKnown`; **OOXML xuất** `<p:cmLst>` + `<p:cmAuthorLst>` chuẩn PowerPoint.
+- **`CommentsPanel`** (`lib/screens/widgets/comments_panel.dart`): pane phải editor — thêm/trả lời thread/resolve/delete, highlight @mention, menu gợi ý collaborator khi gõ @ (từ session hoặc profile).
+- **Toolbar**: nút "Bình luận" bật/tắt pane.
+
+**T49 — Tài khoản người dùng & Phân quyền (FEAT 84)**
+- **`UserProfile`** (`lib/models/user_profile.dart`): tên + avatar emoji + màu, lưu SharedPreferences (offline-first, không yêu cầu tài khoản).
+- **`AuthService`** (`lib/services/auth_service.dart`): vai trò host/editor/viewer, `canEdit`/`isViewer`, mint token theo vai trò (`e_`/`v_`), màu profile chuẩn hóa.
+- **Vai trò trong session**: host (toàn quyền + moderation) / editor / viewer (join qua view link → server từ chối mọi sync).
+- **`ProfileDialog`** (`lib/screens/widgets/profile_cloud_dialogs.dart`): sửa tên/avatar/màu; dùng làm tác giả comments.
+
+**T50 — Cloud sync & Version history (FEAT 82, 83)**
+- **`CloudSyncService`** (`lib/services/cloud_sync_service.dart`): WebDAV thuần (Nextcloud/ownCloud) qua `http` — MKCOL/PROPFIND/PUT/GET/DELETE, credentials trong `flutter_secure_storage`, parse PROPFIND XML → danh sách version, upload tự tăng `v{N}.ghita` + con trỏ `latest.ghita`.
+- **`VersionHistoryService`** (`lib/services/version_history_service.dart`): giữ tối đa 20 version/project (trim bản cũ), `localIsNewer` cho merge conflict → lưu bản cũ thành `.conflict`.
+- **`CloudSyncDialog`** (`lib/screens/widgets/profile_cloud_dialogs.dart`): cấu hình URL/user/pass, Sync now (upload deck hiện tại), danh sách phiên bản + Restore (tải về máy) + Delete.
+- **Toolbar**: nút "Hồ sơ" + "Đồng bộ đám mây".
+
+### 🐛 Bug sửa trong quá trình làm M7
+- **`Response.change` giữ Content-Length cũ khi nén gzip** — compressed body khác kích thước → client đọc thiếu stream; phải thay header `Content-Length` cùng body.
+- **dart:io `HttpClient` autoUncompress mặc định true** — body đã giải nén sẵn nhưng header `Content-Encoding: gzip` còn lại → decode 2 lần → `Filter error, bad data`; tắt autoUncompress và tự decode.
+- **JSON không chấp nhận Map key int** — `_slideRevisions` (Map<int,int>) làm `jsonEncode` ném "Converting object to an encodable object failed"; chuyển sang string keys qua `_slideRevisionsStringKeys()`.
+
+### 🧪 Test mới (28)
+- `test/collaboration_delta_test.dart` (+8): merge per-slide 2 editor, stale per-slide conflict kèm ai đổi, view-only join read-only, soft lock chặn + owner, presence/cursor + history, kick, session lock, gzip ratio.
+- `test/comments_auth_test.dart` (+11): Comment round-trip + malformed, CRUD/resolve/reply, @mention, filter dangling, OOXML cmLst/cmAuthorLst, profile persist, role helpers + tokens.
+- `test/cloud_sync_test.dart` (+9): upload bump version từ PROPFIND, download latest/specific/404, list sort, delete, URL normalize, trim cap, localIsNewer.
+
+### ✅ Kiểm định
+- Full suite **631/631 test xanh** (603 + 28) · `flutter analyze` **0 lỗi/warning** · i18n **753/753 key EN = VI** (+52 key M7).
+- **5/5 track T46–T50 hoàn thiện** (service/model thuần test được + UI + i18n EN/VI + test tự động).
+
+---
+
+## [2.0.0-beta] - 2026-08-15 — Deep review M1–M6: rà soát M6 + tối ưu & sửa bug
+
+### 🐛 Bug thật tìm được khi rà soát M6
+
+- **`_probeAudioDuration` (MP4/m4a) — probe thời lượng narration trả sai/0** (`video_export_service.dart`, T41): hai lỗi chồng nhau — (1) quét box từ `i = 4` trong khi box MP4 bắt đầu ở offset 0, nên với file m4a thật (bắt đầu `00 00 00 20 66 74 79 70…`) đọc `size = 0x66747970` (khổng lồ) rồi nhảy ra ngoài file, không bao giờ gặp `mdhd`; (2) offset trường `mdhd` sai 8 byte (đọc `creation_time`/`modification_time` thay vì `timescale`/`duration`). Xác minh bằng file m4a thật (FFmpeg 2.5s): trước fix → `timescale=0` (0s), sau fix → `44100/111274` (2.523s). Ngoài ra mdhd nằm lồng trong `moov→trak→mdia` nên quét phẳng không bao giờ thấy — đã thêm **đệ quy container box**. Hệ quả nếu không sửa: narration m4a (đúng định dạng recorder T39 tạo ra) không bao giờ được dùng làm thời lượng slide trong video/GIF export.
+- **`DocSecurityService._rewriteParts` làm hỏng mọi ký tự non-ASCII trong PPTX** (`doc_security_service.dart`, T45): mỗi XML part được decode Latin-1 (`String.fromCharCodes`) rồi re-encode UTF-8 → round-trip không byte-exact; chứng minh bằng probe: "Xin chào, hôm nay là ngày ế ộ" → "Xin chÃ o…Ã¡ …Ã£â€šÃ¡". Áp mật khẩu / Mark-as-Final / restrict note lên deck có tiếng Việt sẽ làm mojibake **toàn bộ slide text** trong file xuất ra. Fix: decode UTF-8 (`utf8.decode` + `allowMalformed`), round-trip byte-exact — có regression test so sánh byte trước/sau.
+
+### 🔧 Tối ưu thuật toán (M6)
+
+- **`SlideFrameRenderer`** (`slide_frame_renderer.dart`, T41/T42): hoist `RegExp(data-bg-color…)` (chạy mỗi slide) và `RegExp(\s+)` (chạy mỗi paragraph); `_fillOval` outline chia cho `rx-1`/`ry-1` có thể = 0 (ellipse 1–2px) → clamp `math.max(1.0, …)` chống divide-by-zero + bỏ tính lại 2 phép chia lặp.
+- **`PackageService`** (`package_service.dart`, T45): hoist `_mediaRe` (quét base64 trong toàn deck, gọi mỗi slide) và `_extCleanRe` (chạy mỗi media).
+- **`VideoExportService.estimate`** (T41): GIF trước đây ước lượng `frameCount = fps × seconds` trong khi encoder thực tế ra 1 frame/slide (delay đóng vào frame) → thời lượng ước lượng cao gấp ~10 lần; giờ trả `shots.length` cho GIF, giữ `fps × giây` cho MP4.
+- **`PrintService.buildHandoutPdf`** (T43): deck rỗng làm `clamp(0, -1)` ném `ArgumentError` khó hiểu → guard sớm "Nothing to print".
+- **`PackageFormatService`** (T44): `_findSoffice()` dùng `Process.runSync` chạy `soffice --version` trên UI thread → chuyển async `Process.run` + timeout 5s (test hook `binaryProbe` giữ nguyên).
+
+### 🧪 Test mới (4)
+- M4A probe đọc `mdhd` lồng `moov/trak/mdia` với file m4a tổng hợp (timescale 44100/duration 111274 → 2.523s).
+- GIF estimate: 2 slide × 1s → `frameCount == 2` (không phải 20); MP4 vẫn 60.
+- Password rewrite giữ nguyên UTF-8 slide text byte-exact (regression mojibake).
+- Handouts PDF deck rỗng → `ArgumentError` sạch.
+
+### ✅ Kiểm định
+- **603/603 test xanh** (599 + 4 mới) · `flutter analyze` **0 lỗi/warning** · i18n **701/701 EN = VI**.
+- **6/6 milestone (M1–M6) · 45/45 track · 450/450 phase hoàn thành 100%** — đối chiếu phase-by-phase từ code + test.
+
+---
+
+## [2.0.0-beta] - 2026-08-15 — Milestone 6: Xuất & Phân phối nâng cao (T41–T45)
+
+### ✨ Tính năng mới
+
+**T41 — Video/GIF từ slide & in (FEAT 69, 70)**
+- `SlideFrameRenderer` (`lib/services/slide_frame_renderer.dart`): renderer thuần Dart — vẽ slide (nền, text, hình, video poster, hình dạng) thành ảnh qua `package:image`, không phụ thuộc GPU/WebView; dùng làm nền tảng cho video/GIF/handouts.
+- `VideoExportService` (`lib/services/video_export_service.dart`): xuất **video MP4 mô phỏng trình chiếu** (mỗi slide một khoảng thời gian, keyframe cảnh) hoặc **GIF animation** (encoder của `package:image`, tối ưu 256 màu); kèm **WAV timeline** (giọng nói/nhạc nền theo slide — PCM 16-bit chuẩn).
+- i18n EN/VI +28 key; **11 test mới** (`test/slide_frame_video_test.dart`): renderer vẽ text/hình/video poster, GIF magic bytes + frameCount + duration, WAV RIFF header + sample rate + duration, MP4 container đúng (ftyp/moov), progress callback.
+
+**T42 — Xuất ảnh hàng loạt & contact sheet**
+- `SlideImageExportService` (`lib/services/slide_image_export_service.dart`): xuất toàn bộ slide thành **PNG/JPEG** (batch), tùy chọn kích thước, **contact sheet** (tất cả slide trên 1 ảnh dạng lưới, số thứ tự slide), progress callback 0–1.
+- i18n EN/VI (dùng chung key M6); test trong `test/slide_frame_video_test.dart`.
+
+**T43 — Outline RTF & Handouts in**
+- `OutlineExportService` (`lib/services/outline_export_service.dart`): xuất **Outline (.rtf)** — tiêu đề/bullet mỗi slide, ký tự non-ASCII encode `\uN` chuẩn RTF (ế = `\u7871`), giữ ghi chú speaker tùy chọn.
+- `PrintService` (`lib/services/print_service.dart`): **handouts PDF** (2/3/4/6/9 slide mỗi trang) tái dùng `SlideFrameRenderer` render từng slide → ghép layout `Row/Column/Expanded` của `package:pdf`.
+
+**T44 — Định dạng gói: POTX/PPSX/PPTX + ODP**
+- `PackageFormatService` (`lib/services/package_format_service.dart`): xuất **POTX** (đổi content type template + `presProps` isKiosk) và **PPSX** (đổi content type slideshow + isKiosk + `p:show` custom show) từ PPTX có sẵn qua Zip post-process; gọi LibreOffice (nếu có) cho `.ppt` legacy.
+- `OdpExportService` (`lib/services/odp_export_service.dart`): gói **OpenDocument Presentation (.odp)** độc lập — content.xml với slide/placeholder, styles.xml, manifest, meta.xml; mở được bởi LibreOffice/Impress.
+
+**T45 — Đóng gói & bảo mật tài liệu**
+- `PackageService` (`lib/services/package_service.dart`): đóng gói deck + tài nguyên thành **.ghita bundle** (zip) và **thư mục HTML standalone** (index.html + assets) để chia sẻ.
+- `DocSecurityService` (`lib/services/doc_security_service.dart`): **bảo vệ mật khẩu PPTX** — đặt mật khẩu mở file qua `<fileSharing>` + `p:modifyVerifier`/`p:extLst` đúng schema OOXML (PowerPoint yêu cầu mật khẩu khi mở), gỡ mật khẩu.
+- i18n EN/VI (dùng chung key M6); **25 test mới** (`test/print_package_security_test.dart`): RTF encode ế/cấu trúc, handouts PDF số trang + widget tree, POTX content type `template`, PPSX content type `slideshow` + `isKiosk`, ODP content.xml + manifest, zip bundle tròn vẹn, password-protected PPTX có `fileSharing` + mở lại gỡ mật khẩu được.
+
+**UI — M6 Export Dialog**
+- `M6ExportDialog` (`lib/screens/widgets/m6_export_dialog.dart`): một dialog tổng hợp — Video/GIF · Ảnh (batch + contact sheet) · Outline/Handouts in · Định dạng gói (POTX/PPSX/ODP) · Bảo mật (đặt/gỡ mật khẩu); nối từ nút "Xuất nâng cao" của `AdvancedExportDialog`.
+
+### ✅ Kiểm định
+- Full suite **599/599 test xanh** · `flutter analyze` **0 lỗi/warning** · i18n **701/701 key EN = VI**.
+- Cả 5 track T41–T45 hoàn thiện (service/model thuần test được + UI + i18n EN/VI + test tự động).
+
+---
+
+## [2.0.0-beta] - 2026-08-15 — Deep review M1–M5: tối ưu thuật toán & sửa bug
+
+### 🔧 Tối ưu thuật toán (rà soát toàn diện T01–T40)
+
+- **TextMetricsService** (`text_metrics_service.dart`): vòng lặp ước lượng độ rộng chạy từng ký tự mỗi run — trước đây `_punctChars.codeUnits.contains()` cấp phát một `List<int>` mới **mỗi ký tự** (và quét tuyến tính). Thay bằng `Set<int>` tĩnh precompute — hot path của layout pass PPTX (T02).
+- **TextLayoutService** (`text_layout_service.dart`): title-case dựng `RegExp(r'^\s+$')` **mỗi từ** trong map; sentence-case dựng regex mỗi lần gọi — hoisted thành `static final` (T28).
+- **PPTGenerator** (`ppt_generator.dart`): 11 pattern slide-pass (`data-smartart`/`data-chart`/`data-video`/`data-model3d`/`data-action`/`data-equation`/`data-ole`/`data-zoom`/`data-sectionzoom`/`data-cameo`/`data-bg-color` + `<p:timing>` wrapper) được biên dịch lại **mỗi slide** — hoisted thành `static final` (T08–T20).
+- **ShapeEngine** (`shape_engine.dart`): `cmdRe`/`numRe` của path parser được tạo lại mỗi lần parse (freeform/merged shape) — hoisted; đồng thời đơn giản hóa biểu thức identity `p.dx / s.w * s.w` (no-op) trong `_polygonOf` (T21).
+- **PdfExportService** (`pdf_export_service.dart`): `cmdRe`/`numRe` path parser hoisted (T06).
+- **IconLibraryService** (`icon_library_service.dart`): `_samplePath` tạo `RegExp(r'[A-Za-z]')` **mỗi token mỗi vòng lặp** và token regex mỗi lần gọi — hoisted; icon rasterization chạy cho từng icon mỗi lần export (T15).
+- **AnimationEngine** (`animation_engine.dart`): regex `cssClass`/`_sec` hoisted (T29).
+- **ImageEditorService** (`image_editor_service.dart`): `_oilPaint` reset toàn bộ 4 mảng 256 phần tử (`fillRange`) **mỗi pixel** (~10⁹ store thừa trên ảnh 1MP, bán kính 8) — giờ chỉ reset các bucket luminance mà cửa sổ thực sự chạm tới (T23).
+
+### 🐛 Bug sửa
+
+- **`cropImage`** (`image_editor_service.dart`): rect crop sát mép phải/dưới (x + w ≈ 1) làm `clamp(1, 0)` ném `ArgumentError` (lower > upper) → crop âm thầm fail. Guard `math.max(1, image.width - px)` trước khi clamp (T22).
+- **`RemoteControlService.start`** (`remote_control_service.dart`): tham số `requireToken` bị bỏ qua — `_requireToken` là `final bool = true` nên `start(requireToken: false)` vẫn đòi token. Tham số giờ được gán (T37).
+
+### 🧪 Test mới (4)
+- `cropImage` sát mép không crash (regression clamp guard).
+- Oil paint giữ nguyên màu đồng nhất (regression tối ưu bucket).
+- WS remote `requireToken: false` cho client không token kết nối được (nhận state).
+- WS remote `requireToken: true` từ chối client không token (`bad_token`).
+
+### ✅ Kiểm định
+- **574/574 test xanh** · **flutter analyze: 0 lỗi** · **i18n: 673/673 EN = VI**.
+
+## [2.0.0-beta] - 2026-08-15 — Milestone 5: Trình chiếu Pro (T35–T40)
+
+### ✨ Tính năng mới
+
+**T35 — Trình chiếu Pro (FEAT 59, 60, 61)**
+- `PresentToolsService` (`lib/services/present_tools_service.dart`): trạng thái tool pen/laser/magnifier, màu + độ dày pen, B/W screen (black/white), grid overlay, tự động tắt pen sau 3s không vẽ, slide jump G, lưu cấu hình tool trong session (lưu/khôi phục).
+- `PresentDeckCommands` (`lib/services/present_deck_commands.dart`): sinh JS thuần cho deck HTML — `installProKeys` (keydown G/B/W/P/L/M/`?`/số+Enter hoạt động ngay trong WebView2 kể cả khi nó nuốt phím), `overlayScript` (SVG ink pen/laser/lúp + grid vẽ ngay trong deck), `presenterScript` (sync slide hiện tại + kế tiếp cho Presenter View), `showBlack/white`, `zoom` (scale transform).
+- `WebViewRuntimeService` (`lib/services/webview_runtime_service.dart`): kiểm tra WebView2 runtime (trả về null nếu chưa cài → hướng dẫn cài).
+- `PresentScreen` nâng cấp: toolbar tool (pen/laser/lúp/B/W/grid), phím tắt trùng JS (F5/G/B/W/P/L/M), `executeScript` đồng bộ deck ↔ Flutter, cảnh báo thiếu WebView2 runtime.
+- `PresenterViewScreen` nâng cấp: 1 WebView2 duy nhất chạy deck đầy đủ (HTML/CSS/JS), JS presenter script đồng bộ slide hiện tại + kế tiếp, đồng hồ + ghi chú speaker.
+- i18n EN/VI +10 key; **20 test mới** (`test/present_pro_test.dart`).
+
+**T36 — Setup Show & Custom Shows (FEAT 62, 63)**
+- `CustomShow` (`lib/models/custom_show.dart`): danh sách slide tùy chọn (custom show) + serialize/deserialize.
+- `SetupShowService` (`lib/services/setup_show_service.dart`): cấu hình trình chiếu (loop liên tục, không narration, không animation, tự động advance, thời gian mỗi slide, lặp ảnh nền, show speaker notes) + sinh danh sách slide theo custom show.
+- `SetupShowDialog` (`lib/screens/widgets/setup_show_dialog.dart`): UI cấu hình + chọn/soạn custom show; tích hợp vào `PresentationState` (lưu qua SharedPreferences, `buildHtmlDeck` theo custom show, chỉ bật advanced effects khi bật animation).
+- `HomeScreen._present` mở dialog nếu chưa cấu hình; `PresentScreen` nhận `setupShow` + `customShowOrder` (loop, jump theo danh sách custom).
+- **PPTX**: `p:custShowLst` ghi custom show trong `presentation.xml` (danh sách `p:sldIdLst` trỏ đúng slide).
+- i18n EN/VI +12 key; **13 test mới** (`test/custom_show_setup_test.dart`).
+
+**T37 — Remote điện thoại & phụ đề trực tiếp (FEAT 65)**
+- `RemoteControlService` (`lib/services/remote_control_service.dart`): WebSocket server local điều khiển từ điện thoại — QR + link, ping/status, command next/prev/black/resume, yêu cầu token (mặc định) + verify.
+- `SubtitleService` (`lib/services/subtitle_service.dart`): phụ đề trực tiếp từ giọng nói — speech recognition Windows qua PowerShell (`System.Speech`) nếu có, fallback phân tích transcript AI; `subtitlesChanged` stream.
+- i18n EN/VI +4 key; **7 test mới** (`test/remote_subtitle_test.dart`).
+
+**T38 — Rehearse timings & Coach AI (FEAT 66, 67)**
+- `RehearseService` (`lib/services/rehearse_service.dart`): bấm giờ buổi tập, thời gian từng slide (list `slideChangeSeconds`), pause/resume/stop, báo cáo (tổng thời gian, slide chậm nhất, nhịp độ) + auto-stop theo giới hạn.
+- `CoachService` (`lib/services/coach_service.dart`): phân tích transcript — đếm từ dè dặt EN/VI (um/uh/ừm/à…), từ lặp, nhịp độ từ/phút, gợi ý cải thiện (local heuristic + tích hợp AI provider sẵn có khi có transcript dài).
+- i18n EN/VI +4 key; **12 test mới** (`test/rehearse_coach_test.dart`).
+
+**T39 — Ghi hình phiên trình bày (FEAT 68)**
+- `PresentationRecorderService` (`lib/services/presentation_recorder_service.dart`): ghi hình phiên trình bày tái dùng `ScreenRecorderService` — mode timings+narration, pause/resume, theo dõi slide change (seconds), auto-stop theo giới hạn, xuất báo cáo timings JSON, ghi chú slide cuối.
+- i18n EN/VI +3 key; **7 test mới** (`test/presentation_recorder_test.dart`).
+
+**T40 — Broadcast SSE thay reload (FEAT 64, OPT 33)**
+- `WifiBroadcasterService` nâng cấp: trang xem dùng **EventSource** (SSE) thay vì poll 3s — server push slide ngay khi đổi (không giật reload), endpoint `/events` (text/event-stream), `/control` next/prev khi host bật, `/once` link dùng 1 lần + hết hạn, đếm viewer real-time, payload JSON `{currentSlide, totalSlides, allowControl, includeNotes, notes?}`.
+- i18n EN/VI +4 key; **9 test mới** (`test/broadcast_sse_test.dart`) — chạy server thật trong test, client HTTP + socket thô.
+
+### 🐛 Bug SDK tìm được khi làm T40
+- **Dart 3.12.2 (Windows): `Socket.flush()` (và `HttpResponse.flush()`) không đẩy body ra socket** — chỉ `close()` mới gửi. Debug bằng bisect probe: mọi `flush()` chỉ gửi headers; body chỉ tới khi đóng kết nối → SSE ban đầu đứng yên. Ngoài ra `flush()` ném `StateError("StreamSink is bound to a stream")` nếu gọi khi một `flush()` trước chưa xong (implementation `_StreamSinkImpl` đặt `_isBound = true` và `close()` controller nội bộ).
+- **Sửa**: `/events` dùng `response.detachSocket()` lấy raw socket, ghi frame chunked thủ công (`{len}\r\n{data}\r\n`) qua **chuỗi write tuần tự await từng `flush()`** — vừa né bug flush vừa né race "bound to a stream". Verified: client nhận từng frame ngay lập tức, giữ kết nối mở.
+
+### ✅ Kết quả M5
+- Full suite **570/570 test xanh**, `flutter analyze` **0 lỗi/warning**, i18n **673/673 key EN = VI**.
+- Tất cả 6 track T35–T40 hoàn thiện (mỗi track có service/model thuần test được + UI tích hợp + i18n EN/VI + test tự động).
+
+---
+
+## [2.0.0-beta] - 2026-08-15 — Deep review M1–M4 (T01–T34) + test bổ sung
+
+### 🐛 Sửa lỗi
+- **`SectionZoomData.fromMap`** (`lib/services/zoom_feature_service.dart`): ép kiểu `map['entries'] as List` + `.map<SectionZoomEntry>` — trước đây lỗi runtime "`List<dynamic>` is not a subtype of `List<SectionZoomEntry>`" bị `fromJson` nuốt trong try/catch, nên mọi Section Zoom load lại đều mất hết tile (entries rỗng). Giờ round-trip JSON giữ đủ entries.
+
+### 🧪 Test bổ sung (T20 – Section Zoom P6)
+- `test/zoom_cameo_test.dart` +6 test: `SectionZoomData` round-trip JSON, `htmlMarkup` tile grid + goToSlide, service `sectionZoomsIn`/`sectionZoomMarkup`/`replaceSectionZoomAt`, PPTX p:sp grid + `ppaction://hlinksldjump`, HTML tile grid, PDF không crash.
+
+### ✅ Kết quả rà soát M1–M4 (34/34 track)
+- Full suite **502/502 test xanh**, `flutter analyze` **0 lỗi/warning**, i18n **629/629 key EN = VI**.
+- Mỗi track T01–T34 có file test riêng + CHANGELOG + i18n EN/VI (đối chiếu phase-by-phase 2026-08-15).
+- Xác minh lại các điểm từng bị ghi "dở": **T15** có 1000 icon MDI + 98 curated (~1098, đạt roadmap ~1000); **T17** `updateFreeTexts` có `record` undo + engine đọc thật `visualElements`; **T20** Section Zoom đầy đủ 3 định dạng; **T21** polygon boolean Greiner–Hormann thật (L-shaped union), scribble, gradient, edit points, undo.
+
+---
+
+## [2.0.0-beta] - 2026-08-15 — Dev (2.0.0-beta M1/M2) — Track 21: Shape engine: Merge, Freeform, Edit Points (FEAT 25, 26)
+
+### ✨ Tính năng mới
+- **Model `DrawnShape`** (`lib/models/drawn_shape.dart`): type (rect/oval/line/arrow/freeform/merged), x/y/w/h %, rotation, z-order, fillColor, fillTransparency, strokeColor, strokeWidth, freeformPath, mergeOp, mergedIds — serialize/deserialize, `svgMarkup` (SVG `<rect>`/`<ellipse>`/`<line>`/`<polygon>`/`<path>`), `htmlMarkup` (absolute div), `pptxPresetGeom` (rect/ellipse/line/rightArrow).
+- **ShapeEngine** (`lib/services/shape_engine.dart`): `renderPptxShape` (OOXML p:sp + prstGeom + solidFill + ln), `mergeUnion` (bounding box union), `mergeIntersect` (overlap), `mergeSubtract` (simplified), `_custGeomXml` (cubic bezier path fallback).
+- **UI "Chèn hình"** (`lib/screens/widgets/shape_tools_dialog.dart`): chọn ShapeType (rect/oval/line/arrow), fill/stroke color, stroke width — chèn vào slide dạng `visualElements['shapes']`.
+- **Edit Points (P5)** (`lib/screens/widgets/shape_points_dialog.dart`): hiển thị điểm neo trên lưới 10×10, tap chọn, kéo di chuyển, thêm/xóa điểm; `DrawnShape.anchorPoints` (parse SVG path M/L/H/V → points), `pathFromPoints` (serialize ngược), `withAnchors` (chuyển preset shape → freeform với path mới); nút "Chỉnh điểm" trong ShapeToolsDialog.
+- **Shape Properties (P7)** (`lib/screens/widgets/shape_properties_dialog.dart`): chỉnh fillColor, fillTransparency (slider 0–20), strokeColor, strokeWidth, shadow toggle; **CanvasOverlay**: thêm `_DraggableShapeOverlay` — click chọn, kéo di chuyển, resize handle, delete, z-order; **HTML editor panel**: `_selectedShapeId` + `_updateShapes` giống freeTexts; **toolbar**: nút "Thuộc tính hình" (Icons.tune).
+- **PPTX**: mỗi DrawnShape → `<p:sp>` với `<a:prstGeom>` + fill + stroke.
+- **HTML**: SVG inline (absolute div `data-shape-html`).
+- **PDF**: `_buildShapePdf` — Positioned + Container với fill + border.
+- **Toolbar**: nút "Hình dạng" (category_outlined).
+- i18n EN/VI: 7 chuỗi mới.
+
+### 🔬 Kiểm chứng (P10)
+- 18 test tự động mới (`test/shape_engine_test.dart`): DrawnShape round-trip (toMap/fromMap/JSON); svgMarkup rect/oval; pptxPresetGeom; mergeUnion bounding box + mergeIntersect overlap + noop; PPTX p:sp rect + oval + regression; HTML SVG + absolute div + regression; PDF không crash; **anchorPoints parse M L path + 4 corners fallback**; pathFromPoints serialize; withAnchors rect→freeform; **copyWith fillColor/fillTransparency/strokeColor/strokeWidth**.
+- `flutter analyze` 0 lỗi/warning; full suite **355/355 test xanh** (+21 mới).
+
+### Giới hạn trung thực
+- Merge shapes: union/intersect dùng bounding box đơn giản (chưa có polygon boolean thật — chỉ đúng cho rect/circle không xoay).
+- `_custGeomXml` sinh rect path cố định (chưa parse SVG path → OOXML path).
+- `ShapeEngine.mergeSubtract` trả về shape gốc (chưa implement boolean subtract thật).
+
+---
+## [2.0.0-beta] - 2026-08-15 — Dev (M3/M4) — Tracks 22–34 hoàn thiện (0 bug 0 warning)
+
+### ✨ Tracks 22–28 (Soạn thảo & Định dạng)
+- **T22 – Crop ảnh & Xóa nền** (`image_editor_service.dart`, `image_editor_dialog.dart`): crop freeform + tỷ lệ khóa 1:1/16:9/3:2, crop-to-shape (mask clip-path/prstGeom), xóa nền local bằng flood-fill theo màu click, brush xóa/khôi phục, PNG alpha chuẩn, undo, i18n.
+- **T23 – Hiệu chỉnh & Hiệu ứng nghệ thuật** (cùng service): sharpness, saturation, tone, duotone theo màu theme, blur/mosaic/pencil/film filters, alpha toàn ảnh giữ 3 định dạng, 6 preset nhanh (B&W, Vintage, Cool, Warm, Soft, Vivid), preview real-time.
+- **T24 – Eyedropper & Format Painter** (`eyedropper_service.dart` — FFI GetPixel qua user32; `format_painter_service.dart`): capture màu tại con trỏ, snapshot style text/shape, painter 1 lần/liên tục, phím tắt Ctrl+Shift+C/V (+Ctrl+Shift+I eyedropper), sync ShortcutsProvider.
+- **T25 – Hiệu ứng Text & Shape chuyên sâu** (`shape_effect.dart`): shadow/glow/reflection/softEdge/bevel + preset nhanh; OOXML a:effectLst, CSS filter/box-shadow, PDF shadow phẳng; UI tab Hiệu ứng trong ShapePropertiesDialog.
+- **T26 – Selection Pane & Group** (`layer.dart`, `layer_service.dart`, `group_service.dart`, `selection_pane.dart`): layer model z-order, pane ẩn/khóa/đổi tên/kéo thứ tự, Group/Ungroup (p:grpSp + a:xfrm child coordinates), sync canvas.
+- **T27 – Align/Snap/Guides/Ruler** (`alignment_service.dart`, `guide_settings.dart`, `guides_align_dialog.dart`): align 6 hướng theo slide/selection, distribute, smart guides + snap threshold 3%, snap grid 5%, ruler ticks, guides user tùy ý (khóa/xóa), lưu vào DeckMeta (.ghita).
+- **T28 – Text nâng cao** (`text_layout_service.dart`, `text_layout_dialog.dart`): replace font toàn deck, change case (5 chế độ), letter-spacing, text dọc (writing-mode + bodyPr vert), autofit shrink/resize, bullets (start/level/icon + a:buAutoNum), tab stops (a:tabLst + leader dot/hyphen).
+
+### ✨ Tracks 29–34 (Animation & Transition)
+- **T29 – Động cơ Animation** (`object_animation.dart`, `animation_engine.dart`): model 4 nhóm (entrance/emphasis/exit/motion), timing (delay/duration/repeat/autoReverse/start), CSS keyframes + animation shorthand, HTML deck player JS theo timeline, by-shape targeting qua data-ghita-id.
+- **T30 – Animation Pane & Painter** (`animation_pane.dart`): dock panel liệt kê animation, thêm/xóa/sửa, kéo đổi thứ tự, start/duration/repeat, Clear all, Animation Painter (copy timing giữ nguyên).
+- **T31 – Trigger & Motion Path**: trigger click trên shape X (OOXML p:spTgt cond + JS click listener), 12 preset motion path (line, arc, circle, zigzag, curve, heart, star, turn, wave, spiral, swish, boomerang), custom path (điểm %), edit lại path.
+- **T32 – Xuất Animation chuẩn OOXML** (`animation_ooxml.dart`): p:timing + p:seq + p:cond (clickEffect/withEffect/afterEffect) + p:animEffect/p:animScale/p:animRot/p:animClr/p:animMotion + p:set visibility, dur/delay/repeatCount chính xác, skip + cảnh báo khi không map được (PPTGenerator.animationWarnings).
+- **T33 – Transition toàn diện**: 26 hiệu ứng mới (dissolve, cover/uncover 4 hướng, curtain, cedar, pageCurl, ripple, vortex, shred, diamond, wedge, newsflash, ferris, flip, gallery, honeycomb, invert, orbit, origami, reveal), map ISO + p14 namespace, âm thanh p:snd, thời lượng 0.1–3s từng slide, auto-advance per-slide, cảnh báo export (cedar → fade), dialog Transition mới trên ribbon.
+- **T34 – Morph** (`morph_service.dart`): match shape giữa 2 slide (id → type+size), FLIP keyframes trong HTML deck, p14:morph transition cho PPTX, giới hạn 20 shape, toggle trong Transition dialog.
+
+### 🧪 Kiểm chứng
+- 60+ test mới: image_editor_edit, format_painter, shape_effect, layer_group, alignment_service, text_layout_service, animation_engine, animation_pane, animation_trigger_path, animation_ooxml, morph_service + integration (ppt_generator timing + transitions).
+- `flutter analyze` 0 lỗi/warning; full suite xanh.
+
+### 🔧 Deep review M1–M4 (bổ sung)
+- **Timing OOXML**: mọi `p:cTn` trong `p:timing` giờ dùng id duy nhất (trước là `id="0"` lặp lại — rủi ro PowerPoint repair file khi mở).
+- **HTML animation player**: sửa bug điều hướng bỏ qua animation — wrapper `showSlide` giờ định nghĩa ở local binding (không chỉ `window.showSlide`) nên changeSlide/goToSlide/bàn phím/cảm ứng đều kích hoạt animation; deck không animation vẫn điều hướng bình thường.
+- **Hiệu năng HTML export**: hoist 5 RegExp dùng trong vòng lặp slide (`data-bg-color`, empty div, break thừa) thành static final — tránh compile lại mỗi slide.
+
+---
+
+## [2.0.0-beta] - 2026-08-15 — Dev (2.0.0-beta M1/M2) — Track 20: Zoom trong slide & Cameo (FEAT 22, 23)
+
+### ✨ Tính năng mới
+- **Slide Zoom** (`lib/services/zoom_feature_service.dart` + `zoom_dialog.dart`): model `ZoomItem` (targetSlide, thumbnailLabel, frameStyle simple/outline/shadow, x/y/w/h %) — dialog chọn slide đích + khung; block: `<div data-zoom='{json}'>`.
+  - **HTML**: thumbnail clickable `goToSlide(N)` (JS player function) — trình chiếu app nhảy đúng slide đích.
+  - **PPTX**: `<p:sp>` fallback với `a:hlinkClick action="ppaction://hlinksldjump"` (slide jump) — thay cho `<p:zoom>` (chuẩn p14 phức tạp/dễ hỏng — roadmap cho phép fallback hyperlink).
+  - **PDF**: labelled blue box.
+- **Cameo** (`lib/services/cameo_service.dart` + `cameo_dialog.dart`): model `CameoData` (label, x/y/w/h %) — dialog chọn nhãn + vị trí; block: `<div data-cameo='{json}'>`.
+  - **HTML**: styled camera placeholder (📷 + label + "Live camera").
+  - **PPTX**: `<p:sp>` dark placeholder với viền xanh + label (PowerPoint không hỗ trợ `<p:cameo>` chuẩn p14 — giữ placeholder như roadmap P8).
+  - **PDF**: dark camera box.
+- **Sections** (`lib/models/deck_section.dart`): model `DeckSection` (name, startSlide) + `SectionService` serialize/deserialize — nền tảng cho Section Zoom (P6).
+- **Toolbar**: 2 nút mới "Thu phóng" (zoom_in) + "Cameo" (videocam).
+- i18n EN/VI: 12 chuỗi mới.
+
+### 🔬 Kiểm chứng (P10)
+- 17 test tự động mới (`test/zoom_cameo_test.dart`): ZoomItem round-trip/htmlMarkup goToSlide; zoomsIn/replaceZoomAt; CameoData round-trip/htmlMarkup 📷; cameosIn/replaceCameoAt; DeckSection round-trip + SectionService list; PPTX zoom p:sp + ppaction://hlinksldjump; PPTX cameo placeholder; HTML zoom div goToSlide + cameo placeholder + goToSlide JS function; PDF zoom/cameo không crash; regression deck không zoom/cameo không đổi.
+- `flutter analyze` 0 lỗi/warning; full suite **334/334 test xanh** (+17 mới).
+
+### Giới hạn trung thực
+- Slide Zoom dùng **fallback hyperlink** (p:sp + hlinkClick) thay vì `<p:zoom>` p14 thật — tương thích mọi PowerPoint/LibreOffice, không lỗi repair.
+- Cameo dùng placeholder (không có webcam thật trong trình chiếu HTML/PPTX — roadmap P7/P8 cho phép).
+- Section Zoom: model `DeckSection` đã có (P6) — chưa có UI quản lý sections riêng (nối khi có Slide Sorter).
+
+---
+
+## [2.0.0-beta] - 2026-08-15 — Dev (2.0.0-beta M1/M2) — Track 19: Header/Footer & field động (FEAT 21, 24)
+
+### ✨ Tính năng mới
+- **Model `DeckMeta`** (`lib/services/header_footer_service.dart`): header, footer, slideNumber, dateTime (auto/tĩnh), dateTimeFormat, excludeFirst — serialize/deserialize JSON, tích hợp vào `PresentationState` + `ConfigService` persistence.
+- **UI "Chèn Header & Footer"** (`lib/screens/widgets/header_footer_dialog.dart`): dialog từ ribbon → nhập header/footer text, checkbox slide number, date/time (auto/tĩnh + format), exclude first slide; áp dụng cho toàn deck.
+- **PPTX — slide master footer shapes**: `<p:ph type="hdr|ftr|sldNum|dt">` + `<a:fld>` dynamic field (slide number: `type="slidenum"`, date: `type="datetime1"`) — PowerPoint tự cập nhật ngày giờ khi mở file. Header/footer shapes được nhúng vào `<p:spTree>` của `slideMaster1.xml`.
+- **excludeFirst (P7)**: `DeckMeta.excludeFirst` tôn trọng trong cả 3 định dạng — **PPTX** `showMasterSp="0"` trên slide 1 (ẩn master footer shapes), **HTML** JS `hfExcludeFirst` ẩn `.ghita-hf` trên slide đầu, **PDF** `_wrapWithHF` bỏ qua header/footer/num/date trên trang đầu.
+- **HTML/PDF**: HTML: fixed header/footer bar (`ghita-hf` CSS + divs); PDF: `_wrapWithHF` wraps slide canvas with header/footer Row + slide number + date.
+- **Toolbar**: nút "Đầu trang & Chân trang".
+- i18n EN/VI: 12 chuỗi mới.
+
+### 🔬 Kiểm chứng (P9, P10)
+- 22 test tự động mới (`test/header_footer_test.dart`): DeckMeta round-trip + defaults; masterFooterShapesXml — header/footer/sldNum/dt field shapes; PPTX master includes footer shapes; a:fld slidenum; **PPTX showMasterSp="0" khi excludeFirst**; **HTML header/footer divs + excludeFirst JS hide**; **PDF header/footer wrap + excludeFirst skip**; regression deck không config → master không có footer shapes.
+- `flutter analyze` 0 lỗi/warning; full suite **317/317 test xanh** (+22 mới).
+
+### Giới hạn trung thực
+- Ngày giờ động dùng `<a:fld type="datetime1">` — PowerPoint cập nhật khi mở; định dạng theo locale hệ thống (không override riêng).
+
+---
+
+## [2.0.0-beta] - 2026-08-15 — Dev (2.0.0-beta M1/M2) — Track 18: Nút hành động, Equation, Symbol, OLE (FEAT 17, 18, 19, 20)
+
+### ✨ Tính năng mới
+- **Action buttons** (`lib/services/action_button_service.dart` + `action_button_dialog.dart`): 12 loại nút chuẩn (Home, Next, Back, End, Info, Help, Movie, Sound, Document, Begin, Custom) — chọn loại, hành động (slide next/prev/first/last, URL, file, program), nhãn, màu; block slide: `<div data-action='{json}'>`.
+  - **PPTX**: `<p:sp>` + `<a:hlinkClick action="ppaction://hlinksldjump">` (slide jump) hoặc `r:id` hyperlink (URL/file) — prstGeom theo loại nút (chevron/homePlate/info/question...).
+  - **HTML**: button styled div (position:absolute %).
+  - **PDF**: labelled button box.
+- **Equation** (`lib/services/equation_service.dart` + `equation_dialog.dart`): MathML → OOXML `<m:oMath>` converter (mfrac, msqrt, msup, msub, msubsup, munderover ∑, mtable matrix, mrow) — dialog chọn mẫu (fraction, sqrt, quadratic, sum, integral, matrix 2×2, E=mc²) hoặc nhập MathML tùy chỉnh; block: `<div data-equation='{json}'>`.
+  - **PPTX**: `<p:sp>` với `<m:oMath>` (namespace `m` khai báo root slide) + `a:mathPr` Cambria Math; fallback plain text.
+  - **HTML/PDF**: hiển thị dạng text fallback italic.
+- **Symbol** (`lib/services/symbol_service.dart` + `symbol_dialog.dart`): ~200 ký hiệu Unicode 5 nhóm (Currency, Arrows, Math, Greek, Technical, Misc) — lưới chọn, tìm theo tên/ký tự/mã U+XXXX; chèn vào slide dạng `<p>`.
+- **Toolbar**: 3 nút mới "Nút hành động", "Công thức", "Ký hiệu".
+- i18n EN/VI: 19 chuỗi mới.
+
+### 🔬 Kiểm chứng (P8, P10)
+- 27 test tự động mới (`test/actions_equation_symbol_test.dart`): ActionButton round-trip/defaultLabel/htmlMarkup; actionsIn/replaceActionAt; PPTX p:sp + ppaction://hlinksldjump + hyperlink rels; HTML button; Equation round-trip; mathmlToOoxml fraction/sqrt/sup; PPTX m:oMath + namespace; **HTML inline SVG (viewBox, fraction bar, radical path)**; **PDF widget tree**; SymbolService categories/search/code-point; **OLE oleObj + progId + oleObject bin + HTML document icon**; **regression hyperlink text thường vẫn hoạt động** (hlinkClick + rels external) + deck không track-18 features không đổi.
+- `flutter analyze` 0 lỗi/warning; full suite **295/295 test xanh** (+27 mới).
+
+### Giới hạn trung thực
+- Action slide-jump dùng `ppaction://hlinksldjump` chuẩn PowerPoint (chưa có `p14:action` slide-target cụ thể — mặc định next/prev/first/last).
+- Symbol chưa có ô "nhập mã Unicode trực tiếp" chuyên dụng (tìm U+XXXX trong search box — có).
+- OLE embedding: file nhúng vào `ppt/media/`, không phải `ppt/embeddings/` (PowerPoint vẫn mở được — OOXML validator không báo lỗi).
+
+---
+
+## [2.0.0-beta] - 2026-08-14 — Dev (2.0.0-beta M1/M2) — Track 17: WordArt & TextBox tự do (FEAT 15, 16)
+
+### ✨ Tính năng mới
+- **Model `FreeTextShape`** (`lib/models/free_shape.dart`): x/y/w/h (% slide), text, rotation, z-order, font/size/weight/style, color, background, border, shadow, wordArtStyle; HTML markup sinh position:absolute với % tọa độ; serialize/deserialize toMap/fromMap/JSON.
+- **WordArt: 12 styles** (`lib/services/wordart_service.dart`): Fill (Black/Blue/Orange/Green), Gradient (Linear/Radial/Diagonal), Wave, Outline, Shadow, Reflection, Glow — mỗi style có CSS (cho HTML deck + canvas overlay) + OOXML `<a:gradFill>`/`<a:effectLst>` (cho PPTX).
+- **CanvasOverlay** (`lib/screens/editor/canvas_overlay.dart`): drag-to-move, resize handle (bottom-right), delete button, z-order sorting, selection highlight — nằm trên preview HTML editor.
+- **FreeTextEditDialog** (`lib/screens/widgets/free_text_edit_dialog.dart`): sửa text, tọa độ %, kích thước, font, màu, nền, viền, đổ bóng, rotation, z-order, WordArt style + preview nhỏ.
+- **Engine export — ĐỌC thật `visualElements`** (Track 17, P3 — không bỏ qua như trước):
+  - **PPTX**: mỗi FreeTextShape → `<p:sp>` với `<a:xfrm>` x/y/w/h EMU tuyệt đối (không xếp dọc), `<a:prstGeom>`, fill gradient/solid/noFill, border, WordArt effect, `<a:rPr>` font/size/color/bold/italic, rotation `rot` attribute.
+  - **HTML**: `<div style="position:absolute; left:X%; top:Y%; width:W%; height:H%; ...">` — giữ % tọa độ.
+  - **PDF**: `pw.Positioned` + `pw.Container` với `left/top` tính từ % (1% = 0.75pt).
+- **Toolbar**: nút "Thêm hộp văn bản" (icon text_fields) → dialog → `updateFreeTexts` → `addSlide` (history).
+- i18n EN/VI: 11 chuỗi mới.
+
+### 🔬 Kiểm chứng (P10)
+- 17 test tự động mới (`test/free_text_wordart_test.dart`): FreeTextShape round-trip (toMap/fromMap/JSON); htmlMarkup % tọa độ; WordArt 12 styles + CSS + OOXML gradFill/effectLst; PPTX TextBox 30%,40% → EMU đúng (2743200,2743200); WordArt gradient fill; WordArt shadow; rotation attribute; regression deck không visualElements; HTML absolute divs; PDF render; Slide.visualElements persistence.
+- `flutter analyze` 0 lỗi/warning; full suite **268/268 test xanh** (+17 mới).
+
+### Giới hạn trung thực
+- Canvas overlay dùng px scale tạm (4× % → px) — chưa đồng bộ kích thước preview thật.
+- WordArt OOXML chỉ hỗ trợ gradient fill + effect cho style 5/6/7/9/10/12; các style còn lại dùng solid fill hoặc CSS fallback.
+- Chưa có kéo-thả resize tỷ lệ khung hình (resize handle tự do).
+- `visualElements` key là `freeTexts` — tương thích ngược với Slide cũ không có key này.
+
+---
+
+## [2.0.0-beta] - 2026-08-14 — Dev (2.0.0-beta M1/M2) — Track 16: Screenshot nhanh & Photo Album (FEAT 13, 14)
+
+### ✨ Tính năng mới
+- **Screenshot service** (`lib/services/screenshot_service.dart`): chụp **toàn màn hình / cửa sổ active / vùng chọn** bằng PowerShell `Add-Type` C# helper (`Graphics.CopyFromScreen` — .NET built-in, không cần FFmpeg/plugin, chạy Windows 7+).
+- **UI "Chụp màn hình"** (`lib/screens/widgets/screenshot_dialog.dart`): SegmentedButton 3 chế độ, nhập tọa độ vùng, nút Capture/Recapture + preview, báo lỗi thân thiện khi thất bại; sau khi chụp → **mở `ImageEditorDialog` (đã có) để crop** → chèn `<img>` vào slide hiện tại.
+- **Photo Album** (`lib/screens/widgets/photo_album_dialog.dart`): chọn **nhiều ảnh** (file_picker multi), chọn layout — **1 ảnh / 2 ảnh / 1 lớn + 2 nhỏ / Lưới 2×2 / Lưới 3 / Lưới 4**; tùy chọn **caption** (tên file, sửa được), **frame viền**, **chuyển tiếp mặc định** (Fade/Push/Zoom) giữa slide ảnh.
+- **Sinh tự động N slide**: ảnh chia theo layout (1/2/3/4 ảnh mỗi slide) → slide HTML có `<img>` (nén JPEG 85% nếu nhỏ hơn — tái dùng Track 03 pipeline) + `layoutType = pictureAndCaption` + `effect` theo lựa chọn; **chèn vào cuối deck** (`addSlide` + history).
+- **Toolbar**: 2 nút mới "Chụp màn hình" + "Album ảnh".
+- i18n EN/VI: 20 chuỗi mới (screenshot modes/capture/failed/use, photo album empty/pick/count/caption/frame/transition/create/created).
+
+### 🔬 Kiểm chứng (P7, P10)
+- 13 test tự động mới (`test/screenshot_photo_album_test.dart`): ScreenshotService 3 mode không crash (trả null khi không có màn hình); batching ảnh đúng theo từng layout (single 5→5, two 5→3+2+1, grid2x2 10→3 nhóm, oneLargeTwoSmall 7→3+3+1); slide sinh đúng `pictureAndCaption`; transition bật/tắt; regression addSlide/upsertVideo không đổi.
+- `flutter analyze` 0 lỗi/warning; full suite **251/251 test xanh** (+13 mới).
+
+### Giới hạn trung thực
+- Screenshot cần **Windows + .NET System.Drawing** (chạy qua PowerShell — máy có PowerShell 5.1+ mặc định); vùng chọn nhập tọa độ số (chưa có overlay kéo-thả trực quan).
+- Chụp cửa sổ = cửa sổ **đang active** (GetForegroundWindow).
+- Photo album chưa hỗ trợ tải ảnh từ web; caption mặc định = tên file (sửa được trước khi tạo).
+
+---
+
+## [2.0.0-beta] - 2026-08-14 — Dev (2.0.0-beta M1/M2) — Track 15: Thư viện Icons & Ảnh kho (FEAT 11, 12)
+
+### ✨ Tính năng mới
+- **Model `IconItem`** (`lib/models/icon_item.dart`): name, category, svgPath, color, size; block trong slide HTML: `<span data-icon='{json}'>`.
+- **Thư viện icons nhúng ~150 icon SVG** (`lib/services/icon_library_service.dart`): path `d` Material/Fluent-style, 10 nhóm (UI, Navigation, Media, Communication, Business, Education, Arrows, Devices, Time, Travel, Status, Text); **SVG path parser + rasterizer tự viết** (`package:image`: M/L/H/V/C/S/Q/T/A/Z, curve sampling, fill + stroke) — không cần SVG renderer, chạy được trong export isolate.
+- **UI "Chèn biểu tượng"** (`lib/screens/widgets/icon_dialog.dart`): tìm kiếm, lọc nhóm, chọn màu (8 swatch), slider kích thước 16–96px, thumbnail PNG render thật, tap = chèn; nút toolbar "Chèn icon".
+- **PPTX — icon thành `<p:pic>` PNG**: render PNG 48px màu chọn → `ppt/media/image{n}.png` + rel image + dedupe SHA-256 (2 icon giống nhau → 1 media part); block nằm trong layout flow như ảnh.
+- **HTML deck — inline SVG**: `<span data-icon>` thay bằng `<svg>` đúng màu/kích thước, giữ `data-icon` để sửa lại.
+- **PDF — icon PNG raster** ở vị trí block.
+- **Ảnh kho local** (`lib/services/stock_media_service.dart` + `stock_media_dialog.dart`): 18 ảnh minh họa SVG tự sinh CC0-style (Nature, Business, Technology, Education, Abstract, People) — chèn dạng `<img src="data:image/svg+xml;base64,...">`.
+- **Trạng thái "Đã chèn"** snackbar + i18n EN/VI.
+
+### 🔬 Kiểm chứng (P10)
+- 10 test tự động mới (`test/icon_library_pipeline_test.dart`): model round-trip; svgMarkup đúng màu/kích thước; iconCount/iconsIn/replaceIconAt; renderPng ra PNG hợp lệ (magic bytes); PPTX `<p:pic>` + media PNG + rel + dedupe; HTML inline SVG giữ data-icon; PDF render; deck không icon không đổi; icon payload rỗng bị skip.
+- `flutter analyze` 0 lỗi/warning; full suite **238/238 test xanh** (bao gồm 10 test mới).
+
+### Quốc tế hóa
+- 11 chuỗi mới vào .arb EN/VI: insert/search/recent/color/no-results/inserted cho icon + stock media.
+
+### Giới hạn trung thực
+- Icons nhúng là **SVG path rasterized bằng bộ vẽ tự viết** (không phải file font) — đủ đẹp cho icon đơn sắc Material/Fluent; không hỗ trợ gradient/pattern fill phức tạp.
+- Ảnh kho là **vector minh họa tự sinh** (CC0-style, không phải ảnh bitmap thật); chưa có tìm ảnh Bing/Unsplash online (P6 roadmap — tùy chọn + sau).
+- Lịch sử icon gần đây (P7) dừng ở hiển thị "Recent" trong dialog (theo phiên).
+
+---
+
+## [2.0.0-beta] - 2026-08-12 — Dev (2.0.0-beta M1/M2) — Track 14: Mô hình 3D (FEAT 10)
+
+### ✨ Tính năng mới
+- **Model `Model3DData`** (`lib/models/model3d_item.dart`): src (GLB data URI), posterSvg (tự sinh), rotate, name; block trong slide HTML: `<div data-model3d='{json}'>`.
+- **PPTX — shape `am3d:model3d` chuẩn Office 2017**: `<mc:AlternateContent>` (Choice `Requires="am3d"` + Fallback `p:pic`) chứa graphicFrame `am3d:model3d` — spPr/camera/trans/raster (poster PNG tự vẽ bằng `package:image`)/objViewport/ambientLight + 3 point-lights + a3danim extLst; GLB nhúng `ppt/media/model3d{n}.glb` + rel `…/office/2017/06/relationships/model3d` + Default `glb` (`model/gltf-binary`) trước Override; dedupe SHA-256.
+- **Tự xoay (rotate)**: phát animation nhúng đầu tiên của mô hình khi mở slide — a3danim `embedAnim` + timeline `Animate embedded1` (idBase 100 tránh đụng timeline video/audio); không rotate → extension tồn tại nhưng không có timing (PowerPoint bắt buộc có extension).
+- **HTML deck**: poster SVG + ghi chú "mở trong PowerPoint để xem & xoay" — **KHÔNG nhúng GLB** (JSON attribute được làm gọn, bỏ payload megabyte).
+- **PDF**: placeholder "3D Model — Xem trong PowerPoint" (không vẽ SVG — limit).
+- **UI**: nút **"Chèn mô hình 3D"** (icon view_in_ar) trên toolbar → dialog: FilePicker GLB (kiểm tra magic `glTF` — file không hợp lệ báo lỗi rõ), preview poster tự sinh + badge "3D" (không cần 3D renderer), checkbox tự xoay, tên mô hình; sửa model đã chèn (`upsertModel3d` + dropdown).
+- Namespace `am3d/a16/p14/a3danim` khai báo trên **root slide** đúng như PowerPoint tự ghi.
+
+### 🔬 Kiểm chứng thật (P10)
+- **GLB mẫu tự sinh** (glTF 2.0 hợp lệ — Khronos validator 0 lỗi, tam giác màu + material + NORMAL): bản nhỏ 908B và bản **~5MB** (BIN padded, byteLength hợp lệ).
+- **PowerPoint COM**: cả 2 deck (nhỏ + 5MB, một deck rotate=true) mở **OK slides=1** — shape nhận dạng **type=30 (3D model)**; deck HTML mở Chrome: poster SVG + note hiển thị, **không chứa payload GLB**.
+- **Bisect gian khổ ghi lại (giá trị cho các track sau)**: 2 lỗi khiến PowerPoint từ chối deck 3D — (1) thiếu đồng thời extLst a3danim + point-lights; (2) **`a16:creationId` phải là GUID RFC-4122 v4 hợp lệ** (chuỗi counter-style bị reject dù cùng format 8-4-4-4-12); thêm: các namespace phải khai báo trên root slide. Golden lấy từ **mẫu chính thức `AnimatedModel3DExample` của Microsoft** (dotnet Open-XML-SDK, chạy được trên máy).
+- 9 test tự động: model round-trip; PPTX package (part glb + Default glb + rel 2017/06 + mc:AlternateContent + am3d + raster + rotate timeline/không rotate không timing + dedupe + skip rỗng + deck không 3D không đổi); HTML (poster + note, không GLB bytes, JSON slim); PDF placeholder.
+
+### 🈺 Quốc tế hóa
+- 11 chuỗi mới vào .arb EN/VI: insert/edit 3D, pick GLB, invalid file, tên mô hình, tự xoay (+ hint), existing/inserted/updated.
+
+### Giới hạn trung thực
+- Preview trong app = poster tự sinh + badge (không renderer 3D — roadmap cho phép).
+- HTML/PDF không nhúng model thật (roadmap P7) — ghi chú dẫn về PowerPoint.
+- "Tự xoay" phát **animation nhúng của mô hình** (glTF animations) — GLB không có animation thì chỉ hiển thị poster (đúng giới hạn định dạng PowerPoint).
+- 3D cần máy có DirectX/GPU (đã kiểm chứng trên máy có RTX 3050).
+
+---
+
+## [2.0.0-beta] - 2026-08-12 — Dev (2.0.0-beta M1/M2) — Track 13: Audio & Narration gắn slide (FEAT 8, 9 + OPT 31)
+
+### ✨ Tính năng mới
+- **Nối lại `AudioRecorderPanel`** (trước đây chết) vào editor **cạnh ô Notes** (`html_editor_panel.dart`): ghi âm mic → dừng → **tự nén WAV → m4a bằng FFmpeg** (`-c:a aac 128k`) — không còn WAV cồng kềnh; không FFmpeg → giữ WAV (limit).
+- **Model**: `Slide.audioPath` + `Slide.audioEmbedded` + `Slide.audioOptions` (durationMs, autoplay, loop, acrossSlides, hideIcon, trimStart, trimEnd) — toMap/fromMap tương thích ngược + `copyWith(clearAudio)`.
+- **PPTX `<p:audio>`**: shape `<p:pic>` đúng cấu trúc PowerPoint tự ghi (golden COM `AddMediaObject2`): `p:nvPr/a:audioFile` (rel `…/audio`) + `p14:media` ext + **icon loa chuẩn PowerPoint** (trích từ golden, nhúng base64 const) + `p:timing` — autoplay `playFrom(0.0)` (dur = durationMs), loop `repeatCount="indefinite"`, **dừng khi rời slide** qua `endCondLst onStopAudio` (bỏ khi chọn "phát xuyên slide"); dedupe theo SHA-256; Default `m4a`/`wav` trước mọi Override.
+- **HTML deck**: `<audio controls data-src>` + `ghitaAudios` map (base64, MIME chuẩn `audio/mp4` — Chrome từ chối `audio/m4a`) + inject khi slide active; options: loop/autoplay/trim (currentTime + clamp), **ẩn icon** → nút toggle nhỏ, **phát xuyên slide** → pause-all bỏ qua audio có `data-across`; tự pause khi đổi slide.
+- **Trim**: cắt thật bằng FFmpeg (`-ss/-to -c copy`, fallback re-encode) — file nhúng tự cắt; không FFmpeg → timestamps (HTML tôn trọng).
+- **Bundle `.ghita`**: implement `media/` (document cũ nhưng chưa có) — `saveProjectBundle(mediaFiles:)` + slides.json ghi `audioPath: 'media/…'` + `audioEmbedded`; `loadProjectBundle` extract về thư mục audio + rewrite path → **mở project trên máy khác vẫn có narration**.
+- Ghi âm thất bại/không có quyền mic → xử lý mượt (không crash).
+
+### 🔬 Kiểm chứng thật (P10)
+- **PPTX**: deck có narration m4a thật (FFmpeg sine 2s, autoplay + loop) mở **OK** trong PowerPoint COM (`OK slides=1`), shape nhận dạng **type=16 (ppMedia)** tên "Narration".
+- **HTML deck**: Chrome headless — thẻ `<audio>` nhận `src` từ `ghitaAudios` khi slide active; probe decode payload base64: **readyState=4, duration 2s** (đã sửa MIME `audio/m4a` → `audio/mp4` vì Chrome báo MEDIA_ERR_SRC_NOT_SUPPORTED).
+- **Ghi âm mic thật (gate P10 hoàn tất)**: máy có **Microphone Array (AMD Audio Device)** — chạy `integration_test/mic_recording_test.dart -d windows` (app Windows thật, plugin `record` nạp được — `flutter test` thường không nạp plugin desktop) → **ghi mic 2.85s → transcode m4a (12.4KB) → probe 2849ms PASS**. Bản ghi thật đó được đưa qua đủ chuỗi: xuất PPTX → **PowerPoint COM mở OK slides=1 + shape type=16 (ppMedia) "Narration"**; xuất HTML deck → **Chrome: src inject + decode readyState=4, 2.8s**.
+- 10 test tự động: Slide audio round-trip + backward-compat + clearAudio; PPTX package (media/audio1.m4a, Default m4a, rels audio, a:audioFile, icon, timing autoplay/loop/across/onStopAudio, deck không audio không đổi); HTML deck (ghitaAudios, data-src, hide-icon, across exception, MIME mp4); bundle round-trip (media entry + extract + path rewrite).
+
+### 🈺 Quốc tế hóa
+- 10 chuỗi mới vào .arb EN/VI: ghi narration, chưa có narration, duration, trim, không FFmpeg, tự phát, lặp, xuyên slide, ẩn icon, xóa.
+
+### Giới hạn trung thực
+- **Mic**: kiểm chứng thật trên máy có Microphone Array — integration test (app Windows + plugin `record`). Trên máy không có mic/quyền, panel xử lý mượt (không crash).
+- **Phát xuyên slide ở PPTX**: chỉ HTML deck hỗ trợ đầy đủ (PPTX bỏ `onStopAudio` khi chọn across — PowerPoint tự quyết định thời điểm dừng); loop PPTX qua `repeatCount` (mở OK).
+- Trim không FFmpeg → timestamps (HTML-only).
+- Audio luôn nhúng trong bundle khi lưu `.ghita`; sau khi load ở máy khác, file extract về `Documents/GhitaPPT/audio/`.
+
+---
+
+## [2.0.0-beta] - 2026-08-12 — Dev (2.0.0-beta M1/M2) — Track 12: Quay màn hình (FEAT 7)
+
+### ✨ Tính năng mới
+- **Backend FFmpeg gdigrab** (`lib/services/screen_recorder_service.dart`): quay toàn màn hình / cửa sổ (chọn từ danh sách `Get-Process` MainWindowTitle) / vùng tùy chỉnh (tọa độ + kích thước pixel); codec `libx264 ultrafast yuv420p` — đúng định dạng PPTX/Chromium; không cần plugin, không cần quyền đặc biệt, chỉ cần ffmpeg/ffprobe trên PATH (cùng phụ thuộc tùy chọn như Track 11).
+- **Điều khiển thu**: đếm ngược 3s trước khi quay, timer mm:ss + chấm đỏ khi đang quay, **Pause/Resume** (cắt segment + nối bằng concat demuxer `-c copy` — ghép không mất chất lượng), **Stop** dừng mượt bằng stdin `q`.
+- **Giới hạn**: maxDuration 300s + maxSize 100MB (tự dừng + thông báo lý do), cảnh báo đĩa < 500 MB trước khi quay (hỏi "vẫn quay?").
+- **Xử lý lỗi**: không có FFmpeg → màn hình hướng dẫn cài đặt; quay thất bại → thông báo rõ.
+- **Nhúng vào slide ngay**: sau Stop, preview kết quả (poster frame FFmpeg + thời lượng + dung lượng) → "Chèn vào slide" qua `upsertVideo` — tái dùng đúng pipeline Track 11 (`<video data-video>` → PPTX `p:pic` ppMedia + timing, HTML deck `ghitaVideos` + player, PDF poster).
+- **Sửa lỗ hổng 100KB (ảnh hưởng cả Track 11)**: sanitizer `validateAndSanitizeHtml` giờ áp giới hạn cho **nội dung text** — payload `data:…;base64` được miễn, slide chứa video vài MB vẫn Save được; text > 100KB vẫn bị chặn.
+- UI: nút **"Quay màn hình"** trên toolbar editor (cạnh nút Chèn video).
+
+### 🔬 Kiểm chứng thật (P10)
+- **Quay thật trên máy** (gdigrab vùng 640×360, ~6s với Pause giữa chừng): 2 segment ghép lại → mp4 5,8s hợp lệ (ffprobe xác nhận), dừng bằng stdin `q` mượt.
+- **PPTX**: deck chứa bản quay mở **OK** trong PowerPoint COM (`OK slides=1`), shape nhận dạng **type=16 (ppMedia)**.
+- **HTML deck**: mở trong Chrome headless (engine WebView2) — `src` được inject từ `ghitaVideos` khi slide active; probe decode payload thật: **PLAYABLE readyState=4, 5.8s**.
+- 9 test tự động: `buildCaptureCommand` 3 mode (args chính xác), `buildConcatList`, probes window/disk, sanitizer media-aware (3 test: video >100KB qua, text >100KB chặn, block elements vẫn strip).
+
+### 🈺 Quốc tế hóa
+- 29 chuỗi mới vào .arb EN/VI: dialog quay màn hình (modes, cửa sổ, tọa độ vùng, start/countdown/pause/resume/stop, duration/size, insert/discard, hướng dẫn FFmpeg, cảnh báo đĩa, giới hạn…).
+
+### Giới hạn trung thực
+- **Bắt buộc FFmpeg** (không có → hướng dẫn cài; không fallback khác).
+- Quay cửa sổ yêu cầu cửa sổ **không minimized** và tên trùng chính xác (giới hạn của gdigrab).
+- Vùng tùy chỉnh nhập **tọa độ số** (chưa có drag-region overlay — ghi TODO).
+- Pause = ghép segment (có thể lệch vài frame tại điểm nối); quay gồm cả cửa sổ ứng dụng nếu nằm trong vùng chọn.
+- Dừng tự động khi đạt giới hạn: lưu vào temp, dialog hiện preview như bình thường.
+
+---
+
+## [2.0.0-beta] - 2026-08-12 — Dev (2.0.0-beta M1/M2) — Track 11: Video nhúng & chỉnh (FEAT 5, 6, 76)
+
+### ✨ Tính năng mới
+- **Model `VideoData`** (`lib/models/media_item.dart`): src/poster (data URI), trimStart/End, autoplay, loop, youtubeId, durationMs, bookmarks; JSON round-trip. Video trong slide HTML là thẻ `<video src="data:video/mp4;base64,…" poster="…" controls data-video='{json}'>` — sanitizer cho phép thẻ video, payload đi cùng htmlContent như ảnh.
+- **PPTX — shape media thật**: `<p:pic>` kiêm poster + video đúng cấu trúc PowerPoint tự ghi (golden từ COM `AddMediaObject2`): `p:nvPr/a:videoFile` (rel `…/video`), `p14:media` (rel `…/2007/relationships/media`), poster `blipFill`, `hlinkClick r:id="" action="ppaction://media"` (không cần hyperlink rel); `Default mp4` đặt trước mọi Override; dedupe mp4 theo SHA-256 (1 part / nhiều thẻ).
+- **Playback options trong PPTX**: `p:timing` chuẩn PowerPoint — on-click = interactiveSeq + `togglePause`; autoplay = mainSeq + `playFrom(0.0)` (dur = durationMs probe bằng ffprobe); loop = `repeatCount="indefinite"` trên media node; nhiều video gộp chung 1 timing (id tuần tự).
+- **HTML deck (WebView2)**: payload hoist vào `ghitaVideos` (mp4 + poster), thẻ `<video>` nhận `data-src`/`data-poster` + `preload="none"`, JSON inline chỉ còn metadata (không trùng megabyte); player JS `setupVideo`: áp trim (currentTime + clamp end), loop/autoplay, danh sách bookmark (click → nhảy), YouTube → thumbnail + nút mở ngoài (vẫn chặn iframe); tự pause mọi video khi đổi slide.
+- **PDF**: vẽ poster frame của video (hoặc hộp placeholder "Video" khi không có poster).
+- **UI**: nút **Chèn video** trên toolbar editor → dialog: chọn file MP4 (FilePicker) hoặc dán link YouTube (parse id + thumbnail qua http có guardrail 10s/2MB); **FFmpeg tự động khi có**: probe duration, lấy frame đầu làm poster, **trim thật** (stream copy, fallback re-encode nhanh); chọn/đổi poster riêng; checkbox tự phát/lặp; bookmark thêm/xóa; sửa video đã chèn (`upsertVideo` + `replaceVideoAt`).
+- **Chống rỗng**: video không payload (không src, không online) bị bỏ qua khi xuất PPTX/HTML.
+- Toolbar editor chuyển thành **cuộn ngang** — không tràn trên cửa sổ hẹp.
+
+### 🔬 Kiểm chứng PowerPoint thật (P10)
+- Deck có video mp4 thật (FFmpeg sinh 3s, autoplay + loop) mở **OK** trong PowerPoint COM (`OK slides=1`, không 0x80070570); COM nhận dạng shape đúng loại **ppMedia (type=16)** — không chỉ là pic thường.
+- Cấu trúc shape so khớp golden PowerPoint thật (sinh bằng `AddMediaObject2` + `PlaySettings.PlayOnEntry/LoopUntilStopped`): dạng `p:pic` + `a:videoFile` trong `nvPr` + `p14:media` ext + timing 2 tầng; autoplay = `playFrom(0.0)` + `sldTgt` cond; loop = `repeatCount="indefinite"`.
+
+### 🧪 Kiểm thử
+- `test/video_pipeline_test.dart` (12 test): model round-trip + `parseYouTubeId` 4 dạng URL; PPTX package (media/video1.mp4, Default mp4 trước Override, rels video+media+image, p:pic + a:videoFile + ppaction://media, timing autoplay/loop `playFrom`+`repeatCount`, on-click interactiveSeq, dedupe 1 part/2 thẻ, YouTube rel external, empty skip + deck không video không đổi); HTML deck (ghitaVideos map, data-src/preload, JSON gọn không chứa payload, JS setupVideo/trim/bookmarks/youtube/pause **còn nguyên sau minify**); PDF poster; sanitizer cho phép `<video>`.
+
+### 🈺 Quốc tế hóa
+- 26 chuỗi mới vào .arb EN/VI: dialog video (insert/edit/file/youtube/trim/poster/bookmarks/autoplay/loop/invalid url/no ffmpeg…).
+
+### Giới hạn trung thực
+- **Bookmark & loop**: chỉ phát huy ở HTML deck (OOXML không có bookmark; PPTX loop qua `repeatCount` — mở OK, hành vi phát phụ thuộc PowerPoint).
+- **Trim**: áp dụng cho file nhúng chỉ khi có FFmpeg tại lúc chèn; không có FFmpeg → nhúng nguyên file + timestamps (chỉ HTML tôn trọng; PPTX phát cả file).
+- **YouTube**: PPTX giữ poster + link ngoài (phát cần PowerPoint + mạng); chưa kiểm chứng phát thật trong slideshow bằng UI tự động.
+
+---
+
+## [2.0.0-beta] - 2026-08-11 — Dev (2.0.0-beta M1/M2) — Track 10: SmartArt (FEAT 4)
+
+### ✨ Tính năng mới
+- **Model `SmartArtGraph` + 28 layout** (`lib/models/smartart.dart`): 8 nhóm PowerPoint (List, Process, Cycle, Hierarchy, Relationship, Matrix, Pyramid, Picture) × 3–6 layout mỗi nhóm; node cây (parentId), 3 chủ đề màu (Office / Sắc màu / Đậm).
+- **PPTX — `<dgm:>` package**: `data{n}.xml` (dataModel: ptLst/cxnLst) + `layout1.xml` + `quickStyle1.xml` + `colors1.xml` (màu theo theme) + slide binding `<dgm:relIds r:dm/r:lo/r:qs/r:cs>` + ContentTypes; dedupe theo JSON (1 data part / nhiều graphicFrame). *Đã kiểm chứng mở được trong PowerPoint thật — xem 🔬 bên dưới.*
+- **HTML/PDF**: SVG inline cho cả 8 nhóm (hộp/chevron/vòng/hệ phân cấp/ma trận/kim tự tháp/ảnh) + painter PDF cùng bảng màu; preview trong dialog.
+- **UI**: nút **Chèn SmartArt** trên toolbar → dialog: thumbnail layout theo nhóm, ngăn văn bản (text pane) thêm/xóa mục, chọn chủ đề màu, **relayout giữ nguyên nội dung**; danh sách "SmartArt trong slide" cho chỉnh sửa; `upsertSmartArt` đồng bộ cả 3 định dạng qua `data-smartart`.
+- **Chống crash rỗng**: sơ đồ không node bị bỏ qua khi xuất PPTX + SVG "Không có nội dung SmartArt".
+
+### 🔬 Kiểm chứng PowerPoint thật (P8)
+- Dùng PowerPoint COM (`Presentations.Open`) mở deck sinh bởi đúng code path: deck chỉ văn bản **OK**, deck có chart **OK**, deck có SmartArt **OK**, deck kết hợp text + chart + SmartArt **OK** (`OK slides=1`, không lỗi 0x80070570, không cần Repair).
+- **2 lỗi làm PowerPoint từ chối toàn bộ deck khi có SmartArt được tham chiếu** (deck không frame vẫn mở — bisection 2 phía + golden từ Word `SmartArtLayouts` thật):
+  1. Frame slide phải dùng dạng mới `<dgm:relIds r:dm=… r:lo=… r:qs=… r:cs=…/>` — dạng cũ `<dgm:diagram dgm:dataId=…/>` bị PowerPoint hiện đại đánh rơi (0x80070570) dù đúng schema cũ.
+  2. `<dgm:t>` trong dataModel phải là text body đầy đủ (`<a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>…`) — chuỗi text trần làm diagram engine crash khi load.
+- Bisection từng part (đổi 1 part tại một lần so với golden Word): layout/quickStyle/colors của Ghita đều vượt qua engine; chỉ dataModel sai 2 điểm trên. Giới hạn trung thực: layoutDef vẫn là bản generic tối giản (rendering đúng ý đồ tối giản "flat nodes"; đổi layout trong PowerPoint hoạt động vì binding theo relIds); kiểm chứng render pixel không thực hiện — chỉ kiểm chứng mở + nạp diagram không lỗi.
+
+### 🧪 Kiểm thử
+- `test/smartart_test.dart` (9 test): model round-trip + relayout giữ text + đổi màu, dgm package (data/layout/quickStyle/colors well-formed, ptLst/cxnLst/srcId, text-body `<dgm:t>` + rels `r:dm/r:lo/r:qs/r:cs` theo dạng đã kiểm chứng PowerPoint, ContentTypes, dedupe 1 part/2 frame, empty skip, deck không SmartArt không có part diagram), HTML SVG từng nhóm, PDF hợp lệ.
+
+### 🈺 Quốc tế hóa
+- 20 chuỗi mới vào .arb EN/VI: tên 8 nhóm + dialog (insert/edit/title/layouts/text pane/add node/color theme/existing/inserted/updated…).
+
+---
+
+## [2.0.0-beta] - 2026-08-11 — Dev (2.0.0-beta M1/M2) — Track 09: Khung dữ liệu kiểu Excel + workbook nhúng (FEAT 3)
+
+### ✨ Tính năng mới
+- **`ChartDataGrid`**: lưới dữ liệu kiểu Excel trong dialog biểu đồ — cột A = nhãn, các cột sau = chuỗi series; thêm/xóa dòng & cột, chọn ô (viền highlight), **dán CSV** (paste vào ô đã chọn hoặc thay cả lưới), **Điền nhanh** (10, 20, 30…).
+- **Workbook thật** (`EmbeddedWorkbookService`): xlsx tự build bằng `archive` đúng chuẩn — `sheet1` + **`sharedStrings`** (t="s") + styles/workbook/rels/ContentTypes; dữ liệu theo quy ước Excel-chart (A1 trống, B1.. tên chuỗi, A2.. nhãn). Nhúng vào chart package → PowerPoint mở "Chỉnh dữ liệu trong Excel" được ngay.
+- **Map lưới → caches**: numCache/strCache trong `chartN.xml` phản chiếu đúng workbook (test mirror: đổi giá trị workbook → re-export → cache khớp).
+- **Đồng bộ 2 chiều**: lưới ↔ `ChartData` ↔ dialog → `upsertChart` (data-chart) → cả PPTX/PDF/HTML cập nhật tự động.
+- **Nhập CSV**: paste CSV + `parseCsv` (xử lý dấu ngoặc kép, dấu phẩy trong ô, CRLF). *Ghi chú: nút chọn file (file_picker) chưa bổ sung do môi trường offline — luồng paste dữ liệu đã hoạt động.*
+- **Chống crash chart rỗng** (P10): biểu đồ không series/giá trị bị bỏ qua khi xuất PPTX (không sinh `<c:chart>` rỗng dễ repair prompt) và hiển thị "Không có dữ liệu biểu đồ" trong SVG.
+
+### 🧪 Kiểm thử
+- `test/embedded_workbook_test.dart` (5 test): xlsx thật (workbook/sheet/sharedStrings/styles, t="s", uniqueCount, XML hợp lệ), CSV (quote/kép/CRLF), grid→ChartData, mirror workbook↔chart caches + refs `Sheet1!$B$2:$B$4`, empty-chart skip + SVG friendly.
+
+### 🈺 Quốc tế hóa
+- 8 chuỗi mới vào .arb EN/VI: `chartData`, thêm/xóa dòng, thêm/xóa chuỗi, điền nhanh, dán CSV.
+
+---
+
+## [2.0.0-beta] - 2026-08-11 — Dev (2.0.0-beta M1/M2) — Track 08: Động cơ Biểu đồ thật (FEAT 1, 2)
+
+### ✨ Tính năng mới
+- **Model `ChartData` + `ChartService`**: biểu đồ sống trong slide HTML dưới dạng `<div data-chart='{json}'>` — 14 loại (Column, Bar, Line, Pie, Area, Donut, Combo, Treemap, Sunburst, Histogram, Box & Whisker, Waterfall, Funnel, Map), style (màu, legend, data labels, stacked).
+- **PPTX — `<c:chart>` thật**: sinh `chartN.xml` (DrawingML Charts), workbook nhúng `Microsoft_Excel_SheetN.xlsx` (SpreadsheetML hợp lệ, dữ liệu đối xứng với cache) + rels + ContentTypes; slide chứa graphicFrame `r:id` → chart; chart trùng nội dung chỉ nhúng 1 part (dedupe theo JSON). Dữ liệu mở được trong PowerPoint chart editor. Lưu ý trung thực: các loại nâng cao (treemap/sunburst/histogram/box/waterfall/funnel/map) xuất PPTX dưới dạng biểu đồ gốc gần nhất (column/bar/pie) giữ nguyên dữ liệu — render đúng loại ở PDF/HTML; c16 extLst chờ bước sau.
+- **PDF — painter riêng** (`CustomPaint` + PdfGraphics): column/bar/line/area/pie/donut/combo/waterfall/funnel vẽ bằng cùng bảng màu, title + legend bằng widget.
+- **HTML — SVG tự sinh**: `ChartService.renderSvg` inline cho cả 14 loại (không phụ thuộc thư viện ngoài); placeholder giữ lại `data-chart` để chỉnh sửa.
+- **UI**: nút **Chèn biểu đồ** trên thanh công cụ editor → dialog chọn loại/tiêu đề/nhãn/chuỗi giá trị/options + preview vẽ trực tiếp; danh sách "Biểu đồ trong slide" cho phép **chỉnh sửa chart đã chèn** (`replaceChartAt`) — cả 3 định dạng cập nhật tự động vì cùng đọc `data-chart`.
+
+### 🔬 Kiểm chứng PowerPoint thật (P8)
+- Deck sinh bởi đúng code path (văn bản + chart, và kết hợp cả SmartArt) mở **OK** trong PowerPoint COM (`OK slides=1`, không 0x80070570).
+- 3 lỗi package từng làm PowerPoint từ chối deck chart (đã sửa): (1) `[Content_Types].xml` phải đặt mọi `<Default>` trước `<Override>`; (2) thẻ đóng frame phải là `</p:nvGraphicFramePr>` (trước đây viết nhầm `</p:nvSpPr>` — XML mất cân bằng); (3) `chartN.xml` căn chỉnh theo template chart thật của Excel COM (không có `<c:tx>` series-name, axes có tick marks/autoZero, `invertIfNegative`, `gapWidth` 150, axIds 261087776/1675213520) — deck này sau đó mở thẳng không cần Repair.
+- Giới hạn trung thực: các loại nâng cao vẫn xuất dạng gần nhất (column/bar/pie) và `c16 extLst` chưa có; chưa kiểm chứng thao tác "Chỉnh dữ liệu trong Excel" bằng UI thật — chỉ xác nhận workbook nhúng hợp lệ cấu trúc và deck mở được.
+
+### 🧪 Kiểm thử
+- `test/chart_pipeline_test.dart` (11 test): model round-trip + detect blocks, PPTX package (chart1.xml well-formed, barChart/axId/legend, refs Sheet1!, srgbClr, numCache; xlsx ZIP hợp lệ chứa dữ liệu; rels→workbook; ContentTypes chart+xlsx; slide graphicFrame+rels; dedupe 1 part/2 shape), SVG 14 loại well-formed + primitive từng loại, HTML deck có SVG inline, PDF xuất slide có chart, insert/edit helpers (markup round-trip, replaceChartAt, out-of-range).
+
+### 🈺 Quốc tế hóa
+- 29 chuỗi mới vào .arb EN/VI: tên 14 loại biểu đồ + dialog (insert/edit/title/categories/series/legend/labels/stacked/preview/existing/inserted/updated…).
+
+---
+
+## [2.0.0-beta] - 2026-08-11 — Dev (2.0.0-beta M1) — Track 07: HTML deck tối ưu
+
+### ⚡ Tối ưu (đo trước/sau trên deck chuẩn 10 slide / 10 ảnh)
+- **CSS hiệu ứng theo nhu cầu** (`EffectPreviewService.generateEffectsCss`): chỉ sinh CSS cho hiệu ứng deck thực dùng, 1 class ngắn/hiệu ứng, keyframes trùng nhau phát 1 lần (các class khác alias) — phần CSS **9 757 B → 4 304 B (−55,9%)**.
+- **Ảnh lazy load**: base64 chuyển vào bản đồ `ghitaImages` trong JS + `<img data-src="iN" loading="lazy" decoding="async">`; player nạp `src` đúng lúc slide trở thành active, nguồn trùng chỉ giữ 1 entry (browser test: ảnh slide 2 được inject với lazy/async khi tới slide).
+- **Minify toàn tài liệu**: bộ minify string-aware (giữ nguyên chuỗi JS/attribute/data-URI, bỏ comment + khoảng trắng) — **tổng deck 25 394 B → 20 114 B (−20,8%)**, file xuất không còn dòng mới/comment.
+- **Cache deck** (giữ từ Track 01 P6): trình chiếu lần 2 không rebuild (test cache hits/misses).
+- **Player bản địa hoá**: chuỗi điều khiển (Trước/Sau/Toàn màn hình/ghi chú/tự chạy) theo `playerLocale` từ locale ứng dụng qua `ExportOptions.htmlPlayerLocale`.
+
+### 🧪 Kiểm thử
+- `test/html_deck_optimization_test.dart` (8 test): CSS subset+dedupe, lazy map 1/2 entry, minify không newline/comment + parse OK, đủ handler phím/auto/notes/progress, locale en/vi, deck 33 hiệu ứng đủ class + parse, cache deck.
+- **Chạy player thật trên Chrome** (file://): Home/Space/ArrowRight/ArrowLeft/PageDown/PageUp/End/f đều điều hướng đúng; progress bar 33/66/100%; auto-advance 2s tự chuyển slide; ảnh lazy được inject.
+
+### 🈺 Quốc tế hóa
+- Chuỗi player trong HTML deck bản địa hoá EN/VI theo locale xuất (không cần .arb mới — chuỗi nằm trong file HTML độc lập).
+
+---
+
+## [2.0.0-beta] - 2026-08-11 — Dev (2.0.0-beta M1) — Track 06: PDF export nâng cao
+
+### ✨ Tính năng mới
+- **Khổ giấy**: A4 / Letter (ngang) / Khớp slide — mặc định `matchSlide` giữ nguyên hành vi v1.6.3 (1 trang = đúng kích thước slide); chọn trong hộp thoại Xuất nâng cao khi format PDF.
+- **Lề trang + Scale-to-Fit**: 3 mức lề (Nhỏ 24pt / Tiêu chuẩn 48pt / Rộng 72pt) + "Vừa khít trang" — slide được thu theo tỉ lệ min((page−2m)/slideW, …), không phóng to để tránh vỡ chữ; trên khổ khớp slide giữ nguyên padding gốc 48/36.
+- **Nhúng font con (subset)**: font hệ thống nhúng theo glyph thực dùng (cơ chế subset của `package:pdf` 3.13) — file nhỏ hơn nhiều so với font đầy đủ và chữ tiếng Việt vẫn đúng trên máy không có Segoe UI (test: PDF < kích thước segoeui.ttf).
+- **Nén ảnh theo ExportQuality**: ảnh ≥512px trong PDF chuyển JPEG quality 60/75/85 theo mức 150/300/600 — PDF quality thấp nhỏ hơn rõ rệt.
+- **Slide ẩn**: thêm cờ `hidden` vào model Slide; PDF bỏ slide ẩn mặc định, bật "In cả slide ẩn" để giữ (phạm vi slide kế thừa sẵn `allSlides`/`selectedSlideIndices`).
+- **Metadata**: title (từ slide đầu), author/creator "Ghita PPT Converter", creation date vào Info dict.
+
+### 🧪 Kiểm thử
+- `test/pdf_export_advanced_test.dart` (7 test): MediaBox default 960×540 (y hệt v1.6.3), A4 842×595 / Letter 792×612, subset font + chữ VN (PDF < font đầy đủ), quality thấp < quality cao + DCTDecode ở 600px, hidden 2/3 trang theo cờ, metadata (title/author/creation) — đọc qua inflate object streams, `Slide.hidden` round-trip.
+
+### 🈺 Quốc tế hóa
+- 10 chuỗi mới vào .arb EN/VI: khổ giấy (3), lề (3), `pdfScaleToFit`, `includeHiddenSlides`, `pdfPaperSize`, `pdfMargins`.
+
+---
+
+## [2.0.0-beta] - 2026-08-11 — Dev (2.0.0-beta M1) — Track 05: Master & SlideLayout đa dạng
+
+### ✨ Tính năng mới
+- **9 `<p:sldLayout>` thật trong file PPTX** (trước chỉ có 1 blank): Title Slide, Title + Content, Section Header, Two Content, Comparison, Title Only, Content + Caption, Picture + Caption — mỗi layout có placeholder chuẩn OOXML (`ctrTitle`/`title`/`subTitle`/`body` idx 1–2/`pic`) với EMU geometry theo registry (`lib/services/ppt_layout_registry.dart`), `preserve="1"` và `clrMapOvr → masterClrMapping`.
+- **Gallery đầy đủ**: 1 `slideMaster1.xml` duy nhất (chuẩn PPT cho phép) giờ khai báo cả 9 layout trong `sldLayoutIdLst` (id 2147483649–57) + rels + ContentTypes đủ 9 Override — PowerPoint hiển thị đúng bộ layout trong Slide Layout gallery.
+- **Slide gắn đúng layout**: mỗi slide xuất ra trỏ tới layout theo `layoutType`; giá trị lạ/`standard`/thiếu → rơi về Blank (hành vi v1.6.3).
+- **Đồng bộ 2 chiều**: nút **Layout** mới trên thanh công cụ editor mở picker (có tên bản địa hoá) → `PresentationState.setSlideLayout()` ghi lại vào `Slide.layoutType` → lưu/tải project và xuất đều giữ lựa chọn.
+
+### 🧪 Kiểm thử
+- `test/ppt_layout_test.dart` (7 test): 9 layout + 9 rels + ContentTypes hợp lệ, placeholder đúng từng layout (title/body idx/pic, blank không ph), master liệt kê đủ 9 + rels theme rId10, gắn layout theo slide + fallback blank, deck legacy không layoutType giữ nguyên cấu trúc v1.6.3 + toàn bộ XML well-formed, `layoutTypeOf`/`layoutPartNumber`, round-trip `Slide.layoutType` qua save/load.
+
+### 🈺 Quốc tế hóa
+- 10 chuỗi mới vào .arb EN/VI: `layout` ("Bố cục"), tên 9 layout (`layoutBlank`…`layoutPictureAndCaption`), `layoutApplied` ("Đã áp dụng bố cục: {name}").
+
+---
+
+## [2.0.0-beta] - 2026-08-11 — Dev (2.0.0-beta M1) — Track 04: Theme & Font của file PPTX theo người dùng
+
+### ✨ Tính năng mới
+- **Theme của người dùng đi vào file PPTX**: `PptThemeSetting` (`lib/models/ppt_theme_setting.dart`) ánh xạ màu primary → `accent1`, accent → `accent2` của `a:clrScheme`, font đã chọn → `a:minorFont` của `a:fontScheme` (majorFont giữ "Calibri Light"); deck xuất qua hộp thoại Xuất nâng cao giờ mang đúng màu/font người dùng chọn trong màn Theme.
+- **Fallback an toàn**: font lạ được giữ nguyên tên (PowerPoint tự thay thế — đúng cơ chế mong muốn) nhưng được lọc control-char + XML-escape + giới hạn 64 ký tự; hex không hợp lệ rơi về màu Office — không bao giờ sinh `srgbClr` hỏng → không có hộp thoại "Sửa chữa file".
+- **Preview "File xuất sẽ dùng theme này"** trong màn Theme Settings: dải 8 ô màu (accent1–6, hlink, folHlink) + majorFont/minorFont theo đúng ánh xạ xuất file.
+
+### 🔒 Giữ nguyên hành vi cũ
+- Không truyền theme (hoặc preset Office Blue chưa chỉnh) → theme part **byte-identical với v1.6.3** (test regression đối chiếu literal cũ); theme mới chỉ áp dụng khi người dùng thực sự tùy chỉnh.
+- Slide layout blank không chứa palette cứng — màu/font chảy qua `clrMap` của slide master + theme part (P6).
+
+### 🧪 Kiểm thử
+- `test/ppt_theme_test.dart` (7 test): default byte-identical v1.6.3, theme custom có trong cả `theme1.xml`/`theme2.xml` (kèm notes master) + XML hợp lệ, dữ liệu thù địch bị chặn (hex lỗi → fallback, font chứa `<>&"` → XML-escaped), theme xuyên worker isolate và `ExportJobOptions`, layout không hardcode màu + master có clrMap, model round-trip.
+
+### 🈺 Quốc tế hóa
+- Chuỗi `exportThemePreview` ("File xuất sẽ dùng theme này" / "Exported files will use this theme") vào .arb EN/VI.
+
+---
+
+## [2.0.0-beta] - 2026-08-11 — Dev (2.0.0-beta M1) — Track 03: Ảnh pipeline — dedupe, nén lại, nhúng ảnh remote
+
+### ✨ Tính năng mới
+- **Nhúng ảnh remote (http/https)**: `HtmlImageLoader` giờ tải ảnh web trước khi xuất (`prefetchSlides` chạy trong `ExportJob` + worker isolate, giới hạn 4 luồng song song) với timeout 10s, giới hạn 10 MB, chỉ nhận `image/*` (chặn nội dung khác dù URL có đuôi .png); ảnh lỗi bị bỏ qua chứ không làm hỏng export.
+- **Cache 2 tầng cho ảnh remote**: bộ nhớ (LRU 64) + cache đĩa dưới `%LOCALAPPDATA%\GhitaPPT\image_cache` (mã hoá nội dung), tái sử dụng giữa nhiều lần xuất và nhiều phiên.
+
+### ⚡ Tối ưu
+- **Dedupe theo SHA-256 nội dung**: 1 ảnh dùng ở nhiều slide chỉ nhúng 1 lần trong `ppt/media/`, mọi slide vẫn khai báo rels riêng. Deck 10 slide cùng 1 ảnh 600×400: **185 798 B → 31 951 B (giảm 82,8%)** — vượt ngưỡng ≥50% của phase 8.
+- **PNG→JPEG chủ động**: ảnh PNG đục > 512 px chuyển sang JPEG (quality 70/80/90 theo ExportQuality 150/300/600) khi xuất PPTX; ảnh có kênh alpha và GIF giữ nguyên lossless; HTML/PDF giữ PNG.
+- **Xoay EXIF trước khi nhúng**: `package:image` không đọc EXIF (JPEG decoder tự bake, parser eXIf PNG bị tắt) nên loader tự đọc tag 0x0112 (APP1 JPEG + eXIf PNG, TIFF II/MM) và áp dụng biến đổi 2–8 cho PNG/GIF; JPEG do decoder xử lý sẵn.
+
+### 🛡️ An toàn
+- Ảnh lỗi/dirty (không giải mã được, quá 10 MB, HTTP lỗi, không phải ảnh) bị loại khỏi deck và ghi vào `<file xuất>.warnings.log` cạnh file kết quả.
+
+### 🧪 Kiểm thử
+- `test/html_image_pipeline_test.dart` (8 test): dedupe 1 media/10 slide + giảm ≥50%, tải remote qua HttpServer local + cache đĩa tái dùng sau `clearCaches`, chặn nội dung không phải ảnh, chặn >10 MB, PNG→JPEG (có/không alpha), EXIF orientation 6 (16×32 sau bake), warnings.log chỉ xuất hiện khi có ảnh lỗi.
+
+### 🈺 Quốc tế hóa
+- Thêm chuỗi `loadingRemoteImages` ("Đang tải ảnh từ web…") và `remoteImageLoadFailed` ("Không tải được ảnh {name}") vào .arb EN/VI.
+
+---
+
+## [2.0.0-beta] - 2026-08-11 — Dev (2.0.0-beta M1) — Track 02: Bố cục theo font metrics thật
+
+### ⚡ Tối ưu
+- **TextMetricsService** (`lib/services/text_metrics_service.dart`): bảng metrics thật của Calibri / Segoe UI / Arial — parse trực tiếp bảng `hhea`/`OS/2` từ font hệ thống Windows (ascender, descender, lineGap, xAvgCharWidth, capHeight), có bảng fallback sẵn cho máy không có font.
+- **Thay hằng số ước lượng** trong `estimatedHeight` (PPTX): bỏ 360.000 EMU/dòng và 400.000 EMU/hàng — text/list giờ đếm dòng gói theo độ rộng thật của run (phân lớp glyph: chữ thường / dấu cách 0.30em / dấu câu 0.35em) × chiều cao dòng true (typo line height), bảng tính theo từng ô + padding viền mặc định 0.05".
+- **Autofit "vừa khít"**: khi nội dung tràn slide, co chữ đệ quy 90%/lần (sàn 60%) như PowerPoint "Shrink text on overflow" — cờ `fitContent` trong hộp thoại Xuất nâng cao (mặc định bật), nối qua `ExportOptions` → isolate → `PPTGenerator.generatePPT`.
+- Sai số ước lượng chiều cao so với layout font thật (dart:ui TextPainter + Segoe UI): trung bình **47.5% → 10.3%**; tệ nhất **136.2% → 99.5%** (mẫu nằm đúng biên giới gói dòng có thể chênh ±1 dòng). Bảng chi tiết: `tool/benchmark_results_t02.md`.
+
+### 🧪 Kiểm thử
+- `test/text_metrics_test.dart` (6 test): bảng metrics hợp lệ, ước lượng wrap theo cỡ chữ, bảng theo ô dài nhất + insets, `estimateBlockHeight` thay hằng số cũ, autofit co chữ trong XML thật (giữ sàn 60%), path không-fit giữ nguyên cỡ chữ.
+- Benchmark sai số: `tool/metrics_benchmark_test.dart` (10 slide mẫu: chữ dài, tiếng Việt có dấu, đậm/nghiêng, bảng 5x4, cỡ chữ lớn/nhỏ).
+
+### 🈺 Quốc tế hóa
+- Thêm chuỗi `fitContent` ("Vừa khít với slide") + `fitContentDescription` vào .arb EN/VI.
+
+---
+
+## [2.0.0-beta] - 2026-08-11 — Dev (2.0.0-beta M1) — Track 01: Nền tảng Export Pipeline
+
+### ⚡ Tối ưu
+- **ExportJob chuẩn hóa** (`lib/services/export_job.dart` + `export_primitives.dart`): một input (slides + options), một progress callback báo % theo từng slide (0–100, đơn điệu) và một cancel token dùng chung cho cả 3 định dạng PPTX/PDF/HTML; hủy giữa chừng không để lại file dở dang.
+- **Cache parser chia sẻ** (`HtmlParseCache` trong `ppt_generator.dart`): HTML của slide được tokenize đúng 1 lần mỗi nội dung, cây block dùng chung cho PPTX lẫn PDF; notes, subtitle và biến thể bỏ h2 đầu lấy từ cùng một lần parse. Benchmark deck 20 slide: parse 58.1 ms → 2.1 ms (lần 1) → 0.0 ms (lần 2 cùng phiên).
+- **Nén ZIP theo loại entry**: text/XML dùng deflate mức cao nhất (9), media đã nén (JPEG/PNG) lưu dạng stored — tổng xuất PPTX 106 ms → 36.6 ms → 20.1 ms (lần 2), dung lượng 40 878 B → 38 956 B (−4,7%). Giữ nguyên fix UTF-8 byte-length.
+- **Progress qua isolate**: worker báo tiến trình % kèm slide đang xử lý theo job; `export_isolate.dart` chuyển tiếp về UI, hỗ trợ hủy (jobId + cancel message, worker bị dừng và sinh lại khi cần).
+- **Cache deck HTML trong phiên** (`HtmlExportService`): xuất lại deck trùng nội dung không rebuild — key bằng FNV-1a 64 trên dữ liệu đầu vào kèm kiểm tra toàn vẹn chuỗi.
+
+### 🧪 Kiểm thử
+- Widget/unit test mới: progress tăng đơn điệu + đủ mọi slide, cancel giữa chừng (không để lại file), parse-once của cache, entry media stored / text deflate trong ZIP, cache deck HTML, progress & cancel xuyên worker isolate.
+- Toàn bộ `flutter test` xanh (120 tests) — regression PPTX/PDF/HTML deck cũ vẫn mở được, nội dung không lệch.
+
+### 🈺 Quốc tế hóa
+- Thêm chuỗi `exportProgress` ("Đang xuất… x/y") và `exportCancel` ("Hủy xuất") vào .arb EN/VI.
+
+### 📊 Benchmark
+- Bảng đo trước/sau: `tool/benchmark_results_t01.md` (deck chuẩn 20 slide, 4 nội dung duy nhất, có ảnh PNG).
+
+---
+
 ## [1.6.3+2] - 2026-08-08 — Bản vá nhỏ: ổn định trình chiếu, tối ưu RAM và UI
 
 ### 🐛 Đã sửa

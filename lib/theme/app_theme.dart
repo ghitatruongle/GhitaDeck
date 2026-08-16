@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'office_colors.dart';
 
-/// GhitaPPT v2.0.0-beta — Microsoft Office 365 Theme System với dynamic colors
+/// GhitaPPT v2.0.0 — Microsoft Office 365 Theme System với dynamic colors
 class AppTheme {
   // Light Theme - supports dynamic colors
   static ThemeData lightTheme({

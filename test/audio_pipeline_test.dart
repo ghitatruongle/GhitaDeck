@@ -166,8 +166,8 @@ void main() {
     test('narration becomes an <audio> tag with hoisted payload', () async {
       final dir = await Directory.systemTemp.createTemp('ghita_t13_html_');
       try {
-        final slide = slideWithAudio(
-            loop: true, acrossSlides: true, autoplay: true);
+        final slide =
+            slideWithAudio(loop: true, acrossSlides: true, autoplay: true);
         final path = await HtmlExportService().exportToHtmlPath(
           [slide.toMap()],
           '${dir.path}/deck.html',
@@ -195,8 +195,8 @@ void main() {
         () async {
       final dir = await Directory.systemTemp.createTemp('ghita_t13_html2_');
       try {
-        final slide = slideWithAudio()
-            .copyWith(audioOptions: const {'hideIcon': true});
+        final slide =
+            slideWithAudio().copyWith(audioOptions: const {'hideIcon': true});
         final path = await HtmlExportService().exportToHtmlPath(
           [slide.toMap()],
           '${dir.path}/deck.html',
@@ -222,17 +222,19 @@ void main() {
         targetPath: bundlePath,
         slides: [slideWithAudio()],
         title: 'Audio project',
-        mediaFiles: [MapEntry('narration.m4a', Uint8List.fromList(fakeAudioBytes))],
+        mediaFiles: [
+          MapEntry('narration.m4a', Uint8List.fromList(fakeAudioBytes))
+        ],
       );
       expect(ok, isTrue);
 
       // The bundle must be self-contained: slides reference media/….
       final bytes = File(bundlePath).readAsBytesSync();
       final archive = ZipDecoder().decodeBytes(bytes);
-      expect(archive.files.any((e) => e.name == 'media/narration.m4a'),
-          isTrue);
-      final slidesJson =
-          utf8.decode(archive.files.firstWhere((e) => e.name == 'slides.json').content as List<int>);
+      expect(archive.files.any((e) => e.name == 'media/narration.m4a'), isTrue);
+      final slidesJson = utf8.decode(archive.files
+          .firstWhere((e) => e.name == 'slides.json')
+          .content as List<int>);
       expect(slidesJson, contains('"audioPath":"media/narration.m4a"'));
       expect(slidesJson, contains('"audioEmbedded":true'));
 
@@ -250,6 +252,100 @@ void main() {
         File(slides.single.audioPath).readAsBytesSync(),
         fakeAudioBytes,
       );
+    });
+
+    test('atomic overwrite leaves a valid latest bundle and no temp files',
+        () async {
+      final bundlePath = '${tmpDir.path}/atomic.ghita';
+      final service = ProjectBundleService();
+      expect(
+        await service.saveProjectBundle(
+          targetPath: bundlePath,
+          slides: [Slide(title: 'A', htmlContent: '<h1>A</h1>')],
+          title: 'First',
+        ),
+        isTrue,
+      );
+      expect(
+        await service.saveProjectBundle(
+          targetPath: bundlePath,
+          slides: [Slide(title: 'B', htmlContent: '<h1>B</h1>')],
+          title: 'Second',
+        ),
+        isTrue,
+      );
+      final loaded = await service.loadProjectBundle(
+        bundlePath,
+        extractDir: '${tmpDir.path}/atomic_extract',
+      );
+      expect(loaded?['manifest']['title'], 'Second');
+      final leftovers = tmpDir.listSync().whereType<File>().where(
+          (file) => file.path.endsWith('.tmp') || file.path.endsWith('.bak'));
+      expect(leftovers, isEmpty);
+    });
+
+    test('load sanitizes embedded HTML and protects manifest version',
+        () async {
+      final path = '${tmpDir.path}/sanitized.ghita';
+      final service = ProjectBundleService();
+      expect(
+        await service.saveProjectBundle(
+          targetPath: path,
+          slides: [
+            Slide(
+              title: 'Unsafe',
+              htmlContent:
+                  '<h1 onclick=alert(1)>Safe</h1><script>alert(2)</script>',
+            ),
+          ],
+          extraManifest: const {'version': 'attacker-controlled'},
+        ),
+        isTrue,
+      );
+      final loaded = await service.loadProjectBundle(
+        path,
+        extractDir: '${tmpDir.path}/sanitize_extract',
+      );
+      expect(loaded?['manifest']['version'], '2.0.0');
+      final slide = (loaded?['slides'] as List<Slide>).single;
+      expect(slide.htmlContent.toLowerCase(), isNot(contains('<script')));
+      expect(slide.htmlContent.toLowerCase(), isNot(contains('onclick')));
+    });
+
+    test('save and load reject unsafe embedded media paths', () async {
+      final service = ProjectBundleService();
+      expect(
+        await service.saveProjectBundle(
+          targetPath: '${tmpDir.path}/unsafe-save.ghita',
+          slides: [Slide(title: 'A', htmlContent: '<p>A</p>')],
+          mediaFiles: [
+            MapEntry('../escape.mp3', Uint8List.fromList(fakeAudioBytes)),
+          ],
+        ),
+        isFalse,
+      );
+
+      final archive = Archive()
+        ..addFile(ArchiveFile(
+          'slides.json',
+          2,
+          utf8.encode('[]'),
+        ))
+        ..addFile(ArchiveFile(
+          'media/../escape.mp3',
+          fakeAudioBytes.length,
+          fakeAudioBytes,
+        ));
+      final maliciousPath = '${tmpDir.path}/unsafe-load.ghita';
+      File(maliciousPath).writeAsBytesSync(ZipEncoder().encode(archive)!);
+      expect(
+        await service.loadProjectBundle(
+          maliciousPath,
+          extractDir: '${tmpDir.path}/unsafe_extract',
+        ),
+        isNull,
+      );
+      expect(File('${tmpDir.path}/escape.mp3').existsSync(), isFalse);
     });
   });
 }

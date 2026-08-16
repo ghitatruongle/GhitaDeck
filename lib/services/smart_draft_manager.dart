@@ -51,7 +51,7 @@ class SmartDraftManager {
       final file = await _getDraftFile();
       final slidesJson = jsonEncode(slides.map((s) => s.toMap()).toList());
       final draftData = <String, dynamic>{
-        'version': '2.0.0-beta',
+        'version': '2.0.0',
         'timestamp': DateTime.now().millisecondsSinceEpoch,
         'metadata': metadata ?? {},
       };

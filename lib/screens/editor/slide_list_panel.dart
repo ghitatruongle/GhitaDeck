@@ -148,7 +148,7 @@ class SlideListPanel extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Click + to add a slide',
+            context.l10n.clickToAddSlide,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.outline,
             ),

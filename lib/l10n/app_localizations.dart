@@ -4825,6 +4825,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Version restored.'**
   String get versionsRestored;
+
+  /// No description provided for @deckEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Deck is empty — add slides first.'**
+  String get deckEmpty;
+
+  /// No description provided for @summarySlideAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary slide added.'**
+  String get summarySlideAdded;
+
+  /// No description provided for @askDeckHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Which slide talks about budgets?'**
+  String get askDeckHint;
+
+  /// No description provided for @slideTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Slide title...'**
+  String get slideTitleHint;
+
+  /// No description provided for @slideUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Slide updated!'**
+  String get slideUpdated;
+
+  /// No description provided for @slideAddedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Slide added successfully!'**
+  String get slideAddedSuccess;
+
+  /// No description provided for @templateSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search templates...'**
+  String get templateSearchHint;
+
+  /// No description provided for @importSlides.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Slides'**
+  String get importSlides;
+
+  /// No description provided for @addAllSlides.
+  ///
+  /// In en, this message translates to:
+  /// **'Add All ({count})'**
+  String addAllSlides(Object count);
+
+  /// No description provided for @addedSlideNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Added \"{title}\" to slides!'**
+  String addedSlideNotice(Object title);
+
+  /// No description provided for @openGhitaFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Open .ghita file'**
+  String get openGhitaFile;
+
+  /// No description provided for @openedProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Opened: {project}'**
+  String openedProject(Object project);
+
+  /// No description provided for @moreTools.
+  ///
+  /// In en, this message translates to:
+  /// **'More tools'**
+  String get moreTools;
+
+  /// No description provided for @collapseTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse tools'**
+  String get collapseTools;
+
+  /// No description provided for @presenterBroadcastStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Broadcast over Wi-Fi'**
+  String get presenterBroadcastStart;
+
+  /// No description provided for @presenterBroadcastStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop Wi-Fi broadcast'**
+  String get presenterBroadcastStop;
+
+  /// No description provided for @presenterBroadcastCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy viewer link'**
+  String get presenterBroadcastCopy;
+
+  /// No description provided for @presenterBroadcastCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Secure viewer link copied to the clipboard.'**
+  String get presenterBroadcastCopied;
+
+  /// No description provided for @presenterBroadcastFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start the Wi-Fi broadcast server.'**
+  String get presenterBroadcastFailed;
+
+  /// No description provided for @presenterViewerCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} viewers'**
+  String presenterViewerCount(int count);
 }
 
 class _AppLocalizationsDelegate

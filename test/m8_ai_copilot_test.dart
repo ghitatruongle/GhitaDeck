@@ -113,9 +113,13 @@ void main() {
     });
 
     test('report lists every diff line', () {
-      final a = [slide('Same', '<h1>Same</h1>'), slide('Gone', '<h1>Gone</h1>')];
+      final a = [
+        slide('Same', '<h1>Same</h1>'),
+        slide('Gone', '<h1>Gone</h1>')
+      ];
       final b = [slide('Same', '<h1>Same</h1>'), slide('New', '<h1>New</h1>')];
-      final report = CompareMergeService.report(CompareMergeService.compare(a, b));
+      final report =
+          CompareMergeService.report(CompareMergeService.compare(a, b));
       expect(report, contains('same: Same'));
       expect(report, contains('changed'));
     });
@@ -153,8 +157,7 @@ void main() {
           '<h1>ok</h1><script>alert(1)</script><iframe src="x"></iframe>');
       expect(result.html, isNot(contains('<script')));
       expect(result.html, isNot(contains('<iframe')));
-      expect(result.warnings.any((w) => w.contains('dangerous_tag')),
-          isTrue);
+      expect(result.warnings.any((w) => w.contains('dangerous_tag')), isTrue);
       expect(result.warnings.first, contains('script'));
     });
 
@@ -163,6 +166,23 @@ void main() {
           '<p onclick="evil()">hi</p><a href="javascript:alert(1)">x</a>');
       expect(result.html, isNot(contains('onclick')));
       expect(result.html, isNot(contains('javascript:')));
+    });
+
+    test('guard catches single-quoted, unquoted and entity-obfuscated URLs',
+        () {
+      final result = AIHtmlGuard.guard(
+        "<a href='javascript:alert(1)'>a</a>"
+        '<img src=jav&#x61;script:alert(2) onerror=alert(3)>'
+        '<div style="background:url(javascript:alert(4))">x</div>',
+      );
+      expect(result.html.toLowerCase(), isNot(contains('javascript:')));
+      expect(result.html.toLowerCase(), isNot(contains('onerror')));
+    });
+
+    test('UTF-8 size cap never splits a surrogate pair', () {
+      final result = AIHtmlGuard.guard('😀' * 200, maxBytes: 101);
+      expect(AIHtmlGuard.utf8Length(result.html), lessThanOrEqualTo(101));
+      expect(() => utf8.encode(result.html), returnsNormally);
     });
 
     test('guard shrinks oversized HTML', () {
@@ -184,16 +204,16 @@ void main() {
   // -------------------------------------------------------------------------
   group('T53 AI pipeline', () {
     test('repairJsonArray balances truncated array', () {
-      final repaired =
-          AIPipelineService.repairJsonArray('[{"title":"a","html":"<h1>a</h1>"}');
+      final repaired = AIPipelineService.repairJsonArray(
+          '[{"title":"a","html":"<h1>a</h1>"}');
       expect(repaired, endsWith(']'));
       final decoded = jsonDecode(repaired) as List;
       expect(decoded, hasLength(1));
     });
 
     test('repairJsonArray handles code fences', () {
-      final repaired = AIPipelineService.repairJsonArray(
-          '```json\n[{"title":"a"}]\n```');
+      final repaired =
+          AIPipelineService.repairJsonArray('```json\n[{"title":"a"}]\n```');
       final decoded = jsonDecode(repaired) as List;
       expect(decoded, hasLength(1));
     });
@@ -206,8 +226,7 @@ void main() {
     });
 
     test('parseIncremental marks complete arrays', () {
-      final result =
-          AIPipelineService.parseIncremental('[{"title":"one"}]');
+      final result = AIPipelineService.parseIncremental('[{"title":"one"}]');
       expect(result.complete, isTrue);
       expect(result.slides, hasLength(1));
     });
@@ -223,8 +242,8 @@ void main() {
         for (var i = 0; i < 20; i++)
           {'role': 'user', 'content': 'message number $i ' * 20},
       ];
-      final result = AIPipelineService.trimHistoryByTokens(history,
-          maxTokens: 300);
+      final result =
+          AIPipelineService.trimHistoryByTokens(history, maxTokens: 300);
       expect(result.dropped, greaterThan(0));
       // The newest message survives (at the end, order preserved).
       expect(result.history.last['content'], contains('message number 19'));
@@ -248,8 +267,8 @@ void main() {
     test('long list suggests two-column layout', () {
       final html = '<h1>T</h1>${List.filled(8, '<li>item</li>').join()}';
       final suggestions = DesignerService.suggest(html);
-      expect(suggestions.firstWhere((s) => s.id == 'two_column_list'),
-          isNotNull);
+      expect(
+          suggestions.firstWhere((s) => s.id == 'two_column_list'), isNotNull);
     });
 
     test('numeric content suggests KPI cards', () {
@@ -295,10 +314,9 @@ void main() {
       expect(slides[0]['htmlContent'], contains('<h1>Intro</h1>'));
     });
 
-    test('slidesFromDocument chunks without headings, capped at maxSlides',
-        () {
-      final text = List.filled(60, 'This is a sentence about the topic.')
-          .join(' ');
+    test('slidesFromDocument chunks without headings, capped at maxSlides', () {
+      final text =
+          List.filled(60, 'This is a sentence about the topic.').join(' ');
       final slides = CopilotService.slidesFromDocument(text, maxSlides: 4);
       expect(slides.length, lessThanOrEqualTo(4));
       expect(slides.length, greaterThanOrEqualTo(2));
@@ -329,8 +347,8 @@ void main() {
   // -------------------------------------------------------------------------
   group('T56 DeckTranslationService', () {
     test('textNodes extracts text outside tags', () {
-      final nodes = DeckTranslationService.textNodes(
-          '<h1>Hello</h1><p><b>World</b></p>');
+      final nodes =
+          DeckTranslationService.textNodes('<h1>Hello</h1><p><b>World</b></p>');
       expect(nodes, hasLength(2));
       expect(nodes[0].text, 'Hello');
       expect(nodes[1].text, 'World');
@@ -346,8 +364,8 @@ void main() {
     });
 
     test('buildTranslationPrompt keeps structure instruction', () {
-      final prompt = DeckTranslationService.buildTranslationPrompt(
-          '<h1>x</h1>', 'vi');
+      final prompt =
+          DeckTranslationService.buildTranslationPrompt('<h1>x</h1>', 'vi');
       expect(prompt, contains('Tiếng Việt'));
       expect(prompt, contains('keep every tag'));
     });
@@ -367,8 +385,8 @@ void main() {
       expect(phrases, ['Xin chào']);
       expect(dictation.lastPhrase, 'Xin chào');
       // Auto-stop fires after the silence window.
-      await Future<void>.delayed(DictationService.silenceTimeout +
-          const Duration(milliseconds: 200));
+      await Future<void>.delayed(
+          DictationService.silenceTimeout + const Duration(milliseconds: 200));
       expect(dictation.listening, isFalse);
       dictation.dispose();
     });

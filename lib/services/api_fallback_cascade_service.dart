@@ -15,14 +15,16 @@ class APIFallbackCascadeService {
       };
 
       if (config.formatType == 'gemini') {
-        uri = Uri.parse(
-            '${config.baseUrl}/v1beta/models?key=${config.apiKey}');
+        final endpoint = AIProviderManager.buildEndpointUrl(config.baseUrl, '/v1beta/models');
+        uri = Uri.parse(endpoint).replace(queryParameters: {'key': config.apiKey});
       } else if (config.formatType == 'anthropic') {
-        uri = Uri.parse('${config.baseUrl}/v1/models');
+        final endpoint = AIProviderManager.buildEndpointUrl(config.baseUrl, '/v1/models');
+        uri = Uri.parse(endpoint);
         headers['x-api-key'] = config.apiKey;
         headers['anthropic-version'] = '2023-06-01';
       } else {
-        uri = Uri.parse('${config.baseUrl}/v1/models');
+        final endpoint = AIProviderManager.buildEndpointUrl(config.baseUrl, '/v1/models');
+        uri = Uri.parse(endpoint);
         if (config.apiKey.isNotEmpty) {
           headers['Authorization'] = 'Bearer ${config.apiKey}';
         }
@@ -34,7 +36,7 @@ class APIFallbackCascadeService {
 
       stopwatch.stop();
 
-      if (response.statusCode == 200 || response.statusCode == 404) {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
         return PingResult(
           isSuccess: true,
           latencyMs: stopwatch.elapsedMilliseconds,

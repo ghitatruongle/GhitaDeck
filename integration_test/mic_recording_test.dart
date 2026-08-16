@@ -16,24 +16,25 @@ void main() {
 
   testWidgets('record narration with the real microphone', (tester) async {
     final service = AudioRecordingService();
-    final ok = await service.startRecording(slideIndex: 0);
-    if (!ok) {
+    try {
+      final ok = await service.startRecording(slideIndex: 0);
+      expect(ok, isTrue,
+          reason: 'the release microphone gate must start a real recording');
+      await Future<void>.delayed(const Duration(seconds: 3));
+      final path = await service.stopRecording();
+      expect(path, isNotNull, reason: 'recording produced a file');
+      final m4a = await AudioRecordingService.transcodeToM4a(path!);
+      final durationMs = await VideoEmbedService.probeDurationMs(m4a);
       // ignore: avoid_print
-      print('MIC_START_FAILED');
-      return;
+      print(
+          'MIC_RECORDED: $m4a durationMs=$durationMs size=${File(m4a).lengthSync()}');
+      expect(durationMs, greaterThan(1000), reason: 'a ~3s narration');
+      // Artifact for the PPTX/HTML export verification.
+      final keep = File('D:/GhitaPPT/tool/real_mic.m4a');
+      keep.parent.createSync(recursive: true);
+      File(m4a).copySync(keep.path);
+    } finally {
+      service.dispose();
     }
-    await Future<void>.delayed(const Duration(seconds: 3));
-    final path = await service.stopRecording();
-    expect(path, isNotNull, reason: 'recording produced a file');
-    final m4a = await AudioRecordingService.transcodeToM4a(path!);
-    final durationMs = await VideoEmbedService.probeDurationMs(m4a);
-    // ignore: avoid_print
-    print('MIC_RECORDED: $m4a durationMs=$durationMs size=${File(m4a).lengthSync()}');
-    expect(durationMs, greaterThan(1000), reason: 'a ~3s narration');
-    // Artifact for the PPTX/HTML export verification.
-    final keep = File('D:/GhitaPPT/tool/real_mic.m4a');
-    keep.parent.createSync(recursive: true);
-    File(m4a).copySync(keep.path);
-    service.dispose();
   }, timeout: const Timeout(Duration(seconds: 60)));
 }

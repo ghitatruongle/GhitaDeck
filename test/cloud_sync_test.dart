@@ -17,8 +17,7 @@ void main() {
   group('T50 — CloudSyncService (WebDAV over fake client)', () {
     test('uploads a version and bumps the counter from PROPFIND listing',
         () async {
-      const propfindXml =
-          '<?xml version="1.0"?><d:multistatus xmlns:d="DAV:">'
+      const propfindXml = '<?xml version="1.0"?><d:multistatus xmlns:d="DAV:">'
           '<d:response><d:href>/files/user/ghita/p1/v1.ghita</d:href>'
           '<d:propstat><d:prop><d:getcontentlength>10</d:getcontentlength>'
           '<d:getlastmodified>2026-08-15T00:00:00Z</d:getlastmodified>'
@@ -44,9 +43,9 @@ void main() {
         return http.Response('', 404);
       });
 
-      final version =
-          await CloudSyncService.uploadVersion(creds, 'p1', [1, 2, 3],
-              client: mock);
+      final version = await CloudSyncService.uploadVersion(
+          creds, 'p1', [1, 2, 3],
+          client: mock);
       expect(version, 2, reason: 'requests: $seen');
     });
 
@@ -73,8 +72,7 @@ void main() {
     });
 
     test('lists versions from PROPFIND and sorts newest first', () async {
-      const xml =
-          '<?xml version="1.0"?><d:multistatus xmlns:d="DAV:">'
+      const xml = '<?xml version="1.0"?><d:multistatus xmlns:d="DAV:">'
           '<d:response><d:href>/files/user/ghita/p1/v1.ghita</d:href>'
           '<d:propstat><d:prop><d:getcontentlength>10</d:getcontentlength>'
           '</d:prop></d:propstat></d:response>'
@@ -104,15 +102,29 @@ void main() {
         }
         return http.Response('', 404);
       });
-      final ok = await CloudSyncService.deleteVersion(creds, 'p1', 5,
-          client: mock);
+      final ok =
+          await CloudSyncService.deleteVersion(creds, 'p1', 5, client: mock);
       expect(ok, isTrue);
       expect(deleted, isTrue);
     });
 
     test('sanitises project names and normalises base URLs', () {
-      expect(CloudSyncService.normalizedBaseUrl('https://x.com/'), 'https://x.com');
-      expect(CloudSyncService.normalizedBaseUrl('https://x.com'), 'https://x.com');
+      expect(CloudSyncService.normalizedBaseUrl('https://x.com/'),
+          'https://x.com');
+      expect(
+          CloudSyncService.normalizedBaseUrl('https://x.com'), 'https://x.com');
+      expect(
+        CloudSyncService.normalizedBaseUrl('http://localhost:8080/'),
+        'http://localhost:8080',
+      );
+      expect(
+        () => CloudSyncService.normalizedBaseUrl('http://x.com'),
+        throwsFormatException,
+      );
+      expect(
+        () => CloudSyncService.normalizedBaseUrl('https://user:pass@x.com'),
+        throwsFormatException,
+      );
     });
   });
 
@@ -127,8 +139,7 @@ void main() {
       mock;
       final versions = [
         for (var i = 1; i <= 25; i++)
-          RemoteVersion(
-              projectName: 'p', version: i, sizeBytes: 100),
+          RemoteVersion(projectName: 'p', version: i, sizeBytes: 100),
       ];
       // Trim with versions capped at maxVersions → nothing deleted.
       final capped = versions.take(VersionHistoryService.maxVersions).toList();
@@ -144,8 +155,7 @@ void main() {
     test('localIsNewer compares file timestamps', () {
       final dir = Directory.systemTemp.createTempSync('ghita_ver');
       addTearDown(() => dir.deleteSync(recursive: true));
-      final file = File('${dir.path}/latest.ghita')
-        ..writeAsBytesSync([1]);
+      final file = File('${dir.path}/latest.ghita')..writeAsBytesSync([1]);
       // Touch the file to now.
       final newer = VersionHistoryService.localIsNewer(
           file, DateTime.now().subtract(const Duration(hours: 1)));

@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:crypto/crypto.dart' as crypto;
 import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/export_options.dart';
@@ -317,16 +319,24 @@ class PresentationState with ChangeNotifier {
     // every slide's audio file is collected (deduped by name) and the slide
     // maps are rewritten to bundle-relative paths by the service.
     final mediaFiles = <MapEntry<String, Uint8List>>[];
-    final seen = <String>{};
+    final nameByDigest = <String, String>{};
+    final mediaPathNames = <String, String>{};
     for (final slide in _slides) {
       final path = slide.audioPath;
       if (path.isEmpty || path.startsWith('media/')) continue;
       try {
         final bytes = File(path).readAsBytesSync();
-        final name = path.split(RegExp(r'[\\/]')).last;
-        if (seen.add(name)) {
+        final digest = crypto.sha256.convert(bytes).toString();
+        var name = nameByDigest[digest];
+        if (name == null) {
+          final basename = p.basename(path);
+          final extension = p.extension(basename);
+          final stem = p.basenameWithoutExtension(basename);
+          name = '$stem-${digest.substring(0, 12)}$extension';
+          nameByDigest[digest] = name;
           mediaFiles.add(MapEntry(name, bytes));
         }
+        mediaPathNames[path] = name;
       } catch (_) {}
     }
     final success = await _bundleService.saveProjectBundle(
@@ -335,6 +345,7 @@ class PresentationState with ChangeNotifier {
       title: _presentationTitle,
       aspectRatio: _aspectRatio,
       mediaFiles: mediaFiles,
+      mediaPathNames: mediaPathNames,
     );
     if (success) {
       // PURGE temporary draft from sandbox after official save

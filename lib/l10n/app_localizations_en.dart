@@ -2463,4 +2463,74 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get versionsRestored => 'Version restored.';
+
+  @override
+  String get deckEmpty => 'Deck is empty — add slides first.';
+
+  @override
+  String get summarySlideAdded => 'Summary slide added.';
+
+  @override
+  String get askDeckHint => 'e.g. Which slide talks about budgets?';
+
+  @override
+  String get slideTitleHint => 'Slide title...';
+
+  @override
+  String get slideUpdated => 'Slide updated!';
+
+  @override
+  String get slideAddedSuccess => 'Slide added successfully!';
+
+  @override
+  String get templateSearchHint => 'Search templates...';
+
+  @override
+  String get importSlides => 'Import Slides';
+
+  @override
+  String addAllSlides(Object count) {
+    return 'Add All ($count)';
+  }
+
+  @override
+  String addedSlideNotice(Object title) {
+    return 'Added \"$title\" to slides!';
+  }
+
+  @override
+  String get openGhitaFile => 'Open .ghita file';
+
+  @override
+  String openedProject(Object project) {
+    return 'Opened: $project';
+  }
+
+  @override
+  String get moreTools => 'More tools';
+
+  @override
+  String get collapseTools => 'Collapse tools';
+
+  @override
+  String get presenterBroadcastStart => 'Broadcast over Wi-Fi';
+
+  @override
+  String get presenterBroadcastStop => 'Stop Wi-Fi broadcast';
+
+  @override
+  String get presenterBroadcastCopy => 'Copy viewer link';
+
+  @override
+  String get presenterBroadcastCopied =>
+      'Secure viewer link copied to the clipboard.';
+
+  @override
+  String get presenterBroadcastFailed =>
+      'Could not start the Wi-Fi broadcast server.';
+
+  @override
+  String presenterViewerCount(int count) {
+    return '$count viewers';
+  }
 }

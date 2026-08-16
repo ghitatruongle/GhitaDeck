@@ -793,7 +793,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                    content: Text('GhitaPPT v2.0.0-beta — Office 365 Style')),
+                    content: Text('GhitaPPT v2.0.0 — Office 365 Style')),
               );
             },
             isDark: isDark,

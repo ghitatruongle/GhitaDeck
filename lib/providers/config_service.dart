@@ -49,12 +49,12 @@ class ConfigService {
             loaded[idx] = p.copyWith(apiKey: storedKey);
           }
         }
-        return loaded;
+        if (loaded.isNotEmpty) return loaded;
       } catch (e) {
         debugPrint('Error loading providers: $e');
       }
     }
-    return [AIProviderConfig.defaultProvider()];
+    return AIProviderConfig.allDefaults();
   }
 
   // ---- API Key secure storage ----

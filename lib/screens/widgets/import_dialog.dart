@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../services/advanced_import_service.dart';
 import '../../models/slide.dart';
 import '../../utils/error_mapper.dart';
+import '../../l10n/l10n.dart';
 
 /// Import Dialog — v1.2.0 + Track 66 (M10)
 /// Import slides from advanced Markdown (tables/lists/code/images), web URL,
@@ -132,7 +133,7 @@ class _ImportDialogState extends State<ImportDialog> {
                 children: [
                   const Icon(Icons.file_upload),
                   const SizedBox(width: 12),
-                  Text('Nhập Slides', style: theme.textTheme.titleLarge),
+                  Text(context.l10n.importSlides, style: theme.textTheme.titleLarge),
                   const Spacer(),
                   IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
                 ],

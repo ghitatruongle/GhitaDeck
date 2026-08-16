@@ -966,7 +966,7 @@ class _RibbonToolbarState extends State<RibbonToolbar>
                 _RibbonButton(
                   icon: Icons.play_circle_outline,
                   label: 'From Current',
-                  compact: true,
+                  large: true,
                   onPressed: widget.onPresentFromCurrent,
                 ),
               ],
@@ -981,14 +981,7 @@ class _RibbonToolbarState extends State<RibbonToolbar>
                     _RibbonButton(
                       icon: Icons.slideshow,
                       label: 'Presenter View',
-                      compact: true,
-                      onPressed: widget.onPresenterView,
-                    ),
-                    _RibbonButton(
-                      icon: Icons.record_voice_over,
-                      label: 'Rehearse',
-                      compact: true,
-                      tooltip: 'Rehearse with presenter view',
+                      large: true,
                       onPressed: widget.onPresenterView,
                     ),
                     _RibbonButton(
@@ -1000,38 +993,6 @@ class _RibbonToolbarState extends State<RibbonToolbar>
                           ? () => _showTimingDialog(
                               context, widget.presentationState!)
                           : null,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const _RibbonDivider(),
-            _RibbonGroup(
-              label: 'Monitors',
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _RibbonButton(
-                      icon: Icons.monitor,
-                      label: 'Primary',
-                      compact: true,
-                      tooltip: 'Use primary display',
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Đang sử dụng màn hình chính'),
-                            duration: Duration(seconds: 1),
-                          ),
-                        );
-                      },
-                    ),
-                    _RibbonButton(
-                      icon: Icons.aspect_ratio,
-                      label: 'Presenter View',
-                      compact: true,
-                      tooltip: 'Toggle presenter view mode',
-                      onPressed: widget.onPresenterView,
                     ),
                   ],
                 ),
@@ -1074,13 +1035,6 @@ class _RibbonToolbarState extends State<RibbonToolbar>
                       compact: true,
                       tooltip: 'Slide sorter view',
                       onPressed: widget.onOpenSlideSorter,
-                    ),
-                    _RibbonButton(
-                      icon: Icons.auto_stories,
-                      label: 'Reading View',
-                      compact: true,
-                      tooltip: 'Read-only presentation view',
-                      onPressed: widget.onPresent,
                     ),
                   ],
                 ),

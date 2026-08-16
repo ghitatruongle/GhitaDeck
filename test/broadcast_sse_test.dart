@@ -8,11 +8,13 @@ import 'package:ghita_ppt_converter/services/wifi_broadcaster_service.dart';
 void main() {
   late WifiBroadcasterService svc;
   late String base;
+  late String accessToken;
 
   setUp(() async {
     svc = WifiBroadcasterService();
     final url = await svc.startBroadcaster(port: 8050, allowControl: true);
     expect(url, isNotNull);
+    accessToken = Uri.parse(url!).queryParameters['t']!;
     // Tests connect via loopback (the returned LAN IP may be unreachable in
     // the sandbox); the port is what matters.
     base = 'http://127.0.0.1:${svc.port}';
@@ -22,24 +24,37 @@ void main() {
 
   HttpClient directClient() => HttpClient()..findProxy = (_) => 'DIRECT';
 
-  Future<HttpClientResponse> get(String path) =>
-      directClient().getUrl(Uri.parse('$base$path')).then((r) => r.close());
+  Future<HttpClientResponse> get(String path) {
+    final separator = path.contains('?') ? '&' : '?';
+    return directClient()
+        .getUrl(Uri.parse('$base$path${separator}t=$accessToken'))
+        .then((r) => r.close());
+  }
+
+  test('endpoints reject requests without an access token', () async {
+    final resp = await directClient()
+        .getUrl(Uri.parse('$base/view'))
+        .then((r) => r.close());
+    expect(resp.statusCode, 401);
+  });
 
   /// Read SSE frames until the buffer contains [needle] (or timeout), then
   /// close. The server writes each frame as its own chunk, so accumulate.
   Future<String> readUntil(HttpClientResponse resp, String needle) async {
     final completer = Completer<String>();
     final sb = StringBuffer();
-    final sub = resp.listen((data) {
-      sb.write(utf8.decode(data));
-      if (sb.toString().contains(needle) && !completer.isCompleted) {
-        completer.complete(sb.toString());
-      }
-    }, onError: (_) {}, onDone: () {
-      if (!completer.isCompleted) completer.complete(sb.toString());
-    });
-    return completer.future
-        .timeout(const Duration(seconds: 3), onTimeout: () {
+    final sub = resp.listen(
+        (data) {
+          sb.write(utf8.decode(data));
+          if (sb.toString().contains(needle) && !completer.isCompleted) {
+            completer.complete(sb.toString());
+          }
+        },
+        onError: (_) {},
+        onDone: () {
+          if (!completer.isCompleted) completer.complete(sb.toString());
+        });
+    return completer.future.timeout(const Duration(seconds: 3), onTimeout: () {
       sub.cancel();
       resp.detachSocket();
       return sb.toString();
@@ -85,6 +100,7 @@ void main() {
     final updated = await sawUpdate.future
         .timeout(const Duration(seconds: 3), onTimeout: () => sb.toString());
     expect(updated, contains('"currentSlide":1'));
+    expect(updated, contains('"slideHtml":"<h1>s2</h1>"'));
     await sub.cancel();
     resp.detachSocket();
   });
@@ -106,9 +122,10 @@ void main() {
 
   test('control blocked when disabled', () async {
     final svc2 = WifiBroadcasterService();
-    await svc2.startBroadcaster(port: 8060, allowControl: false);
+    final url = await svc2.startBroadcaster(port: 8060, allowControl: false);
+    final token = Uri.parse(url!).queryParameters['t'];
     final resp = await directClient()
-        .getUrl(Uri.parse('http://127.0.0.1:8060/control?action=next'))
+        .getUrl(Uri.parse('http://127.0.0.1:8060/control?action=next&t=$token'))
         .then((r) => r.close());
     expect(resp.statusCode, 403);
     await svc2.stopBroadcaster();

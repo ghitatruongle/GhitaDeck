@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../providers/presentation_state.dart';
 import '../utils/error_mapper.dart';
+import '../l10n/l10n.dart';
 
 /// Recent Projects Screen — v1.2.0: FilePicker integration, project management
 class RecentProjectsScreen extends StatefulWidget {
@@ -175,7 +176,7 @@ class _RecentProjectsScreenState extends State<RecentProjectsScreen> {
                 const SizedBox(width: 12),
                 OutlinedButton.icon(
                   icon: const Icon(Icons.folder_open),
-                  label: const Text('Mở file .ghita'),
+                  label: Text(context.l10n.openGhitaFile),
                   onPressed: _openGhitaFile,
                 ),
                 const SizedBox(width: 8),
@@ -273,7 +274,7 @@ class _RecentProjectsScreenState extends State<RecentProjectsScreen> {
                               const SizedBox(height: 12),
                               OutlinedButton.icon(
                                 icon: const Icon(Icons.folder_open),
-                                label: const Text('Mở File .ghita'),
+                                label: Text(context.l10n.openGhitaFile),
                                 onPressed: _openGhitaFile,
                               ),
                             ],
@@ -308,7 +309,7 @@ class _RecentProjectsScreenState extends State<RecentProjectsScreen> {
                                       if (success) {
                                         _addToRecent(path, project['name'] as String);
                                         ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Đã mở: ${project['name']}')),
+                                          SnackBar(content: Text(context.l10n.openedProject(project['name'] ?? ''))),
                                         );
                                       } else {
                                         ScaffoldMessenger.of(context).showSnackBar(

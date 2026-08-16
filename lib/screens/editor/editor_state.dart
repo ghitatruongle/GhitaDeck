@@ -8,6 +8,7 @@ import '../../models/slide_template.dart';
 import '../../services/format_painter_service.dart';
 import '../../utils/effect_helpers.dart';
 import '../../utils/error_mapper.dart';
+import '../../l10n/l10n.dart';
 
 /// Centralized editor state for the PowerPoint-style editor.
 ///
@@ -379,14 +380,14 @@ class EditorState with ChangeNotifier {
         state.updateSlide(_editingIndex!, slide);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Slide updated!')),
+            SnackBar(content: Text(context.l10n.slideUpdated)),
           );
         }
       } else {
         state.addSlide(slide);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Slide added successfully!')),
+            SnackBar(content: Text(context.l10n.slideAddedSuccess)),
           );
         }
       }

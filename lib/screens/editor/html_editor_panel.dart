@@ -11,6 +11,7 @@ import '../../services/eyedropper_service.dart';
 import '../../services/wysiwyg_service.dart';
 import '../editor/editor_state.dart';
 import 'canvas_overlay.dart';
+import '../../l10n/l10n.dart';
 
 /// Central editor panel containing the HTML editor, WYSIWYG toolbar,
 /// and live preview — the main content editing area.
@@ -24,6 +25,8 @@ class HtmlEditorPanel extends StatefulWidget {
 class _HtmlEditorPanelState extends State<HtmlEditorPanel> {
   String? _selectedFreeTextId;
   String? _selectedShapeId;
+  double _splitRatio = 0.5;
+  int _viewMode = 0; // 0 = Split, 1 = Editor only, 2 = Preview only
 
   @override
   Widget build(BuildContext context) {
@@ -50,39 +53,23 @@ class _HtmlEditorPanelState extends State<HtmlEditorPanel> {
             formatPainterArmed: editorState.formatPainterArmed,
             onFormatPainter: () => _handleFormatPainter(context, editorState),
             onEyedropper: () => _handleEyedropper(context),
-            onPickColor: (hex) => _applySelectionFormat(
+            onPickColor: (hex) => _applySelectionFormat(editorState,
+                (h, s, e) => WysiwygService.colorSelection(h, s, e, hex)),
+            onListNumbered: () => _applySelectionFormat(
                 editorState,
-                (h, s, e) =>
-                    WysiwygService.colorSelection(h, s, e, hex)),
-            onListNumbered: () => _applySelectionFormat(editorState,
-                (h, s, e) => WysiwygService.wrapSelection(h, s, e, '<ol>\n  <li>', '</li>\n</ol>')),
-            onQuote: () => _applySelectionFormat(editorState,
-                (h, s, e) => WysiwygService.wrapSelection(h, s, e, '<blockquote>', '</blockquote>')),
+                (h, s, e) => WysiwygService.wrapSelection(
+                    h, s, e, '<ol>\n  <li>', '</li>\n</ol>')),
+            onQuote: () => _applySelectionFormat(
+                editorState,
+                (h, s, e) => WysiwygService.wrapSelection(
+                    h, s, e, '<blockquote>', '</blockquote>')),
           ),
 
           const Divider(height: 1),
 
-          // Editor + Preview
+          // Editor + Preview (with view modes & draggable splitter)
           Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // HTML editor
-                Expanded(
-                  flex: editorState.showPreview ? 3 : 1,
-                  child: _buildHtmlEditor(context, editorState, theme),
-                ),
-
-                // Live preview
-                if (editorState.showPreview) ...[
-                  VerticalDivider(width: 1, color: theme.dividerColor),
-                  Expanded(
-                    flex: 2,
-                    child: _buildLivePreview(context, editorState, theme),
-                  ),
-                ],
-              ],
-            ),
+            child: _buildMainContent(context, editorState, theme),
           ),
 
           // Notes panel (toggleable)
@@ -96,6 +83,74 @@ class _HtmlEditorPanelState extends State<HtmlEditorPanel> {
           _buildActionBar(context, editorState, theme),
         ],
       ),
+    );
+  }
+
+  Widget _buildMainContent(
+      BuildContext context, EditorState editorState, ThemeData theme) {
+    if (_viewMode == 1) {
+      return _buildHtmlEditor(context, editorState, theme);
+    }
+    if (_viewMode == 2) {
+      return _buildLivePreview(context, editorState, theme);
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final totalWidth = constraints.maxWidth;
+        if (totalWidth < 336) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: _buildHtmlEditor(context, editorState, theme)),
+              const Divider(height: 8, thickness: 1),
+              Expanded(child: _buildLivePreview(context, editorState, theme)),
+            ],
+          );
+        }
+        final leftWidth =
+            (totalWidth * _splitRatio).clamp(160.0, totalWidth - 168.0);
+        final rightWidth = totalWidth - leftWidth - 8.0;
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              width: leftWidth,
+              child: _buildHtmlEditor(context, editorState, theme),
+            ),
+            MouseRegion(
+              cursor: SystemMouseCursors.resizeColumn,
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onHorizontalDragUpdate: (details) {
+                  setState(() {
+                    final newLeft = leftWidth + details.delta.dx;
+                    _splitRatio = (newLeft / totalWidth).clamp(0.15, 0.85);
+                  });
+                },
+                child: Container(
+                  width: 8,
+                  color: Colors.transparent,
+                  child: Center(
+                    child: Container(
+                      width: 2,
+                      decoration: BoxDecoration(
+                        color: theme.dividerColor.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(1),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(
+              width: rightWidth,
+              child: _buildLivePreview(context, editorState, theme),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -138,15 +193,17 @@ class _HtmlEditorPanelState extends State<HtmlEditorPanel> {
               controller: editorState.titleController,
               style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
               decoration: InputDecoration(
-                hintText: 'Slide title...',
+                hintText: context.l10n.slideTitleHint,
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(vertical: 2),
                 prefixIcon: Padding(
                   padding: const EdgeInsets.only(right: 4),
-                  child: Icon(Icons.title, size: 16, color: theme.colorScheme.outline),
+                  child: Icon(Icons.title,
+                      size: 16, color: theme.colorScheme.outline),
                 ),
-                prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                prefixIconConstraints:
+                    const BoxConstraints(minWidth: 0, minHeight: 0),
               ),
             ),
           ),
@@ -154,18 +211,40 @@ class _HtmlEditorPanelState extends State<HtmlEditorPanel> {
           // Transition effect dropdown
           _buildEffectDropdown(context, editorState, theme),
 
-          const SizedBox(width: 4),
+          const SizedBox(width: 6),
 
-          // Preview toggle
-          IconButton(
-            icon: Icon(
-              editorState.showPreview ? Icons.visibility : Icons.visibility_off,
-              size: 18,
+          // View mode segmented button
+          SegmentedButton<int>(
+            segments: const [
+              ButtonSegment(
+                value: 0,
+                icon: Icon(Icons.vertical_split, size: 14),
+                tooltip: 'Chia đôi (Split View)',
+              ),
+              ButtonSegment(
+                value: 1,
+                icon: Icon(Icons.code, size: 14),
+                tooltip: 'Chỉ Code (Editor Only)',
+              ),
+              ButtonSegment(
+                value: 2,
+                icon: Icon(Icons.slideshow, size: 14),
+                tooltip: 'Chỉ Preview (16:9 Canvas)',
+              ),
+            ],
+            selected: {_viewMode},
+            onSelectionChanged: (set) {
+              if (set.isNotEmpty) {
+                setState(() => _viewMode = set.first);
+              }
+            },
+            style: const ButtonStyle(
+              visualDensity: VisualDensity.compact,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            tooltip: 'Toggle Preview',
-            onPressed: editorState.togglePreview,
-            visualDensity: VisualDensity.compact,
           ),
+
+          const SizedBox(width: 4),
 
           // Notes toggle
           IconButton(
@@ -192,19 +271,23 @@ class _HtmlEditorPanelState extends State<HtmlEditorPanel> {
       ),
       child: DropdownButton<SlideEffect?>(
         value: editorState.slideEffectOverride,
-        hint: Text('Effect', style: TextStyle(fontSize: 12, color: theme.colorScheme.outline)),
+        hint: Text('Effect',
+            style: TextStyle(fontSize: 12, color: theme.colorScheme.outline)),
         underline: const SizedBox.shrink(),
         isDense: true,
         style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurface),
         items: [
           DropdownMenuItem<SlideEffect?>(
             value: null,
-            child: Text('Deck effect', style: TextStyle(fontSize: 12, color: theme.colorScheme.outline)),
+            child: Text('Deck effect',
+                style:
+                    TextStyle(fontSize: 12, color: theme.colorScheme.outline)),
           ),
           ...SlideEffect.values.map(
             (e) => DropdownMenuItem<SlideEffect?>(
               value: e,
-              child: Text(EditorState.effectName(e), style: const TextStyle(fontSize: 12)),
+              child: Text(EditorState.effectName(e),
+                  style: const TextStyle(fontSize: 12)),
             ),
           ),
         ],
@@ -232,7 +315,8 @@ class _HtmlEditorPanelState extends State<HtmlEditorPanel> {
               height: 1.5,
             ),
             decoration: InputDecoration(
-              hintText: '<h1>Title</h1>\n<p>Content...</p>\n<ul>\n  <li>Item</li>\n</ul>',
+              hintText:
+                  '<h1>Title</h1>\n<p>Content...</p>\n<ul>\n  <li>Item</li>\n</ul>',
               hintStyle: TextStyle(
                 color: theme.colorScheme.outline.withValues(alpha: 0.5),
                 fontFamily: 'Consolas',
@@ -264,7 +348,8 @@ class _HtmlEditorPanelState extends State<HtmlEditorPanel> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+            color: theme.colorScheme.surfaceContainerHighest
+                .withValues(alpha: 0.2),
           ),
           child: Row(
             children: [
@@ -289,7 +374,8 @@ class _HtmlEditorPanelState extends State<HtmlEditorPanel> {
               ),
               Text(
                 '${(editorState.zoomLevel * 100).round()}%',
-                style: TextStyle(fontSize: 10, color: theme.colorScheme.outline),
+                style:
+                    TextStyle(fontSize: 10, color: theme.colorScheme.outline),
               ),
               IconButton(
                 icon: const Icon(Icons.add, size: 14),
@@ -335,12 +421,10 @@ class _HtmlEditorPanelState extends State<HtmlEditorPanel> {
     );
   }
 
-  Widget _buildCanvasOverlay(
-      BuildContext context, EditorState editorState) {
+  Widget _buildCanvasOverlay(BuildContext context, EditorState editorState) {
     final presentationState = Provider.of<PresentationState>(context);
     if (presentationState.slides.isEmpty) return const SizedBox.shrink();
-    final slide =
-        presentationState.slides[presentationState.currentSlideIndex];
+    final slide = presentationState.slides[presentationState.currentSlideIndex];
     final raw = slide.visualElements['freeTexts'];
     final elements = raw is List
         ? raw
@@ -441,8 +525,7 @@ class _HtmlEditorPanelState extends State<HtmlEditorPanel> {
 
   /// Track 21, P4: convert a scribble stroke (relative 0..1 canvas points)
   /// into a freeform DrawnShape and insert it.
-  void _insertScribbleShape(
-      PresentationState state, List<Offset2D> points) {
+  void _insertScribbleShape(PresentationState state, List<Offset2D> points) {
     // Normalise the stroke to its own bounding box.
     var minX = 1.0, minY = 1.0, maxX = 0.0, maxY = 0.0;
     for (final p in points) {
@@ -490,7 +573,9 @@ class _HtmlEditorPanelState extends State<HtmlEditorPanel> {
   ) {
     final controller = editorState.htmlController;
     final sel = controller.selection;
-    if (!sel.isValid || sel.isCollapsed || sel.start < 0 ||
+    if (!sel.isValid ||
+        sel.isCollapsed ||
+        sel.start < 0 ||
         sel.end > controller.text.length) {
       return;
     }
@@ -506,8 +591,7 @@ class _HtmlEditorPanelState extends State<HtmlEditorPanel> {
 
   /// onto the current text selection or the selected shape; otherwise it
   /// captures the current selection's format.
-  void _handleFormatPainter(
-      BuildContext context, EditorState editorState) {
+  void _handleFormatPainter(BuildContext context, EditorState editorState) {
     if (editorState.formatPainterArmed) {
       final pasted = editorState.pasteFormatToSelection();
       if (context.mounted) {
@@ -615,12 +699,11 @@ class _HtmlEditorPanelState extends State<HtmlEditorPanel> {
 
   Widget _buildActionBar(
       BuildContext context, EditorState editorState, ThemeData theme) {
-    final presentationState = Provider.of<PresentationState>(context);
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.15),
+        color:
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.15),
       ),
       child: Row(
         children: [
@@ -629,7 +712,8 @@ class _HtmlEditorPanelState extends State<HtmlEditorPanel> {
             onPressed: editorState.isLoading
                 ? null
                 : () => editorState.addOrUpdateSlide(context),
-            icon: Icon(editorState.isEditing ? Icons.save : Icons.add, size: 14),
+            icon:
+                Icon(editorState.isEditing ? Icons.save : Icons.add, size: 14),
             label: Text(
               editorState.isEditing ? 'Update' : 'Add Slide',
               style: const TextStyle(fontSize: 11),
@@ -652,31 +736,7 @@ class _HtmlEditorPanelState extends State<HtmlEditorPanel> {
               ),
             ),
           ],
-
           const Spacer(),
-
-          // Present button
-          if (presentationState.slides.isNotEmpty)
-            FilledButton.tonalIcon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => Scaffold(
-                      body: SlidePreview(
-                        title: presentationState.presentationTitle,
-                        html: presentationState.buildHtmlDeck(),
-                      ),
-                    ),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.play_arrow, size: 14),
-              label: const Text('Present', style: TextStyle(fontSize: 11)),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                visualDensity: VisualDensity.compact,
-              ),
-            ),
         ],
       ),
     );

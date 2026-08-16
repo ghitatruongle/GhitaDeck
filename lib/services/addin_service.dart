@@ -18,8 +18,17 @@ class AddinService {
   AddinService._();
 
   static const String _enabledKey = 'addins_enabled';
+  static const int _maxManifestBytes = 256 * 1024;
+  static const int _maxCodeLength = 64 * 1024;
+  static const Set<String> _allowedHandlers = {
+    'transform',
+    'kpi',
+    'append_title',
+  };
 
-  static final RegExp _remoteRe = RegExp(r'^(https?|ftp)://', caseSensitive: false);
+  static final RegExp _remoteRe =
+      RegExp(r'^(https?|ftp)://', caseSensitive: false);
+  static final RegExp _safeIdRe = RegExp(r'^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$');
 
   /// Directory containing add-in manifests. Overridable for tests.
   static Future<Directory> Function()? addinsDirOverride;
@@ -47,10 +56,14 @@ class AddinService {
       final result = <AddinInfo>[];
       for (final f in files) {
         try {
-          final map = jsonDecode(await f.readAsString()) as Map<String, dynamic>;
+          if (await f.length() > _maxManifestBytes) continue;
+          final map =
+              jsonDecode(await f.readAsString()) as Map<String, dynamic>;
           final source = (map['source'] ?? '').toString();
           if (source.isNotEmpty && _remoteRe.hasMatch(source)) continue;
-          final info = AddinInfo.fromJson(map, enabled: enabled.contains(map['id']));
+          if (!_isValidManifest(map)) continue;
+          final info =
+              AddinInfo.fromJson(map, enabled: enabled.contains(map['id']));
           result.add(info);
         } catch (e) {
           debugPrint('Add-in load error ${f.path}: $e');
@@ -68,6 +81,7 @@ class AddinService {
   }
 
   static Future<void> setEnabled(String id, bool enabled) async {
+    if (!_isSafeId(id)) return;
     final prefs = await SharedPreferences.getInstance();
     final list = prefs.getStringList(_enabledKey) ?? [];
     if (enabled && !list.contains(id)) list.add(id);
@@ -78,13 +92,15 @@ class AddinService {
   /// Install an add-in from a manifest JSON string (local only).
   static Future<AddinInfo?> installFromJson(String json) async {
     try {
+      if (utf8.encode(json).length > _maxManifestBytes) return null;
       final map = jsonDecode(json) as Map<String, dynamic>;
       final source = (map['source'] ?? '').toString();
       if (source.isNotEmpty && _remoteRe.hasMatch(source)) {
         return null; // remote add-ins blocked
       }
+      if (!_isValidManifest(map)) return null;
       final dir = await _addinsDir();
-      final id = (map['id'] ?? 'addin_${DateTime.now().millisecondsSinceEpoch}').toString();
+      final id = map['id'].toString();
       final file = File('${dir.path}/$id.addin');
       await file.writeAsString(json);
       return AddinInfo.fromJson(map);
@@ -94,10 +110,26 @@ class AddinService {
   }
 
   static Future<void> uninstall(String id) async {
+    if (!_isSafeId(id)) return;
     final dir = await _addinsDir();
     final file = File('${dir.path}/$id.addin');
     if (await file.exists()) await file.delete();
     await setEnabled(id, false);
+  }
+
+  static bool _isSafeId(String id) =>
+      id != '.' && id != '..' && _safeIdRe.hasMatch(id);
+
+  static bool _isValidManifest(Map<String, dynamic> map) {
+    final id = (map['id'] ?? '').toString();
+    final name = (map['name'] ?? '').toString().trim();
+    final handler = (map['handler'] ?? 'transform').toString();
+    final code = (map['code'] ?? '').toString();
+    return _isSafeId(id) &&
+        name.isNotEmpty &&
+        name.length <= 128 &&
+        _allowedHandlers.contains(handler) &&
+        code.length <= _maxCodeLength;
   }
 
   /// Run an add-in's handler against the deck.
@@ -118,8 +150,9 @@ class AddinService {
         case 'append_title':
           return _handlerAppendTitle(slides, addin.code);
         case 'transform':
-        default:
           return _handlerTransform(slides, addin.code);
+        default:
+          return (add: const [], update: const []);
       }
     } catch (e) {
       // T61 P3: turning off a broken add-in must not crash the app.
@@ -127,8 +160,6 @@ class AddinService {
       return (add: const [], update: const []);
     }
   }
-
-
   // Built-in sample handlers (the "SDK" — mẫu 2 ví dụ).
 
   static ({List<Map<String, dynamic>> add, List<Map<String, dynamic>> update})
@@ -151,7 +182,8 @@ class AddinService {
       add: [
         {
           'title': 'KPI Summary',
-          'htmlContent': '<h1>KPI Summary</h1><div class="kpi-grid">${kpis.join()}</div>',
+          'htmlContent':
+              '<h1>KPI Summary</h1><div class="kpi-grid">${kpis.join()}</div>',
         }
       ],
       update: const [],
@@ -159,8 +191,7 @@ class AddinService {
   }
 
   static ({List<Map<String, dynamic>> add, List<Map<String, dynamic>> update})
-      _handlerAppendTitle(
-          List<Map<String, dynamic>> slides, String code) {
+      _handlerAppendTitle(List<Map<String, dynamic>> slides, String code) {
     final suffix = code.trim().isEmpty ? ' — updated' : code;
     return (
       add: const [],
@@ -178,14 +209,14 @@ class AddinService {
   }
 
   static ({List<Map<String, dynamic>> add, List<Map<String, dynamic>> update})
-      _handlerTransform(
-          List<Map<String, dynamic>> slides, String code) {
+      _handlerTransform(List<Map<String, dynamic>> slides, String code) {
     // 'code' is a simple text transform: "upper" or "lower".
     final mode = code.trim().toLowerCase();
     if (mode != 'upper' && mode != 'lower') {
       return (add: const [], update: const []);
     }
-    String transform(String s) => mode == 'upper' ? s.toUpperCase() : s.toLowerCase();
+    String transform(String s) =>
+        mode == 'upper' ? s.toUpperCase() : s.toLowerCase();
     return (
       add: const [],
       update: [
@@ -197,8 +228,8 @@ class AddinService {
               'title': transform((slides[i]['title'] ?? '').toString()),
               'htmlContent': (slides[i]['htmlContent'] ?? '')
                   .toString()
-                  .replaceAllMapped(RegExp(r'>([^<]+)<'), (m) =>
-                      '>${transform(m.group(1)!)}<'),
+                  .replaceAllMapped(RegExp(r'>([^<]+)<'),
+                      (m) => '>${transform(m.group(1)!)}<'),
             }
           }
       ],
@@ -239,7 +270,8 @@ class AddinInfo {
         'code': code,
       };
 
-  factory AddinInfo.fromJson(Map<String, dynamic> map, {bool enabled = false}) =>
+  factory AddinInfo.fromJson(Map<String, dynamic> map,
+          {bool enabled = false}) =>
       AddinInfo(
         id: (map['id'] ?? '').toString(),
         name: (map['name'] ?? 'Add-in').toString(),

@@ -246,10 +246,26 @@ class _ProviderTypeStepState extends State<_ProviderTypeStep> {
   final List<Map<String, dynamic>> _providerTypes = [
     {
       'id': 'openai',
-      'name': 'OpenAI (GPT-4o / GPT-3.5)',
+      'name': 'OpenAI',
       'baseUrl': 'https://api.openai.com',
       'icon': Icons.smart_toy,
       'color': Colors.green,
+      'formatType': 'openai',
+    },
+    {
+      'id': 'deepseek',
+      'name': 'DeepSeek',
+      'baseUrl': 'https://api.deepseek.com/v1',
+      'icon': Icons.bolt,
+      'color': Colors.cyan,
+      'formatType': 'openai',
+    },
+    {
+      'id': 'siliconflow',
+      'name': 'SiliconFlow',
+      'baseUrl': 'https://api.siliconflow.cn/v1',
+      'icon': Icons.cloud_outlined,
+      'color': Colors.blueAccent,
       'formatType': 'openai',
     },
     {
@@ -274,6 +290,14 @@ class _ProviderTypeStepState extends State<_ProviderTypeStep> {
       'baseUrl': 'http://localhost:11434/v1',
       'icon': Icons.computer,
       'color': Colors.orange,
+      'formatType': 'openai',
+    },
+    {
+      'id': 'custom',
+      'name': 'Tùy chỉnh riêng (Custom)',
+      'baseUrl': 'https://api.example.com/v1',
+      'icon': Icons.tune,
+      'color': Colors.teal,
       'formatType': 'openai',
     },
   ];
@@ -436,12 +460,18 @@ class _ProviderTypeStepState extends State<_ProviderTypeStep> {
     switch (providerType) {
       case 'openai':
         return ['gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo', 'o1-preview'];
+      case 'deepseek':
+        return ['deepseek-chat', 'deepseek-reasoner'];
+      case 'siliconflow':
+        return ['deepseek-ai/DeepSeek-V3', 'deepseek-ai/DeepSeek-R1', 'Qwen/Qwen2.5-72B-Instruct'];
       case 'anthropic':
         return ['claude-3-5-sonnet-20240620', 'claude-3-opus-20240229', 'claude-3-haiku-20240307'];
       case 'gemini':
         return ['gemini-2.5-flash', 'gemini-2.5-pro'];
       case 'ollama':
         return ['llama3.1', 'mistral', 'qwen2.5'];
+      case 'custom':
+        return ['default-model'];
       default:
         return ['gpt-4o'];
     }
@@ -451,6 +481,10 @@ class _ProviderTypeStepState extends State<_ProviderTypeStep> {
     switch (providerType) {
       case 'openai':
         return 128000;
+      case 'deepseek':
+        return 64000;
+      case 'siliconflow':
+        return 64000;
       case 'anthropic':
         return 200000;
       case 'gemini':
@@ -458,7 +492,7 @@ class _ProviderTypeStepState extends State<_ProviderTypeStep> {
       case 'ollama':
         return 32768;
       default:
-        return 4096;
+        return 32768;
     }
   }
 }
@@ -646,13 +680,23 @@ class _ModelSelectionStep extends StatefulWidget {
 
 class _ModelSelectionStepState extends State<_ModelSelectionStep> {
   final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _modelController;
   final TextEditingController _temperatureController =
       TextEditingController(text: '0.7');
   final TextEditingController _maxTokensController =
       TextEditingController(text: '4096');
+  bool _isFetching = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _modelController =
+        TextEditingController(text: widget.providerConfig.selectedModel);
+  }
 
   @override
   void dispose() {
+    _modelController.dispose();
     _temperatureController.dispose();
     _maxTokensController.dispose();
     super.dispose();
@@ -661,7 +705,6 @@ class _ModelSelectionStepState extends State<_ModelSelectionStep> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // v1.2.0: Filter models by provider type
     final models = widget.providerConfig.availableModels.isNotEmpty
         ? widget.providerConfig.availableModels
         : _getModelsForProvider(widget.providerConfig.formatType);
@@ -676,7 +719,7 @@ class _ModelSelectionStepState extends State<_ModelSelectionStep> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Chọn model mong muốn và thiết lập tham số cho ${widget.providerConfig.name}',
+            'Chọn model từ gợi ý hoặc tự nhập model ID tùy ý cho ${widget.providerConfig.name}',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -686,50 +729,104 @@ class _ModelSelectionStepState extends State<_ModelSelectionStep> {
           Form(
             key: _formKey,
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Model selection — v1.2.0: provider-filtered models
-                DropdownButtonFormField<String>(
-                  initialValue: models.contains(widget.providerConfig.selectedModel)
-                      ? widget.providerConfig.selectedModel
-                      : (models.isNotEmpty ? models.first : null),
-                  decoration: const InputDecoration(
-                    labelText: 'Model',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.model_training),
+                // Custom model text input with suggestions
+                TextFormField(
+                  controller: _modelController,
+                  decoration: InputDecoration(
+                    labelText: 'Model ID (Gõ tùy ý hoặc chọn bên dưới)',
+                    hintText: 'Ví dụ: gpt-4o-mini, deepseek-chat, gemini-2.0-flash...',
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.model_training),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () => _modelController.clear(),
+                    ),
                   ),
-                  items: models
-                      .map((model) => DropdownMenuItem(
-                            value: model,
-                            child: Text(model),
-                          ))
-                      .toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      widget.onConfigUpdated(
-                        widget.providerConfig.copyWith(selectedModel: value),
-                      );
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Vui lòng nhập hoặc chọn Model';
                     }
+                    return null;
+                  },
+                  onChanged: (value) {
+                    widget.onConfigUpdated(
+                      widget.providerConfig.copyWith(selectedModel: value.trim()),
+                    );
                   },
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
+
+                // Quick model suggestion chips
+                if (models.isNotEmpty) ...[
+                  const Text('Gợi ý models:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: models.map((m) {
+                      final isSelected = _modelController.text == m;
+                      return ChoiceChip(
+                        label: Text(m, style: const TextStyle(fontSize: 12)),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          if (selected) {
+                            setState(() => _modelController.text = m);
+                            widget.onConfigUpdated(
+                              widget.providerConfig.copyWith(selectedModel: m),
+                            );
+                          }
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 12),
+                ],
 
                 // Fetch models button
                 OutlinedButton.icon(
-                  onPressed: () async {
-                    final manager = Provider.of<AIProviderManager>(context, listen: false);
-                    final config = widget.providerConfig;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Đang lấy danh sách models...')),
-                    );
-                    final fetched = await manager.fetchAvailableModels(config);
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Tìm thấy ${fetched.length} models')),
-                    );
-                  },
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Lấy models từ server'),
+                  onPressed: _isFetching
+                      ? null
+                      : () async {
+                          setState(() => _isFetching = true);
+                          final messenger = ScaffoldMessenger.of(context);
+                          final manager = Provider.of<AIProviderManager>(context, listen: false);
+                          final config = widget.providerConfig.copyWith(
+                            selectedModel: _modelController.text.trim(),
+                          );
+                          messenger.showSnackBar(
+                            const SnackBar(content: Text('Đang lấy danh sách models từ server...')),
+                          );
+                          final fetched = await manager.fetchAvailableModels(config);
+                          if (!mounted) return;
+                          setState(() => _isFetching = false);
+                          if (fetched.isNotEmpty) {
+                            widget.onConfigUpdated(
+                              widget.providerConfig.copyWith(
+                                availableModels: fetched,
+                                selectedModel: fetched.first,
+                              ),
+                            );
+                            setState(() => _modelController.text = fetched.first);
+                          }
+                          messenger.showSnackBar(
+                            SnackBar(
+                              content: Text(fetched.isNotEmpty
+                                  ? '✓ Tìm thấy ${fetched.length} models từ API'
+                                  : 'Không lấy được models tự động, bạn có thể tự gõ tên model ở trên'),
+                            ),
+                          );
+                        },
+                  icon: _isFetching
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.sync),
+                  label: const Text('Lấy danh sách models từ API'),
                 ),
 
                 const SizedBox(height: 16),

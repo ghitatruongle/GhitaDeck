@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
+import '../../l10n/l10n.dart';
 import '../../providers/presentation_state.dart';
 import '../../services/accessibility_service.dart';
 import '../../services/addin_service.dart';
@@ -42,9 +43,8 @@ class _FindReplaceDialogState extends State<FindReplaceDialog> {
     if (matches.isNotEmpty) _jump(matches.first.slideIndex);
   }
 
-  List<Map<String, dynamic>> _slideMaps() => [
-        for (final s in widget.state.slides) s.toMap()
-      ];
+  List<Map<String, dynamic>> _slideMaps() =>
+      [for (final s in widget.state.slides) s.toMap()];
 
   void _jump(int index) {
     if (index < 0 || index >= widget.state.slides.length) return;
@@ -118,7 +118,8 @@ class _FindReplaceDialogState extends State<FindReplaceDialog> {
                 children: [
                   Checkbox(
                     value: _caseSensitive,
-                    onChanged: (v) => setState(() => _caseSensitive = v ?? false),
+                    onChanged: (v) =>
+                        setState(() => _caseSensitive = v ?? false),
                   ),
                   const Text('Case sensitive', style: TextStyle(fontSize: 12)),
                   const SizedBox(width: 8),
@@ -234,7 +235,9 @@ class _SpellcheckDialogState extends State<SpellcheckDialog> {
                       itemCount: _errors.length,
                       itemBuilder: (context, i) {
                         final error = _errors[i];
-                        if (_ignores.contains(i)) return const SizedBox.shrink();
+                        if (_ignores.contains(i)) {
+                          return const SizedBox.shrink();
+                        }
                         final fix = _fixes[i];
                         return ListTile(
                           dense: true,
@@ -245,7 +248,8 @@ class _SpellcheckDialogState extends State<SpellcheckDialog> {
                                   decorationColor:
                                       Theme.of(context).colorScheme.error)),
                           subtitle: fix != null
-                              ? Text('→ $fix', style: const TextStyle(fontSize: 12))
+                              ? Text('→ $fix',
+                                  style: const TextStyle(fontSize: 12))
                               : (error.suggestions.isEmpty
                                   ? const Text('No suggestions',
                                       style: TextStyle(fontSize: 12))
@@ -260,13 +264,15 @@ class _SpellcheckDialogState extends State<SpellcheckDialog> {
                                   hint: const Text('Fix…'),
                                   items: [
                                     for (final s in error.suggestions)
-                                      DropdownMenuItem(value: s, child: Text(s)),
+                                      DropdownMenuItem(
+                                          value: s, child: Text(s)),
                                   ],
-                                  onChanged: (v) =>
-                                      setState(() => _fixes[i] = v ?? error.word),
+                                  onChanged: (v) => setState(
+                                      () => _fixes[i] = v ?? error.word),
                                 ),
                               TextButton(
-                                onPressed: () => setState(() => _ignores.add(i)),
+                                onPressed: () =>
+                                    setState(() => _ignores.add(i)),
                                 child: const Text('Ignore'),
                               ),
                             ],
@@ -317,8 +323,8 @@ class _SpellcheckDialogState extends State<SpellcheckDialog> {
         widget.state.currentSlideIndex, slide.copyWith(htmlContent: html));
     _scan();
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Applied fixes.')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Applied fixes.')));
     }
   }
 
@@ -333,8 +339,7 @@ class _SpellcheckDialogState extends State<SpellcheckDialog> {
     }
   }
 
-  String _replaceNthOccurrence(
-      String html, String word, String fix, int n) {
+  String _replaceNthOccurrence(String html, String word, String fix, int n) {
     var count = 0;
     return html.replaceAllMapped(word, (m) {
       if (count++ == n) return fix;
@@ -402,7 +407,8 @@ class _AccessibilityPanelState extends State<AccessibilityPanel> {
             const Divider(height: 1),
             Expanded(
               child: _issues.isEmpty
-                  ? const Center(child: Text('No accessibility issues found 🎉'))
+                  ? const Center(
+                      child: Text('No accessibility issues found 🎉'))
                   : ListView.builder(
                       itemCount: _issues.length,
                       itemBuilder: (context, i) {
@@ -432,12 +438,10 @@ class _AccessibilityPanelState extends State<AccessibilityPanel> {
                                     final slideMap = widget
                                         .state.slides[issue.slideIndex]
                                         .toMap();
-                                    final fixed =
-                                        AccessibilityService.applyFix(
-                                            slideMap, issue);
+                                    final fixed = AccessibilityService.applyFix(
+                                        slideMap, issue);
                                     widget.state.updateSlide(
-                                        issue.slideIndex,
-                                        Slide.fromMap(fixed));
+                                        issue.slideIndex, Slide.fromMap(fixed));
                                     _refresh();
                                   },
                                   child: const Text('Fix'),
@@ -523,8 +527,7 @@ class _AddinManagerDialogState extends State<AddinManagerDialog> {
           controller: controller,
           maxLines: 6,
           decoration: const InputDecoration(
-            hintText:
-                '{"id":"kpi","name":"KPI","handler":"kpi","code":""}',
+            hintText: '{"id":"kpi","name":"KPI","handler":"kpi","code":""}',
             border: OutlineInputBorder(),
           ),
         ),
@@ -540,7 +543,8 @@ class _AddinManagerDialogState extends State<AddinManagerDialog> {
     if (json == null || json.isEmpty || !mounted) return;
     final info = await AddinService.installFromJson(json);
     if (info == null) {
-      setState(() => _error = 'Invalid add-in JSON or remote sources are blocked.');
+      setState(
+          () => _error = 'Invalid add-in JSON or remote sources are blocked.');
       return;
     }
     await AddinService.setEnabled(info.id, true);
@@ -570,8 +574,8 @@ class _AddinManagerDialogState extends State<AddinManagerDialog> {
     }
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content:
-              Text('Ran "${addin.name}": +$added slide(s), ${result.update.length} update(s)')));
+          content: Text(
+              'Ran "${addin.name}": +$added slide(s), ${result.update.length} update(s)')));
     }
   }
 
@@ -645,7 +649,8 @@ class _AddinManagerDialogState extends State<AddinManagerDialog> {
                                     onPressed: () => _run(addin),
                                     child: const Text('Run')),
                               IconButton(
-                                icon: const Icon(Icons.delete_outline, size: 18),
+                                icon:
+                                    const Icon(Icons.delete_outline, size: 18),
                                 tooltip: 'Uninstall',
                                 onPressed: () async {
                                   await AddinService.uninstall(addin.id);
@@ -711,7 +716,7 @@ class _ReadAloudBarState extends State<ReadAloudBar> {
     await _service.speakDeck(slides,
         startIndex: widget.state.currentSlideIndex,
         rate: _rate,
-        locale: 'en');
+        locale: context.l10n.localeName.contains('vi') ? 'vi' : 'en');
     _uiTimer?.cancel();
     _uiTimer = null;
     if (mounted) setState(() => _listening = false);
@@ -737,7 +742,8 @@ class _ReadAloudBarState extends State<ReadAloudBar> {
                 size: 18, color: _listening ? Colors.red : null),
             const SizedBox(width: 8),
             if (_listening)
-              Text('Reading slide ${_service.currentIndex + 1}/${_service.totalSlides}',
+              Text(
+                  'Reading slide ${_service.currentIndex + 1}/${_service.totalSlides}',
                   style: const TextStyle(fontSize: 12))
             else
               const Text('Read aloud', style: TextStyle(fontSize: 12)),
@@ -775,5 +781,3 @@ class _ReadAloudBarState extends State<ReadAloudBar> {
     );
   }
 }
-
-

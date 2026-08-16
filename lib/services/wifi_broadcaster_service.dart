@@ -4,8 +4,7 @@ import 'dart:io';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 
-// ignore: unused_import
-import 'dart:async' as async;
+import 'ai_html_guard.dart';
 
 /// A live slide broadcast state (Track 40, OPT 33).
 class BroadcastState {
@@ -50,6 +49,7 @@ class WifiBroadcasterService {
   final List<StreamController<String>> _sseClients = [];
   final List<Socket> _sseSockets = [];
   final _random = Random.secure();
+  String? _accessToken;
   String? _oneTimeLink;
   DateTime? _oneTimeExpiry;
 
@@ -74,6 +74,8 @@ class WifiBroadcasterService {
     bool includeNotes = false,
   }) async {
     if (port > maxPort) return null; // guard: invalid range
+    await stopBroadcaster();
+    _accessToken = _newToken(32);
     _state = BroadcastState(
       currentSlide: _state.currentSlide,
       totalSlides: _state.totalSlides,
@@ -82,7 +84,6 @@ class WifiBroadcasterService {
     );
     for (int tryPort = port; tryPort <= maxPort; tryPort++) {
       try {
-        await stopBroadcaster();
         _serverPort = tryPort;
         _server = await HttpServer.bind(InternetAddress.anyIPv4, _serverPort);
         debugPrint('WifiBroadcasterService running on port $_serverPort');
@@ -99,9 +100,13 @@ class WifiBroadcasterService {
         );
         break;
       } catch (e) {
-        debugPrint('WifiBroadcasterService: Port $tryPort unavailable, trying next...');
+        debugPrint(
+            'WifiBroadcasterService: Port $tryPort unavailable, trying next...');
         _server = null;
-        if (tryPort == maxPort) return null;
+        if (tryPort == maxPort) {
+          _accessToken = null;
+          return null;
+        }
       }
     }
 
@@ -111,26 +116,30 @@ class WifiBroadcasterService {
       for (final interface in interfaces) {
         for (final addr in interface.addresses) {
           if (!addr.isLoopback) {
-            return 'http://${addr.address}:$_serverPort';
+            return 'http://${addr.address}:$_serverPort/view?t=$_accessToken';
           }
         }
       }
     } catch (e) {
       debugPrint('WifiBroadcasterService Error listing interfaces: $e');
     }
-    return 'http://localhost:$_serverPort';
+    return 'http://localhost:$_serverPort/view?t=$_accessToken';
   }
 
   /// Create a one-time link with an expiry (Track 40, P5). The token is
   /// single-use: the first request consumes it.
   String createOneTimeLink({Duration? expiresAfter}) {
-    final token = List<int>.generate(16, (_) => _random.nextInt(256))
-        .map((b) => b.toRadixString(16).padLeft(2, '0'))
-        .join();
+    final token = _newToken(32);
     _oneTimeLink = token;
-    _oneTimeExpiry = expiresAfter == null ? null : DateTime.now().add(expiresAfter);
+    _oneTimeExpiry =
+        expiresAfter == null ? null : DateTime.now().add(expiresAfter);
     return token;
   }
+
+  String _newToken(int byteLength) =>
+      List<int>.generate(byteLength, (_) => _random.nextInt(256))
+          .map((b) => b.toRadixString(16).padLeft(2, '0'))
+          .join();
 
   bool _consumeOneTimeToken(String token) {
     if (_oneTimeLink == null) return false;
@@ -145,14 +154,22 @@ class WifiBroadcasterService {
   }
 
   /// Updates the active slide and pushes it to every SSE client instantly.
-  void updateActiveSlide(String slideHtml, {int currentSlide = 0}) {
-    _currentSlideHtml = slideHtml;
+  void updateActiveSlide(
+    String slideHtml, {
+    int currentSlide = 0,
+    int? totalSlides,
+    String? notes,
+  }) {
+    _currentSlideHtml = AIHtmlGuard.guard(
+      slideHtml,
+      maxBytes: AIHtmlGuard.presentationMaxBytes,
+    ).html;
     _state = BroadcastState(
       currentSlide: currentSlide,
-      totalSlides: _state.totalSlides,
+      totalSlides: totalSlides ?? _state.totalSlides,
       allowControl: _state.allowControl,
       includeNotes: _state.includeNotes,
-      notes: _state.notes,
+      notes: notes ?? _state.notes,
     );
     _broadcast();
   }
@@ -163,8 +180,7 @@ class WifiBroadcasterService {
   }
 
   void _broadcast() {
-    final payload =
-        'data: ${jsonEncode(_state.toMap())}\n\n';
+    final payload = 'data: ${jsonEncode(_payloadMap())}\n\n';
     for (final client in List.of(_sseClients)) {
       try {
         client.add(payload);
@@ -174,6 +190,11 @@ class WifiBroadcasterService {
     }
     onViewerCountChanged?.call(_sseClients.length);
   }
+
+  Map<String, dynamic> _payloadMap() => {
+        ..._state.toMap(),
+        'slideHtml': _currentSlideHtml,
+      };
 
   /// Stops the broadcast server.
   Future<void> stopBroadcaster() async {
@@ -191,6 +212,7 @@ class WifiBroadcasterService {
     _sseSockets.clear();
     await _server?.close(force: true);
     _server = null;
+    _accessToken = null;
     debugPrint('WifiBroadcasterService stopped.');
   }
 
@@ -206,9 +228,21 @@ class WifiBroadcasterService {
         await request.response.close();
         return;
       }
+      _setAccessCookie(request.response);
       request.response.redirect(Uri.parse('/view'));
       await request.response.close();
       return;
+    }
+    if (!_isAuthorized(request)) {
+      request.response
+        ..statusCode = HttpStatus.unauthorized
+        ..headers.set(HttpHeaders.cacheControlHeader, 'no-store')
+        ..write('Authentication required');
+      await request.response.close();
+      return;
+    }
+    if (request.uri.queryParameters['t'] == _accessToken) {
+      _setAccessCookie(request.response);
     }
     // SSE stream (Track 40, OPT 33).
     if (path == '/events') {
@@ -252,7 +286,7 @@ class WifiBroadcasterService {
 
       // Immediate retry hint + current state so the first push is instant.
       enqueue('retry: 2000\n\n');
-      enqueue('data: ${jsonEncode(_state.toMap())}\n\n');
+      enqueue('data: ${jsonEncode(_payloadMap())}\n\n');
       final sub = controller.stream.listen(enqueue);
       socket.done.whenComplete(() {
         _sseSockets.remove(socket);
@@ -281,6 +315,13 @@ class WifiBroadcasterService {
     if (path == '/view' || path == '/') {
       request.response.headers.contentType =
           ContentType('text', 'html', charset: 'utf-8');
+      request.response.headers.set(
+        'Content-Security-Policy',
+        "default-src 'none'; connect-src 'self'; img-src data:; "
+            "font-src data:; style-src 'unsafe-inline'; "
+            "script-src 'unsafe-inline'",
+      );
+      request.response.headers.set(HttpHeaders.cacheControlHeader, 'no-store');
       final allowControlJs = _state.allowControl ? 'true' : 'false';
       final htmlPage = '''
 <!DOCTYPE html>
@@ -321,7 +362,10 @@ class WifiBroadcasterService {
   const es = new EventSource('/events');
   es.onmessage = (e) => {
     try {
-      const s = JSON.parse(e.data);
+       const s = JSON.parse(e.data);
+       if (typeof s.slideHtml === 'string') {
+         document.getElementById('slide').innerHTML = s.slideHtml;
+       }
       if (s.notes) { document.getElementById('notes').style.display = 'block';
                      document.getElementById('notes').textContent = s.notes; }
     } catch (err) {}
@@ -339,5 +383,24 @@ class WifiBroadcasterService {
       ..statusCode = 404
       ..write('not found');
     await request.response.close();
+  }
+
+  bool _isAuthorized(HttpRequest request) {
+    final accessToken = _accessToken;
+    if (accessToken == null) return false;
+    if (request.uri.queryParameters['t'] == accessToken) return true;
+    return request.cookies.any(
+      (cookie) =>
+          cookie.name == 'ghita_broadcast' && cookie.value == accessToken,
+    );
+  }
+
+  void _setAccessCookie(HttpResponse response) {
+    final accessToken = _accessToken;
+    if (accessToken == null) return;
+    response.headers.add(
+      HttpHeaders.setCookieHeader,
+      'ghita_broadcast=$accessToken; HttpOnly; SameSite=Strict; Path=/',
+    );
   }
 }

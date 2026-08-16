@@ -49,6 +49,7 @@ class _PresentScreenState extends State<PresentScreen> {
   int _currentSlide = 0;
   bool _inkInstalled = false;
   int _totalSlides = 0;
+  Timer? _slidePollTimer;
 
   @override
   void initState() {
@@ -58,14 +59,17 @@ class _PresentScreenState extends State<PresentScreen> {
         ? order.length
         : widget.state.slides.length;
     _totalSlides = count;
-    _currentSlide = widget.startSlide.clamp(0, count - 1).toInt();
+    _currentSlide =
+        count == 0 ? 0 : widget.startSlide.clamp(0, count - 1).toInt();
     _tools.addListener(_onToolsChanged);
     _init();
   }
 
   @override
   void dispose() {
+    _slidePollTimer?.cancel();
     _tools.removeListener(_onToolsChanged);
+    _tools.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -80,8 +84,8 @@ class _PresentScreenState extends State<PresentScreen> {
   Future<void> _syncToolToDeck() async {
     if (!_ready || !_inkInstalled) return;
     try {
-      await _controller.executeScript(PresentDeckCommands.setInkTool(
-          _tools.tool == PresentTool.pen
+      await _controller.executeScript(
+          PresentDeckCommands.setInkTool(_tools.tool == PresentTool.pen
               ? 'pen'
               : _tools.tool == PresentTool.highlighter
                   ? 'highlighter'
@@ -93,11 +97,15 @@ class _PresentScreenState extends State<PresentScreen> {
           : _tools.settings.penColor.cssHex;
       await _controller.executeScript(PresentDeckCommands.setInkColor(color));
       await _controller.executeScript(PresentDeckCommands.setInkWidth(
-          _tools.tool == PresentTool.highlighter ? 14.0 : _tools.settings.penWidth));
+          _tools.tool == PresentTool.highlighter
+              ? 14.0
+              : _tools.settings.penWidth));
       if (_tools.blackScreen) {
-        await _controller.executeScript(PresentDeckCommands.setScreen('#000000'));
+        await _controller
+            .executeScript(PresentDeckCommands.setScreen('#000000'));
       } else if (_tools.whiteScreen) {
-        await _controller.executeScript(PresentDeckCommands.setScreen('#FFFFFF'));
+        await _controller
+            .executeScript(PresentDeckCommands.setScreen('#FFFFFF'));
       } else {
         await _controller.executeScript(PresentDeckCommands.setScreen(''));
       }
@@ -151,24 +159,31 @@ class _PresentScreenState extends State<PresentScreen> {
     var out = html;
     if (show.showWithoutNarration) {
       out = out.replaceAll(RegExp(r'<audio\b[^>]*>[\s\S]*?</audio>'), '');
-      out = out.replaceAll(
-          RegExp(r'<audio\b[^>]*/>', caseSensitive: false), '');
+      out =
+          out.replaceAll(RegExp(r'<audio\b[^>]*/>', caseSensitive: false), '');
     }
     if (show.showWithoutAnimation) {
       // Remove ghita-anim-* CSS blocks and inline animation styles.
       out = out.replaceAll(
           RegExp(r'\.ghita-anim-[^{]*\{[^}]*\}', caseSensitive: false), '');
-      out = out.replaceAll(RegExp(r'animation-[a-z]+:\s*[^;]+;',
-          caseSensitive: false), '');
+      out = out.replaceAll(
+          RegExp(r'animation-[a-z]+:\s*[^;]+;', caseSensitive: false), '');
     }
     return out;
   }
 
   void _startSlidePoll() {
-    Timer.periodic(const Duration(milliseconds: 700), (_) async {
+    _slidePollTimer?.cancel();
+    _slidePollTimer =
+        Timer.periodic(const Duration(milliseconds: 700), (_) async {
+      if (!mounted) return;
       try {
-        final idx = await _controller.executeScript(PresentDeckCommands.getCurrentSlideExpr());
-        if (idx is int && idx != _currentSlide && idx >= 0 && idx < _totalSlides) {
+        final idx = await _controller
+            .executeScript(PresentDeckCommands.getCurrentSlideExpr());
+        if (idx is int &&
+            idx != _currentSlide &&
+            idx >= 0 &&
+            idx < _totalSlides) {
           _currentSlide = idx;
           if (mounted) setState(() {});
         }
@@ -242,7 +257,8 @@ class _PresentScreenState extends State<PresentScreen> {
                 ),
                 alignment: Alignment.center,
                 child: Text('${i + 1}',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.w600)),
               ),
             ),
           ),
@@ -311,7 +327,8 @@ class _PresentScreenState extends State<PresentScreen> {
                   right: 0,
                   child: Container(
                     color: const Color(0xFF5B2A1A),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Text(
                       l10n.webviewRuntimeMissing,
                       style: const TextStyle(color: Colors.white, fontSize: 12),
@@ -324,9 +341,7 @@ class _PresentScreenState extends State<PresentScreen> {
                   child: GestureDetector(
                     onTap: () => _tools.clearScreens(),
                     child: ColoredBox(
-                      color: _tools.blackScreen
-                          ? Colors.black
-                          : Colors.white,
+                      color: _tools.blackScreen ? Colors.black : Colors.white,
                     ),
                   ),
                 ),
@@ -347,7 +362,8 @@ class _PresentScreenState extends State<PresentScreen> {
                 child: Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.help_outline, color: Colors.white, size: 20),
+                      icon: const Icon(Icons.help_outline,
+                          color: Colors.white, size: 20),
                       tooltip: l10n.presentHelp,
                       onPressed: () => setState(() => _showHelp = !_showHelp),
                     ),
@@ -359,7 +375,8 @@ class _PresentScreenState extends State<PresentScreen> {
                       style: FilledButton.styleFrom(
                         backgroundColor: Colors.black54,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
                         visualDensity: VisualDensity.compact,
                       ),
                     ),
@@ -371,7 +388,8 @@ class _PresentScreenState extends State<PresentScreen> {
                 top: 14,
                 left: 12,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.black54,
                     borderRadius: BorderRadius.circular(4),
@@ -525,7 +543,8 @@ class _PresentScreenState extends State<PresentScreen> {
                       child: Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
                               color: const Color(0xFF2A3A5A),
                               borderRadius: BorderRadius.circular(4),
@@ -547,7 +566,8 @@ class _PresentScreenState extends State<PresentScreen> {
                     ),
                   const SizedBox(height: 8),
                   Text(l10n.presentHelpClose,
-                      style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                      style:
+                          TextStyle(color: Colors.grey.shade500, fontSize: 12)),
                 ],
               ),
             ),
@@ -611,7 +631,8 @@ class _MagnifierPainter extends CustomPainter {
   final bool visible;
   final double zoom;
 
-  _MagnifierPainter({required this.pos, required this.visible, required this.zoom});
+  _MagnifierPainter(
+      {required this.pos, required this.visible, required this.zoom});
 
   @override
   void paint(Canvas canvas, Size size) {

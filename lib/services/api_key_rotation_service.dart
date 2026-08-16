@@ -1,4 +1,5 @@
 import 'package:http/http.dart' as http;
+import '../providers/ai_provider_manager.dart';
 
 /// Validates API keys against provider endpoints.
 /// Supports OpenAI-compatible, Anthropic, and Gemini format types.
@@ -11,17 +12,19 @@ class APIKeyRotationService {
       Uri url;
 
       if (providerId.contains('gemini') || providerId.contains('google')) {
-        // Gemini uses key as query parameter, not Bearer token
-        url = Uri.parse('$baseUrl/v1beta/models?key=$apiKey');
+        final endpoint = AIProviderManager.buildEndpointUrl(baseUrl, '/v1beta/models');
+        url = Uri.parse(endpoint).replace(queryParameters: {'key': apiKey});
       } else if (providerId.contains('anthropic')) {
-        url = Uri.parse('$baseUrl/v1/models');
+        final endpoint = AIProviderManager.buildEndpointUrl(baseUrl, '/v1/models');
+        url = Uri.parse(endpoint);
         if (apiKey.isNotEmpty) {
           headers['x-api-key'] = apiKey;
           headers['anthropic-version'] = '2023-06-01';
         }
       } else {
-        // OpenAI-compatible (OpenAI, Ollama, custom endpoints)
-        url = Uri.parse('$baseUrl/v1/models');
+        // OpenAI-compatible (OpenAI, Ollama, NVIDIA, custom endpoints)
+        final endpoint = AIProviderManager.buildEndpointUrl(baseUrl, '/v1/models');
+        url = Uri.parse(endpoint);
         if (apiKey.isNotEmpty) {
           headers['Authorization'] = 'Bearer $apiKey';
         }
@@ -50,15 +53,18 @@ class APIKeyRotationService {
       Uri url;
 
       if (providerId.contains('gemini') || providerId.contains('google')) {
-        url = Uri.parse('$baseUrl/v1beta/models?key=$apiKey');
+        final endpoint = AIProviderManager.buildEndpointUrl(baseUrl, '/v1beta/models');
+        url = Uri.parse(endpoint).replace(queryParameters: {'key': apiKey});
       } else if (providerId.contains('anthropic')) {
-        url = Uri.parse('$baseUrl/v1/models');
+        final endpoint = AIProviderManager.buildEndpointUrl(baseUrl, '/v1/models');
+        url = Uri.parse(endpoint);
         if (apiKey.isNotEmpty) {
           headers['x-api-key'] = apiKey;
           headers['anthropic-version'] = '2023-06-01';
         }
       } else {
-        url = Uri.parse('$baseUrl/v1/models');
+        final endpoint = AIProviderManager.buildEndpointUrl(baseUrl, '/v1/models');
+        url = Uri.parse(endpoint);
         if (apiKey.isNotEmpty) {
           headers['Authorization'] = 'Bearer $apiKey';
         }

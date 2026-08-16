@@ -910,5 +910,31 @@
   "outlineView": "Chế độ dàn ý",
   "spellcheck": "Kiểm tra chính tả",
   "templateOnline": "Template trực tuyến",
-  "versionsRestored": "Đã khôi phục phiên bản."
+  "versionsRestored": "Đã khôi phục phiên bản.",
+  "deckEmpty": "Bài thuyết trình đang trống — hãy thêm slide trước.",
+  "summarySlideAdded": "Đã thêm slide tóm tắt.",
+  "askDeckHint": "Ví dụ: Slide nào nói về ngân sách?",
+  "slideTitleHint": "Tiêu đề slide...",
+  "clickToAddSlide": "Bấm + để thêm slide mới",
+  "slideUpdated": "Đã cập nhật slide!",
+  "slideAddedSuccess": "Đã thêm slide thành công!",
+  "templateSearchHint": "Tìm kiếm template...",
+  "importSlides": "Nhập Slides",
+  "addAllSlides": "Thêm tất cả ({count})",
+  "addedSlideNotice": "Đã thêm \"{title}\" vào bài thuyết trình!",
+  "openGhitaFile": "Mở file .ghita",
+  "openedProject": "Đã mở: {project}",
+  "moreTools": "Công cụ khác",
+  "collapseTools": "Thu gọn công cụ",
+  "presenterBroadcastStart": "Phát qua Wi-Fi",
+  "presenterBroadcastStop": "Dừng phát qua Wi-Fi",
+  "presenterBroadcastCopy": "Sao chép liên kết người xem",
+  "presenterBroadcastCopied": "Đã sao chép liên kết xem bảo mật vào clipboard.",
+  "presenterBroadcastFailed": "Không thể khởi động máy chủ phát qua Wi-Fi.",
+  "presenterViewerCount": "{count} người xem",
+  "@presenterViewerCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  }
 }

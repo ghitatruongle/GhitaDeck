@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/template_service.dart';
 import '../../models/slide_template.dart';
+import '../l10n/l10n.dart';
 
 /// Template Studio — v1.2.0: Dynamic grid from TemplateService (20 templates, 6 categories)
 class TemplateStudioScreen extends StatefulWidget {
@@ -97,7 +98,7 @@ class _TemplateStudioScreenState extends State<TemplateStudioScreen> {
             TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Tìm kiếm template...',
+                hintText: context.l10n.templateSearchHint,
                 prefixIcon: const Icon(Icons.search),
                 isDense: true,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

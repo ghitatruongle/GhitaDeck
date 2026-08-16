@@ -27,6 +27,7 @@ import 'effect_preview_service.dart';
 import 'export_primitives.dart';
 import 'html_image_loader.dart';
 import 'ppt_generator.dart';
+import 'ai_html_guard.dart';
 
 class HtmlExportService {
   static const String _defaultFileName = 'presentation';
@@ -1106,7 +1107,9 @@ class HtmlExportService {
     required Map<String, String> lazyVideos,
     required Map<String, String> videoIds,
   }) {
-    final document = html_parser.parse(rawHtml);
+    final document = html_parser.parse(AIHtmlGuard.guard(rawHtml,
+            maxBytes: AIHtmlGuard.presentationMaxBytes)
+        .html);
     final body = document.body;
     if (body == null) return '';
 

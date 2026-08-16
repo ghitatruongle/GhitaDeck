@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ghita_ppt_converter/services/accessibility_service.dart';
 import 'package:ghita_ppt_converter/services/addin_service.dart';
@@ -34,12 +37,12 @@ void main() {
     });
 
     test('Vietnamese dictionary accepts common words', () {
-      final errors = SpellcheckService.checkText('Xin chào các bạn', locale: 'vi');
+      final errors =
+          SpellcheckService.checkText('Xin chào các bạn', locale: 'vi');
       expect(errors, isEmpty);
     });
 
-    test('grammarCheck catches double spaces and lowercase sentence start',
-        () {
+    test('grammarCheck catches double spaces and lowercase sentence start', () {
       final issues = SpellcheckService.grammarCheck('hello  world. next one');
       final rules = issues.map((i) => i.rule).toList();
       expect(rules, contains('double_space'));
@@ -110,8 +113,8 @@ void main() {
     });
 
     test('replaceAll reports zero when no match', () {
-      final result = SearchService.replaceAll(
-          [slide('A', '<p>x</p>')], 'zzz', 'yyy');
+      final result =
+          SearchService.replaceAll([slide('A', '<p>x</p>')], 'zzz', 'yyy');
       expect(result.count, 0);
     });
   });
@@ -140,14 +143,12 @@ void main() {
             '<h1 style="color:#FFD700;background:#FFFFFF">gold on white</h1>',
       };
       final issues = AccessibilityService.checkSlide(slide);
-      final contrast =
-          issues.firstWhere((i) => i.type == 'contrast');
+      final contrast = issues.firstWhere((i) => i.type == 'contrast');
       expect(contrast.suggestedColor, isNotNull);
       // Applying the fix produces a compliant pair.
       final fixed = AccessibilityService.applyFix(slide, contrast);
       final fixedIssues = AccessibilityService.checkSlide(fixed);
-      expect(
-          fixedIssues.any((i) => i.type == 'contrast'), isFalse);
+      expect(fixedIssues.any((i) => i.type == 'contrast'), isFalse);
     });
 
     test('applyFix adds alt text derived from title', () {
@@ -240,8 +241,7 @@ void main() {
 
     test('add custom tab and remove via model helpers', () {
       final tabs = [...RibbonConfigService.defaultTabs()];
-      const custom = RibbonTab(
-          id: 'custom', name: 'Mine', groups: []);
+      const custom = RibbonTab(id: 'custom', name: 'Mine', groups: []);
       tabs.add(custom);
       expect(tabs, hasLength(7));
       tabs.removeWhere((t) => t.id == 'custom');
@@ -265,6 +265,47 @@ void main() {
   // T61 — Add-ins & VBA
   // -------------------------------------------------------------------------
   group('T61 AddinService', () {
+    late Directory addinsDir;
+
+    setUp(() async {
+      addinsDir = await Directory.systemTemp.createTemp('ghita_addins_');
+      AddinService.addinsDirOverride = () async => addinsDir;
+    });
+
+    tearDown(() async {
+      AddinService.addinsDirOverride = null;
+      if (await addinsDir.exists()) await addinsDir.delete(recursive: true);
+    });
+
+    test('installer accepts a bounded safe manifest', () async {
+      final manifest = jsonEncode({
+        'id': 'safe_addin-1',
+        'name': 'Safe add-in',
+        'handler': 'transform',
+        'code': 'upper',
+      });
+      final installed = await AddinService.installFromJson(manifest);
+      expect(installed?.id, 'safe_addin-1');
+      expect(File('${addinsDir.path}/safe_addin-1.addin').existsSync(), isTrue);
+    });
+
+    test('installer rejects traversal IDs, remote sources and unknown handlers',
+        () async {
+      Future<AddinInfo?> install(Map<String, dynamic> values) =>
+          AddinService.installFromJson(jsonEncode({
+            'id': 'test',
+            'name': 'Test',
+            'handler': 'transform',
+            'code': 'upper',
+            ...values,
+          }));
+
+      expect(await install({'id': '../escape'}), isNull);
+      expect(await install({'source': 'https://example.com/addin'}), isNull);
+      expect(await install({'handler': 'arbitrary_code'}), isNull);
+      expect(await addinsDir.list().toList(), isEmpty);
+    });
+
     test('kpi handler adds a summary slide from numeric content', () {
       const addin = AddinInfo(
         id: 'kpi',
@@ -345,15 +386,26 @@ void main() {
         {'title': 'B', 'htmlContent': '<p>b</p>'},
       ];
       final out = VbaService.replay(slides, <Map<String, dynamic>>[
-        {'action': 'set_bg', 'params': {'color': '#112233'}},
+        {
+          'action': 'set_bg',
+          'params': {'color': '#112233'}
+        },
         {
           'action': 'update_slide',
-          'params': {'index': 0, 'slide': {'title': 'A2'}}
+          'params': {
+            'index': 0,
+            'slide': {'title': 'A2'}
+          }
         },
-        {'action': 'remove_slide', 'params': {'index': 1}},
+        {
+          'action': 'remove_slide',
+          'params': {'index': 1}
+        },
         {
           'action': 'add_slide',
-          'params': {'slide': {'title': 'C', 'htmlContent': '<p>c</p>'}}
+          'params': {
+            'slide': {'title': 'C', 'htmlContent': '<p>c</p>'}
+          }
         },
       ]);
       expect(out, hasLength(2));

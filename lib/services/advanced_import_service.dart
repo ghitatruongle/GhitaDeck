@@ -397,11 +397,15 @@ class AdvancedImportService {
       final headingRe = RegExp(r'<h([123])[^>]*>(.*?)</h\1>', caseSensitive: false, dotAll: true);
       final matches = headingRe.allMatches(html).toList();
       if (matches.isEmpty) {
+        final plainText = _stripTags(html).trim();
+        final excerpt = plainText.length <= 400
+            ? plainText
+            : plainText.substring(0, 400).trimRight();
         return [
           Slide(
             title: title,
             htmlContent:
-                '<h1>${_esc(title)}</h1><p>${_esc(_stripTags(html).substring(0, 400).trim())}</p>',
+                '<h1>${_esc(title)}</h1><p>${_esc(excerpt)}</p>',
           )
         ];
       }

@@ -14,6 +14,15 @@ void main() {
     await tester.pumpWidget(const MyApp());
     await tester.pumpAndSettle();
 
+    expect(find.text('More tools'), findsOneWidget);
+    expect(find.text('Insert chart'), findsNothing);
+    await tester.tap(find.text('More tools'));
+    await tester.pumpAndSettle();
+    expect(find.text('Collapse tools'), findsOneWidget);
+    expect(find.text('Insert chart'), findsOneWidget);
+    await tester.tap(find.text('Collapse tools'));
+    await tester.pumpAndSettle();
+
     expect(find.text('Collaboration'), findsOneWidget);
     await tester.tap(find.text('Collaboration'));
     await tester.pumpAndSettle();

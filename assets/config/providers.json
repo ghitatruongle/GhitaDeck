@@ -1,7 +1,7 @@
 [
   {
     "id": "openai_default",
-    "name": "OpenAI (GPT-4o / GPT-3.5)",
+    "name": "OpenAI",
     "baseUrl": "https://api.openai.com",
     "availableModels": [
       "gpt-4o",
@@ -15,7 +15,7 @@
   },
   {
     "id": "anthropic_default",
-    "name": "Anthropic (Claude)",
+    "name": "Anthropic",
     "baseUrl": "https://api.anthropic.com",
     "availableModels": [
       "claude-3-5-sonnet-20240620",

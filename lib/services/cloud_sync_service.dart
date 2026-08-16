@@ -30,7 +30,8 @@ class CloudSyncService {
     required String username,
     required String password,
   }) async {
-    await _secureStorage.write(key: _storageBaseUrlKey, value: baseUrl);
+    final safeBaseUrl = normalizedBaseUrl(baseUrl);
+    await _secureStorage.write(key: _storageBaseUrlKey, value: safeBaseUrl);
     await _secureStorage.write(key: _storageUsernameKey, value: username);
     await _secureStorage.write(key: _storagePasswordKey, value: password);
   }
@@ -55,15 +56,31 @@ class CloudSyncService {
     while (u.endsWith('/')) {
       u = u.substring(0, u.length - 1);
     }
+    final uri = Uri.tryParse(u);
+    if (uri == null || uri.host.isEmpty) {
+      throw const FormatException('A valid cloud server URL is required.');
+    }
+    if (uri.userInfo.isNotEmpty || uri.hasQuery || uri.hasFragment) {
+      throw const FormatException(
+        'Cloud server URLs cannot contain credentials, a query, or a fragment.',
+      );
+    }
+    final isLoopback = uri.host.toLowerCase() == 'localhost' ||
+        uri.host == '127.0.0.1' ||
+        uri.host == '::1';
+    if (uri.scheme != 'https' && !(uri.scheme == 'http' && isLoopback)) {
+      throw const FormatException(
+        'HTTPS is required for cloud sync. HTTP is allowed only on localhost.',
+      );
+    }
     return u;
   }
 
   // ---- WebDAV operations ---------------------------------------------------
 
   /// Base URI for a project folder under the WebDAV root.
-  static Uri _projectUri(CloudCredentials creds, String projectName) =>
-      Uri.parse(
-          '${normalizedBaseUrl(creds.baseUrl)}/ghita/${_safeName(projectName)}/');
+  static Uri _projectUri(CloudCredentials creds, String projectName) => Uri.parse(
+      '${normalizedBaseUrl(creds.baseUrl)}/ghita/${_safeName(projectName)}/');
 
   static String _safeName(String name) => name
       .trim()
@@ -87,9 +104,11 @@ class CloudSyncService {
     final c = client ?? _clientWithAuth(creds);
     try {
       // Root folder first, then per-project.
-      for (final path in ['/ghita/', '/ghita/${_safeName(creds.projectName ?? 'default')}/']) {
-        final uri = Uri.parse(
-            '${normalizedBaseUrl(creds.baseUrl)}$path');
+      for (final path in [
+        '/ghita/',
+        '/ghita/${_safeName(creds.projectName ?? 'default')}/'
+      ]) {
+        final uri = Uri.parse('${normalizedBaseUrl(creds.baseUrl)}$path');
         final request = http.Request('MKCOL', uri);
         request.headers.addAll(_authHeaders(creds));
         final streamed = await c.send(request);
@@ -121,18 +140,25 @@ class CloudSyncService {
         ? 1
         : versions.map((v) => v.version).reduce((a, b) => a > b ? a : b) + 1;
     final fileName = 'v$next.ghita';
-    final uri = Uri.parse('${_projectUri(creds, projectName)}${Uri.encodeComponent(fileName)}');
+    final uri = Uri.parse(
+        '${_projectUri(creds, projectName)}${Uri.encodeComponent(fileName)}');
     final c = client ?? _clientWithAuth(creds);
     try {
       final put = await c.put(uri,
-          headers: {..._authHeaders(creds), 'Content-Type': 'application/octet-stream'},
+          headers: {
+            ..._authHeaders(creds),
+            'Content-Type': 'application/octet-stream'
+          },
           body: bytes);
       if (put.statusCode < 200 || put.statusCode >= 300) return null;
       // Update the latest pointer (overwrite).
       final latestUri =
           Uri.parse('${_projectUri(creds, projectName)}latest.ghita');
       await c.put(latestUri,
-          headers: {..._authHeaders(creds), 'Content-Type': 'application/octet-stream'},
+          headers: {
+            ..._authHeaders(creds),
+            'Content-Type': 'application/octet-stream'
+          },
           body: bytes);
       return next;
     } catch (_) {
@@ -189,8 +215,8 @@ class CloudSyncService {
         if (versions.isNotEmpty) return versions;
       }
       // Fallback: read a manifest we wrote on the last upload.
-      final manifestUri = Uri.parse(
-          '${_projectUri(creds, projectName)}versions.json');
+      final manifestUri =
+          Uri.parse('${_projectUri(creds, projectName)}versions.json');
       final get = await c.get(manifestUri, headers: _authHeaders(creds));
       if (get.statusCode == 200) {
         final decoded = jsonDecode(get.body);
@@ -233,12 +259,12 @@ class CloudSyncService {
   static List<RemoteVersion> _parsePropfind(String xml, String projectName) {
     final versions = <RemoteVersion>[];
     final hrefRe = RegExp(r'<d:href>([^<]+)</d:href>');
-    final lengthRe = RegExp(r'<d:getcontentlength>([^<]+)</d:getcontentlength>');
+    final lengthRe =
+        RegExp(r'<d:getcontentlength>([^<]+)</d:getcontentlength>');
     final modifiedRe =
         RegExp(r'<d:getlastmodified>([^<]+)</d:getlastmodified>');
     final hrefs = hrefRe.allMatches(xml).map((m) => m.group(1)!).toList();
-    final lengths =
-        lengthRe.allMatches(xml).map((m) => m.group(1)!).toList();
+    final lengths = lengthRe.allMatches(xml).map((m) => m.group(1)!).toList();
     final modifieds =
         modifiedRe.allMatches(xml).map((m) => m.group(1)!).toList();
     for (var i = 0; i < hrefs.length; i++) {

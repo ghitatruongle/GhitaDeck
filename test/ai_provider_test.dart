@@ -17,11 +17,11 @@ void main() {
     });
 
     test('returns null for [DONE] and non-data lines', () {
-      expect(AIProviderManager.parseStreamLine('openai', 'data: [DONE]'),
-          isNull);
+      expect(
+          AIProviderManager.parseStreamLine('openai', 'data: [DONE]'), isNull);
       expect(AIProviderManager.parseStreamLine('openai', ''), isNull);
-      expect(AIProviderManager.parseStreamLine('openai', 'event: ping'),
-          isNull);
+      expect(
+          AIProviderManager.parseStreamLine('openai', 'event: ping'), isNull);
     });
 
     test('returns null for malformed JSON', () {
@@ -102,6 +102,24 @@ void main() {
   });
 
   group('Provider defaults and validation', () {
+    test('endpoint builder switches a full generation URL to model discovery',
+        () {
+      expect(
+        AIProviderManager.buildEndpointUrl(
+          'https://api.example.com/v1/chat/completions',
+          '/v1/models',
+        ),
+        'https://api.example.com/v1/models',
+      );
+      expect(
+        AIProviderManager.buildEndpointUrl(
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+          '/v1beta/models',
+        ),
+        'https://generativelanguage.googleapis.com/v1beta/models',
+      );
+    });
+
     test('gemini default uses gemini formatType', () {
       final p = AIProviderConfig.geminiDefault();
       expect(p.formatType, 'gemini');
@@ -122,17 +140,20 @@ void main() {
     });
 
     test('validateProvider rejects invalid base URL', () {
-      final p = AIProviderConfig.defaultProvider()
-          .copyWith(baseUrl: 'not-a-url');
+      final p =
+          AIProviderConfig.defaultProvider().copyWith(baseUrl: 'not-a-url');
       expect(AIProviderManager.validateProvider(p), isNotNull);
     });
 
     test('executeWithFallback cascades when first provider fails', () async {
       final cascadeService = APIFallbackCascadeService();
-      final p1 = AIProviderConfig.defaultProvider().copyWith(name: 'Provider 1');
-      final p2 = AIProviderConfig.defaultProvider().copyWith(name: 'Provider 2');
+      final p1 =
+          AIProviderConfig.defaultProvider().copyWith(name: 'Provider 1');
+      final p2 =
+          AIProviderConfig.defaultProvider().copyWith(name: 'Provider 2');
 
-      final result = await cascadeService.executeWithFallback([p1, p2], (config) async {
+      final result =
+          await cascadeService.executeWithFallback([p1, p2], (config) async {
         if (config.name == 'Provider 1') {
           throw Exception('P1 network timeout');
         }

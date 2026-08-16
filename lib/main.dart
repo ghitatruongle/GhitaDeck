@@ -21,6 +21,7 @@ void main() async {
   // window_manager must be initialized before runApp for the editor's
   // fullscreen toggle (View tab) and any window-level operations to work.
   await windowManager.ensureInitialized();
+  await windowManager.setMinimumSize(const Size(1024, 700));
 
   // Global error boundary
   FlutterError.onError = (details) {
@@ -69,7 +70,8 @@ class MyApp extends StatelessWidget {
         ProxyProvider<PresentationState, CollaborationService>(
           create: (_) => CollaborationService(),
           update: (_, presentation, service) =>
-              (service ?? CollaborationService())..bindPresentation(presentation),
+              (service ?? CollaborationService())
+                ..bindPresentation(presentation),
           dispose: (_, service) => service.dispose(),
         ),
       ],

@@ -204,9 +204,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          FilledButton.tonalIcon(
+                            icon: const Icon(Icons.add_circle_outline, size: 18),
+                            label: const Text('Thêm Custom Provider'),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ProviderSettingsScreen(
+                                    aiProviderManager: aiManager,
+                                    autoOpenAdd: true,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 8),
                           OutlinedButton.icon(
-                            icon: const Icon(Icons.add, size: 18),
-                            label: Text(l10n.addNew),
+                            icon: const Icon(Icons.auto_fix_high, size: 18),
+                            label: const Text('Wizard'),
                             onPressed: () {
                               Navigator.push(
                                   context,
@@ -240,6 +256,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ...aiManager.providers.map((p) {
                     final controller = _keyControllers.putIfAbsent(
                         p.id, () => TextEditingController(text: p.apiKey));
+                    final isCurrent = p.id == aiManager.selectedProvider?.id;
                     final healthIcon = switch (p.healthStatus) {
                       ProviderHealthStatus.healthy => Icons.check_circle,
                       ProviderHealthStatus.degraded => Icons.warning,
@@ -260,17 +277,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           Icon(healthIcon, size: 16, color: healthColor),
                           const SizedBox(width: 6),
                           SizedBox(
-                            width: 150,
+                            width: 170,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(p.name,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 12)),
-                                Text(p.healthStatus.displayName,
-                                    style: TextStyle(
-                                        fontSize: 9, color: healthColor)),
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(p.name,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 12)),
+                                    ),
+                                    if (isCurrent) ...[
+                                      const SizedBox(width: 4),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 4, vertical: 1),
+                                        decoration: BoxDecoration(
+                                          color: theme.colorScheme.primary,
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                        ),
+                                        child: Text('Active',
+                                            style: TextStyle(
+                                                fontSize: 8,
+                                                fontWeight: FontWeight.bold,
+                                                color: theme
+                                                    .colorScheme.onPrimary)),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                Text(
+                                  'Model: ${p.selectedModel.isNotEmpty ? p.selectedModel : "Default"}',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: theme.colorScheme.outline,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -373,8 +420,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Ghita PPT Converter'),
-                    subtitle: Text(l10n.versionInfo('2.0.0-beta', '2026')),
-                    trailing: const Chip(label: Text('v2.0.0-beta')),
+                    subtitle: Text(l10n.versionInfo('2.0.0', '2026')),
+                    trailing: const Chip(label: Text('v2.0.0')),
                   ),
                 ],
               ),
@@ -394,7 +441,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       // Collect all settings
       final backup = {
-        'version': '2.0.0-beta',
+        'version': '2.0.0',
         'exportedAt': DateTime.now().toIso8601String(),
         'themeMode':
             Provider.of<AppProvider>(context, listen: false).themeMode.name,
@@ -407,7 +454,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       final jsonStr = const JsonEncoder.withIndent('  ').convert(backup);
       final path = await FilePicker.platform.saveFile(
-        dialogTitle: 'Lưu backup',
+        dialogTitle: 'Save Backup',
         fileName:
             'ghita_ppt_backup_${DateTime.now().millisecondsSinceEpoch}.json',
         type: FileType.custom,

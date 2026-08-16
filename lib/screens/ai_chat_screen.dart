@@ -254,7 +254,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                                                 .showSnackBar(
                                               SnackBar(
                                                   content: Text(
-                                                      'Added "$title" to slides!')),
+                                                      context.l10n.addedSlideNotice(title))),
                                             );
                                           },
                                         );
@@ -264,7 +264,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                                           avatar: const Icon(
                                               Icons.add_circle_outline,
                                               size: 16),
-                                          label: Text('Add All (${slides.length})',
+                                          label: Text(context.l10n.addAllSlides(slides.length),
                                               style:
                                                   const TextStyle(fontSize: 11)),
                                           onPressed: () {
@@ -587,7 +587,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
     if (slides.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Deck is empty — add slides first.')));
+            SnackBar(content: Text(context.l10n.deckEmpty)));
       }
       return;
     }
@@ -605,7 +605,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
         htmlContent: html,
       ));
       if (mounted) {
-        _addMessage({'role': 'assistant', 'content': 'Summary slide added.'});
+        _addMessage({'role': 'assistant', 'content': context.l10n.summarySlideAdded});
       }
     } catch (e) {
       if (mounted) {
@@ -628,17 +628,17 @@ class _AiChatScreenState extends State<AiChatScreen> {
         title: Text(ctx.l10n.copilotAskDeck),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(
-            hintText: 'e.g. Which slide talks about budgets?',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            hintText: ctx.l10n.askDeckHint,
+            border: const OutlineInputBorder(),
           ),
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              onPressed: () => Navigator.pop(ctx), child: Text(ctx.l10n.cancel)),
           FilledButton(
               onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-              child: const Text('Ask')),
+              child: Text(ctx.l10n.send)),
         ],
       ),
     );

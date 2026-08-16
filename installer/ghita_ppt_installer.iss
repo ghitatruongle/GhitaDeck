@@ -9,7 +9,7 @@
   #define MyAppBuild "1"
 #endif
 #ifndef MyAppDisplayVersion
-  #define MyAppDisplayVersion "2.0.0-beta+1"
+  #define MyAppDisplayVersion "2.0.0"
 #endif
 #define MyAppPublisher "Ghita"
 #define MyAppURL "https://github.com/ghitatruongle/GhitaPowerPointConverter"

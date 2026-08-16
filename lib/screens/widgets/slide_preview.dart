@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:webview_windows/webview_windows.dart';
+import '../../services/ai_html_guard.dart';
 
-/// Renders a single slide's HTML as a Flutter-rendered text preview.
-/// Uses WebView2 when available, with automatic fallback to text rendering.
+/// Renders a single slide's HTML as a high-fidelity 16:9 Presentation Canvas Preview.
+/// Uses WebView2 when available, with automatic fallback to Flutter text rendering.
 class SlidePreview extends StatefulWidget {
   final String title;
   final String html;
@@ -19,34 +20,137 @@ class SlidePreview extends StatefulWidget {
   }
 
   static String wrapSlideHtml(String title, String html) {
-    // v1.2.0: Extract bg color FIRST, then clean data attributes
     final bg = _extractBgColor(html);
-    final cleaned = html
+    final cleaned = AIHtmlGuard.guard(html,
+            maxBytes: AIHtmlGuard.presentationMaxBytes)
+        .html
         .replaceAll(RegExp(r'data-bg-color="[^"]*"', caseSensitive: false), '')
         .replaceAll(RegExp(r"data-bg-color='[^']*'", caseSensitive: false), '');
+
     return '''
 <!DOCTYPE html>
 <html><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: file:; media-src data: file:; font-src data:; style-src 'unsafe-inline';">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: 'Segoe UI', system-ui, sans-serif;
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
     background: $bg;
-    color: #e0e0e0;
-    padding: 5vh 6vw;
-    min-height: 100vh;
+    color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
-  h1 { font-size: clamp(1.6rem, 4vw, 3rem); color: #fff; margin-bottom: 0.3em; }
-  h2 { font-size: clamp(1.1rem, 2.5vw, 1.8rem); color: #ccc; font-style: italic; margin-bottom: 0.8em; }
-  p { font-size: clamp(0.9rem, 1.8vw, 1.3rem); line-height: 1.7; margin-bottom: 0.7em; }
-  ul, ol { margin: 0.5em 0 0.5em 1.5em; line-height: 1.8; }
-  table { border-collapse: collapse; margin: 1em 0; }
-  th, td { padding: 8px 12px; border: 1px solid rgba(255,255,255,0.25); }
-  th { background: rgba(255,255,255,0.1); }
-  b, strong { color: #fff; }
+  .slide-canvas {
+    width: 100%;
+    height: 100%;
+    padding: 3.5vw 4.5vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    overflow: hidden;
+    position: relative;
+  }
+  h1 {
+    font-size: clamp(1.6rem, 3.6vw, 2.8rem);
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1.25;
+    margin-bottom: 0.4em;
+    letter-spacing: -0.02em;
+  }
+  h2 {
+    font-size: clamp(1.1rem, 2.4vw, 1.8rem);
+    font-weight: 600;
+    color: #cbd5e1;
+    line-height: 1.35;
+    margin-bottom: 0.6em;
+  }
+  h3 {
+    font-size: clamp(0.95rem, 1.8vw, 1.4rem);
+    font-weight: 600;
+    color: #94a3b8;
+    margin-bottom: 0.4em;
+  }
+  p {
+    font-size: clamp(0.85rem, 1.6vw, 1.2rem);
+    line-height: 1.6;
+    color: #e2e8f0;
+    margin-bottom: 0.6em;
+  }
+  ul, ol {
+    margin: 0.4em 0 0.6em 1.4em;
+    line-height: 1.65;
+    font-size: clamp(0.85rem, 1.5vw, 1.15rem);
+  }
+  li { margin-bottom: 0.35em; color: #e2e8f0; }
+  blockquote {
+    border-left: 4px solid #3b82f6;
+    padding-left: 14px;
+    margin: 0.8em 0;
+    color: #94a3b8;
+    font-style: italic;
+  }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    background: rgba(0, 0, 0, 0.35);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #fca5a5;
+  }
+  pre {
+    background: #0f172a;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 0.8em 0;
+    overflow-x: auto;
+  }
+  pre code {
+    background: transparent;
+    padding: 0;
+    color: #e2e8f0;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 0.8em 0;
+    font-size: clamp(0.8rem, 1.4vw, 1.05rem);
+  }
+  th, td {
+    padding: 8px 12px;
+    border: 1px solid rgba(255,255,255,0.15);
+    text-align: left;
+  }
+  th {
+    background: rgba(255,255,255,0.1);
+    color: #ffffff;
+    font-weight: 600;
+  }
+  img {
+    max-width: 100%;
+    max-height: 50vh;
+    object-fit: contain;
+    border-radius: 6px;
+  }
+  b, strong { color: #ffffff; font-weight: 700; }
   aside.notes { display: none; }
-</style></head>
-<body>$cleaned</body></html>''';
+  /* Shape container */
+  [data-shape-html] {
+    position: absolute;
+    box-sizing: border-box;
+  }
+</style>
+</head>
+<body>
+  <div class="slide-canvas">
+    $cleaned
+  </div>
+</body>
+</html>''';
   }
 
   @override
@@ -62,7 +166,6 @@ class _SlidePreviewState extends State<SlidePreview> {
   @override
   void initState() {
     super.initState();
-    // Show text preview immediately, then try WebView2 in background
     _tryWebView2();
   }
 
@@ -81,7 +184,6 @@ class _SlidePreviewState extends State<SlidePreview> {
         _pendingHtml = null;
       }
     } catch (_) {
-      // WebView2 not available or slow — use text preview
       if (mounted) setState(() => _failed = true);
     }
   }
@@ -107,20 +209,38 @@ class _SlidePreviewState extends State<SlidePreview> {
 
   @override
   Widget build(BuildContext context) {
-    // Always show text preview; overlay WebView2 on top if available
+    return Center(
+      child: AspectRatio(
+        aspectRatio: 16 / 9,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(6),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black38,
+                blurRadius: 10,
+                offset: Offset(0, 3),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: _buildBody(context),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
     final textPreview = _buildTextPreview(context);
-    
+
     if (!_showWebView && !_failed) {
-      // Still trying WebView2 — show text preview for now
-      return textPreview;
-    }
-    
-    if (_failed || !_showWebView) {
-      // WebView2 failed — use text preview
       return textPreview;
     }
 
-    // WebView2 ready — overlay it on top of text preview
+    if (_failed || !_showWebView) {
+      return textPreview;
+    }
+
     return Stack(
       children: [
         textPreview,
@@ -132,28 +252,34 @@ class _SlidePreviewState extends State<SlidePreview> {
   }
 
   Widget _buildTextPreview(BuildContext context) {
-    // v1.2.0: Use shared extraction method, safe color parsing
     final bgHex = SlidePreview._extractBgColor(widget.html);
     Color bgColor;
     try {
       final hexValue = bgHex.replaceFirst('#', '');
       bgColor = Color(int.parse('FF$hexValue', radix: 16));
     } catch (_) {
-      bgColor = const Color(0xFF1A1A2E); // Fallback dark blue
+      bgColor = const Color(0xFF1A1A2E);
     }
 
     return Container(
       color: bgColor,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              widget.title,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white),
-            ),
-            const SizedBox(height: 12),
+            if (widget.title.isNotEmpty) ...[
+              Text(
+                widget.title,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
             _buildHtmlPreview(widget.html),
           ],
         ),

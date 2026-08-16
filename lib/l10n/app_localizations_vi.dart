@@ -74,7 +74,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get noSlidesYet => 'Chưa có slide nào';
 
   @override
-  String get clickToAddSlide => 'Nhấn + để thêm slide';
+  String get clickToAddSlide => 'Bấm + để thêm slide mới';
 
   @override
   String get title => 'Tiêu Đề';
@@ -2462,4 +2462,74 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get versionsRestored => 'Đã khôi phục phiên bản.';
+
+  @override
+  String get deckEmpty => 'Bài thuyết trình đang trống — hãy thêm slide trước.';
+
+  @override
+  String get summarySlideAdded => 'Đã thêm slide tóm tắt.';
+
+  @override
+  String get askDeckHint => 'Ví dụ: Slide nào nói về ngân sách?';
+
+  @override
+  String get slideTitleHint => 'Tiêu đề slide...';
+
+  @override
+  String get slideUpdated => 'Đã cập nhật slide!';
+
+  @override
+  String get slideAddedSuccess => 'Đã thêm slide thành công!';
+
+  @override
+  String get templateSearchHint => 'Tìm kiếm template...';
+
+  @override
+  String get importSlides => 'Nhập Slides';
+
+  @override
+  String addAllSlides(Object count) {
+    return 'Thêm tất cả ($count)';
+  }
+
+  @override
+  String addedSlideNotice(Object title) {
+    return 'Đã thêm \"$title\" vào bài thuyết trình!';
+  }
+
+  @override
+  String get openGhitaFile => 'Mở file .ghita';
+
+  @override
+  String openedProject(Object project) {
+    return 'Đã mở: $project';
+  }
+
+  @override
+  String get moreTools => 'Công cụ khác';
+
+  @override
+  String get collapseTools => 'Thu gọn công cụ';
+
+  @override
+  String get presenterBroadcastStart => 'Phát qua Wi-Fi';
+
+  @override
+  String get presenterBroadcastStop => 'Dừng phát qua Wi-Fi';
+
+  @override
+  String get presenterBroadcastCopy => 'Sao chép liên kết người xem';
+
+  @override
+  String get presenterBroadcastCopied =>
+      'Đã sao chép liên kết xem bảo mật vào clipboard.';
+
+  @override
+  String get presenterBroadcastFailed =>
+      'Không thể khởi động máy chủ phát qua Wi-Fi.';
+
+  @override
+  String presenterViewerCount(int count) {
+    return '$count người xem';
+  }
 }

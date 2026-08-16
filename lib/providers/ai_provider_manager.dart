@@ -186,6 +186,15 @@ class AIProviderConfig {
     );
   }
 
+  static List<AIProviderConfig> allDefaults() {
+    return [
+      defaultProvider(),
+      anthropicDefault(),
+      geminiDefault(),
+      ollamaDefault(),
+    ];
+  }
+
   /// Whether this provider needs an API key (local endpoints don't).
   bool get requiresApiKey {
     final host = Uri.tryParse(baseUrl)?.host ?? '';
@@ -402,6 +411,9 @@ class AIProviderManager with ChangeNotifier {
       unawaited(_configService.saveSelectedProvider(newProvider.id));
     }
     unawaited(_configService.saveProviders(_providers));
+    if (newProvider.apiKey.isNotEmpty) {
+      unawaited(_configService.saveApiKey(newProvider.id, newProvider.apiKey));
+    }
     notifyListeners();
   }
 
@@ -540,33 +552,37 @@ class AIProviderManager with ChangeNotifier {
   Future<List<String>> fetchAvailableModels(AIProviderConfig config) async {
     try {
       final List<String> fetchedModels = [];
+      final base = config.baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
+
       if (config.formatType == 'gemini') {
-        // Percent-encode the key via queryParameters — interpolating the raw
-        // key into the URL breaks keys containing '+', '&' or '/'.
-        final url = Uri.parse('${config.baseUrl}/v1beta/models')
+        // Percent-encode the key via queryParameters
+        final endpoint = buildEndpointUrl(config.baseUrl, '/v1beta/models');
+        final url = Uri.parse(endpoint)
             .replace(queryParameters: {'key': config.apiKey});
-        final res = await _sharedClient.get(url).timeout(const Duration(seconds: 5));
+        final res = await _sharedClient.get(url).timeout(const Duration(seconds: 8));
         if (res.statusCode == 200) {
           final data = jsonDecode(res.body);
           if (data['models'] is List) {
             for (final m in data['models']) {
               final name = (m['name'] ?? '').toString().replaceAll('models/', '');
-              if (name.isNotEmpty) fetchedModels.add(name);
+              if (name.isNotEmpty &&
+                  !name.contains('embedding') &&
+                  !name.contains('aqa') &&
+                  !name.contains('imagen')) {
+                fetchedModels.add(name);
+              }
             }
           }
         }
-      } else {
-        final url = Uri.parse('${config.baseUrl}/v1/models');
-        final headers = <String, String>{'Content-Type': 'application/json'};
-        if (config.apiKey.isNotEmpty) {
-          if (config.formatType == 'anthropic') {
-            headers['x-api-key'] = config.apiKey;
-            headers['anthropic-version'] = '2023-06-01';
-          } else {
-            headers['Authorization'] = 'Bearer ${config.apiKey}';
-          }
-        }
-        final res = await _sharedClient.get(url, headers: headers).timeout(const Duration(seconds: 5));
+      } else if (config.formatType == 'anthropic') {
+        final endpoint = buildEndpointUrl(config.baseUrl, '/v1/models');
+        final url = Uri.parse(endpoint);
+        final headers = <String, String>{
+          'Content-Type': 'application/json',
+          'x-api-key': config.apiKey,
+          'anthropic-version': '2023-06-01',
+        };
+        final res = await _sharedClient.get(url, headers: headers).timeout(const Duration(seconds: 8));
         if (res.statusCode == 200) {
           final data = jsonDecode(res.body);
           if (data['data'] is List) {
@@ -576,19 +592,73 @@ class AIProviderManager with ChangeNotifier {
             }
           }
         }
+      } else {
+        // OpenAI / DeepSeek / OpenRouter / Ollama / Groq / Together / NVIDIA
+        final endpoint = buildEndpointUrl(config.baseUrl, '/v1/models');
+        final url = Uri.parse(endpoint);
+        final headers = <String, String>{'Content-Type': 'application/json'};
+        if (config.apiKey.isNotEmpty) {
+          headers['Authorization'] = 'Bearer ${config.apiKey}';
+        }
+        if (base.contains('openrouter.ai')) {
+          headers['HTTP-Referer'] = 'https://ghitappt.com';
+          headers['X-Title'] = 'GhitaPPT';
+        }
+
+        try {
+          final res = await _sharedClient.get(url, headers: headers).timeout(const Duration(seconds: 8));
+          if (res.statusCode == 200) {
+            final data = jsonDecode(res.body);
+            if (data['data'] is List) {
+              for (final m in data['data']) {
+                final id = (m['id'] ?? '').toString();
+                if (id.isNotEmpty) fetchedModels.add(id);
+              }
+            } else if (data['models'] is List) {
+              for (final m in data['models']) {
+                final id = (m['name'] ?? m['id'] ?? m['model'] ?? '').toString();
+                if (id.isNotEmpty) fetchedModels.add(id);
+              }
+            }
+          }
+        } catch (_) {}
+
+        // Fallback for native Ollama /api/tags if /v1/models returned nothing
+        if (fetchedModels.isEmpty &&
+            (base.contains('11434') ||
+                config.formatType == 'ollama' ||
+                config.name.toLowerCase().contains('ollama'))) {
+          try {
+            final ollamaTagsUrl =
+                Uri.parse('${base.replaceAll(RegExp(r'/v1$'), '')}/api/tags');
+            final tagsRes = await _sharedClient
+                .get(ollamaTagsUrl)
+                .timeout(const Duration(seconds: 5));
+            if (tagsRes.statusCode == 200) {
+              final data = jsonDecode(tagsRes.body);
+              if (data['models'] is List) {
+                for (final m in data['models']) {
+                  final name = (m['name'] ?? m['model'] ?? '').toString();
+                  if (name.isNotEmpty) fetchedModels.add(name);
+                }
+              }
+            }
+          } catch (_) {}
+        }
       }
 
       if (fetchedModels.isNotEmpty) {
+        final uniqueModels = fetchedModels.toSet().toList();
         final updated = config.copyWith(
-          availableModels: fetchedModels,
-          selectedModel: fetchedModels.contains(config.selectedModel)
+          availableModels: uniqueModels,
+          selectedModel: uniqueModels.contains(config.selectedModel)
               ? config.selectedModel
-              : fetchedModels.first,
+              : uniqueModels.first,
           healthStatus: ProviderHealthStatus.healthy,
           lastHealthCheck: DateTime.now(),
         );
         updateProvider(updated);
-        return fetchedModels;
+        return uniqueModels;
       }
     } catch (e) {
       debugPrint('Error fetching models: $e');
@@ -802,17 +872,70 @@ class AIProviderManager with ChangeNotifier {
     _streamClient = null;
   }
 
-  Stream<String> generateHtmlFromPromptStream(String prompt) async* {
+  /// Safely resolves the target URL by joining [baseUrl] and [defaultPath]
+  /// without causing duplicate path segments like `/v1/v1/chat/completions`.
+  static String buildEndpointUrl(String baseUrl, String defaultPath) {
+    var url = baseUrl.trim();
+    while (url.endsWith('/')) {
+      url = url.substring(0, url.length - 1);
+    }
+    if (url.isEmpty) return defaultPath;
+
+    final pathLower = defaultPath.toLowerCase();
+    var urlLower = url.toLowerCase();
+
+    // Keep a user-supplied full endpoint only when it is the endpoint the
+    // caller actually requested. For model discovery/health checks, reduce it
+    // back to the API root before joining the requested path.
+    if (urlLower.endsWith('/chat/completions')) {
+      if (pathLower.endsWith('/chat/completions')) return url;
+      url = url.substring(0, url.length - '/chat/completions'.length);
+    } else if (urlLower.endsWith('/messages')) {
+      if (pathLower.endsWith('/messages')) return url;
+      url = url.substring(0, url.length - '/messages'.length);
+    } else if (urlLower.contains(':generatecontent') ||
+        urlLower.contains(':streamgeneratecontent')) {
+      if (pathLower.contains(':generatecontent') ||
+          pathLower.contains(':streamgeneratecontent')) {
+        return url;
+      }
+      final modelsAt = urlLower.indexOf('/models/');
+      if (modelsAt >= 0) url = url.substring(0, modelsAt);
+    }
+    urlLower = url.toLowerCase();
+
+    if (urlLower.endsWith(pathLower)) return url;
+
+    // Avoid duplicated API version segments when the base already contains it.
+    if (pathLower.startsWith('/v1/') && urlLower.endsWith('/v1')) {
+      return '$url${defaultPath.substring(3)}';
+    }
+    if (pathLower.startsWith('/v1beta/') && urlLower.endsWith('/v1beta')) {
+      return '$url${defaultPath.substring(7)}';
+    }
+
+    final path = defaultPath.startsWith('/') ? defaultPath : '/$defaultPath';
+    return '$url$path';
+  }
+
+  Stream<String> generateHtmlFromPromptStream(String prompt) {
     final provider = _ensureReady();
-    final client = http.Client();
-    _streamClient = client;
+    return generateSlideStream(provider, prompt);
+  }
+
+  Stream<String> generateSlideStream(
+      AIProviderConfig provider, String prompt) async* {
+    _streamClient?.close();
+    _streamClient = http.Client();
     _streamCancelled = false;
+    final client = _streamClient!;
 
     try {
       final http.Request request;
       switch (provider.formatType) {
         case 'anthropic':
-          request = http.Request('POST', Uri.parse('${provider.baseUrl}/v1/messages'))
+          final endpoint = buildEndpointUrl(provider.baseUrl, '/v1/messages');
+          request = http.Request('POST', Uri.parse(endpoint))
             ..headers.addAll({
               'x-api-key': provider.apiKey,
               'anthropic-version': '2023-06-01',
@@ -832,10 +955,11 @@ class AIProviderManager with ChangeNotifier {
             });
           break;
         case 'gemini':
-          request = http.Request(
-              'POST',
-              Uri.parse(
-                  '${provider.baseUrl}/v1beta/models/${provider.selectedModel}:streamGenerateContent?alt=sse'))
+          final endpoint = buildEndpointUrl(
+            provider.baseUrl,
+            '/v1beta/models/${provider.selectedModel}:streamGenerateContent?alt=sse',
+          );
+          request = http.Request('POST', Uri.parse(endpoint))
             ..headers.addAll({
               'x-goog-api-key': provider.apiKey,
               'Content-Type': 'application/json',
@@ -844,7 +968,8 @@ class AIProviderManager with ChangeNotifier {
                 'Generate single slide HTML presentation content for: $prompt', _systemPrompt));
           break;
         default: // openai / custom
-          request = http.Request('POST', Uri.parse('${provider.baseUrl}/v1/chat/completions'))
+          final endpoint = buildEndpointUrl(provider.baseUrl, '/v1/chat/completions');
+          request = http.Request('POST', Uri.parse(endpoint))
             ..headers.addAll({
               'Authorization': 'Bearer ${provider.apiKey}',
               'Content-Type': 'application/json',
@@ -1003,7 +1128,7 @@ class AIProviderManager with ChangeNotifier {
   Future<String> _callOpenAI(AIProviderConfig config, String prompt, {String? systemPrompt}) async {
     try {
       final response = await _postWithTimeout(
-        Uri.parse('${config.baseUrl}/v1/chat/completions'),
+        Uri.parse(buildEndpointUrl(config.baseUrl, '/v1/chat/completions')),
         headers: {
           'Authorization': 'Bearer ${config.apiKey}',
           'Content-Type': 'application/json',
@@ -1044,7 +1169,7 @@ class AIProviderManager with ChangeNotifier {
   Future<String> _callOpenAIMulti(AIProviderConfig config, String topic, String systemPrompt) async {
     try {
       final response = await _postWithTimeout(
-        Uri.parse('${config.baseUrl}/v1/chat/completions'),
+        Uri.parse(buildEndpointUrl(config.baseUrl, '/v1/chat/completions')),
         headers: {
           'Authorization': 'Bearer ${config.apiKey}',
           'Content-Type': 'application/json',
@@ -1086,7 +1211,7 @@ class AIProviderManager with ChangeNotifier {
   Future<String> _callAnthropic(AIProviderConfig config, String prompt, {String? systemPrompt}) async {
     try {
       final response = await _postWithTimeout(
-        Uri.parse('${config.baseUrl}/v1/messages'),
+        Uri.parse(buildEndpointUrl(config.baseUrl, '/v1/messages')),
         headers: {
           'x-api-key': config.apiKey,
           'anthropic-version': '2023-06-01',
@@ -1126,7 +1251,7 @@ class AIProviderManager with ChangeNotifier {
   Future<String> _callAnthropicMulti(AIProviderConfig config, String topic, String systemPrompt) async {
     try {
       final response = await _postWithTimeout(
-        Uri.parse('${config.baseUrl}/v1/messages'),
+        Uri.parse(buildEndpointUrl(config.baseUrl, '/v1/messages')),
         headers: {
           'x-api-key': config.apiKey,
           'anthropic-version': '2023-06-01',
@@ -1185,7 +1310,7 @@ class AIProviderManager with ChangeNotifier {
   Future<String> _callGemini(AIProviderConfig config, String userText, String systemPrompt) async {
     try {
       final response = await _postWithTimeout(
-        Uri.parse('${config.baseUrl}/v1beta/models/${config.selectedModel}:generateContent'),
+        Uri.parse(buildEndpointUrl(config.baseUrl, '/v1beta/models/${config.selectedModel}:generateContent')),
         headers: {
           'x-goog-api-key': config.apiKey,
           'Content-Type': 'application/json',

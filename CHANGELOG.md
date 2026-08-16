@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.0.0] - 2026-08-15 — Official Production Release
+
+### 🚀 Phát hành chính thức v2.0.0
+- **Chuẩn hóa toàn diện**: Hoàn thành toàn bộ **67 Track (670 Phase)** thuộc 10 Milestone theo đúng kiến trúc Microsoft Office 365.
+- **Đa ngôn ngữ chuẩn mực (i18n)**: 100% chuỗi giao diện được nội địa hóa đồng bộ giữa Tiếng Anh và Tiếng Việt (`812/812 keys in sync EN=VI`), xóa sạch hardcode UI.
+- **Tối ưu hiệu năng & Vòng đời**:
+  - `ReadAloudService`: 1 tiến trình PowerShell SAPI nền bền vững, giao thức base64/stdin chống vỡ UTF-8, dọn dẹp sạch tiến trình khi thoát.
+  - `CollaborationService`: Đóng hoàn toàn server HTTP/Socket khi dừng chia sẻ LAN, delta sync và gzip payload tiết kiệm băng thông.
+  - `HistoryStorageService`: Diff snapshot nén gzip kết hợp spill file cho deck > 1 MB, kiểm soát RAM dưới 150 MB.
+  - `ThumbnailService`: LRU cache 60 ảnh với giải phóng bộ nhớ tự động khi xóa slide.
+- **Kiểm định chất lượng**:
+  - **739/739 test xanh 100%** · `flutter analyze`: **0 lỗi/cảnh báo** · `tool/l10n_audit.dart`: **CLEAN**.
+  - Đóng gói cài đặt Inno Setup Windows: `GhitaPPT-Setup-2.0.0.exe`.
+
 ## [2.0.0-beta] - 2026-08-15 — Tối ưu theo track (M1–M10)
 
 ### ⚡ Tối ưu đã áp dụng

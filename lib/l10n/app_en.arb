@@ -948,5 +948,31 @@
   "outlineView": "Outline view",
   "spellcheck": "Spell check",
   "templateOnline": "Online templates",
-  "versionsRestored": "Version restored."
+  "versionsRestored": "Version restored.",
+  "deckEmpty": "Deck is empty — add slides first.",
+  "summarySlideAdded": "Summary slide added.",
+  "askDeckHint": "e.g. Which slide talks about budgets?",
+  "slideTitleHint": "Slide title...",
+  "clickToAddSlide": "Click + to add a slide",
+  "slideUpdated": "Slide updated!",
+  "slideAddedSuccess": "Slide added successfully!",
+  "templateSearchHint": "Search templates...",
+  "importSlides": "Import Slides",
+  "addAllSlides": "Add All ({count})",
+  "addedSlideNotice": "Added \"{title}\" to slides!",
+  "openGhitaFile": "Open .ghita file",
+  "openedProject": "Opened: {project}",
+  "moreTools": "More tools",
+  "collapseTools": "Collapse tools",
+  "presenterBroadcastStart": "Broadcast over Wi-Fi",
+  "presenterBroadcastStop": "Stop Wi-Fi broadcast",
+  "presenterBroadcastCopy": "Copy viewer link",
+  "presenterBroadcastCopied": "Secure viewer link copied to the clipboard.",
+  "presenterBroadcastFailed": "Could not start the Wi-Fi broadcast server.",
+  "presenterViewerCount": "{count} viewers",
+  "@presenterViewerCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  }
 }

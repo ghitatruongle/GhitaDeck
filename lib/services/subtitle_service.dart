@@ -69,7 +69,7 @@ class SubtitleService extends ChangeNotifier {
     }
   }
 
-  Future<void> start() async {
+  Future<void> start({String locale = 'en'}) async {
     if (_listening) return;
     _lines.clear();
     _listening = true;
@@ -82,29 +82,24 @@ class SubtitleService extends ChangeNotifier {
       }
     });
     try {
-      await _startSapi();
+      await _startSapi(locale);
     } catch (e) {
-      // No mic / no recognizer — soft failure, keep listening flag on so the
-      // UI can show the error line and the user can turn subtitles off.
-      _lines.add(SubtitleLine(
-        text: 'subtitle_unavailable',
-        timestamp: DateTime.now(),
-        isError: true,
-      ));
-      notifyListeners();
+      _reportUnavailable();
     }
   }
 
-  Future<void> _startSapi() async {
+  Future<void> _startSapi(String locale) async {
     // PowerShell + System.Speech: a compact recognizer that echoes the
     // recognized phrase to stdout line by line. Exit code 0 = started;
     // a missing System.Speech or mic throws quickly.
-    _process = await Process.start('powershell', [
+    final culture = locale == 'vi' ? 'vi-VN' : 'en-US';
+    final process = await Process.start('powershell', [
       '-NoProfile',
       '-Command',
       '''
 Add-Type -AssemblyName System.Speech
-\$r = New-Object System.Speech.Recognition.SpeechRecognitionEngine
+\$culture = [System.Globalization.CultureInfo]::GetCultureInfo("$culture")
+\$r = [System.Speech.Recognition.SpeechRecognitionEngine]::new(\$culture)
 \$r.SetInputToDefaultAudioDevice()
 \$r.LoadGrammar((New-Object System.Speech.Recognition.DictationGrammar))
 \$evt = Register-ObjectEvent -InputObject \$r -EventName SpeechRecognized -Action {
@@ -114,15 +109,36 @@ Add-Type -AssemblyName System.Speech
 while (\$true) { Start-Sleep -Seconds 2 }
 ''',
     ]);
-    _process!.stdout.transform(utf8.decoder).listen((chunk) {
-      for (final line in chunk.split('\n')) {
-        final text = line.trim();
-        if (text.isEmpty) continue;
-        _lines.add(SubtitleLine(text: text, timestamp: DateTime.now()));
-        notifyListeners();
-      }
+    _process = process;
+    process.stdout
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) {
+      final text = line.trim();
+      if (text.isEmpty) return;
+      _lines.add(SubtitleLine(text: text, timestamp: DateTime.now()));
+      notifyListeners();
     });
-    _process!.stderr.transform(utf8.decoder).listen((_) {});
+    process.stderr.drain<void>();
+    unawaited(process.exitCode.then((exitCode) {
+      if (!identical(_process, process)) return;
+      _process = null;
+      if (_listening) _reportUnavailable();
+    }));
+  }
+
+  void _reportUnavailable() {
+    _listening = false;
+    _sweepTimer?.cancel();
+    _sweepTimer = null;
+    if (!_lines.any((line) => line.isError)) {
+      _lines.add(SubtitleLine(
+        text: 'subtitle_unavailable',
+        timestamp: DateTime.now(),
+        isError: true,
+      ));
+    }
+    notifyListeners();
   }
 
   Future<void> stop() async {

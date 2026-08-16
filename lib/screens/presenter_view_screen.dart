@@ -7,6 +7,7 @@ import '../l10n/l10n.dart';
 import '../providers/presentation_state.dart';
 import '../services/present_deck_commands.dart';
 import '../services/present_tools_service.dart';
+import '../services/wifi_broadcaster_service.dart';
 
 /// Presenter View (Track 35, P3) — one WebView2 running the full deck; JS
 /// commands drive the current slide, the right panel shows the next-slide
@@ -29,13 +30,18 @@ class PresenterViewScreen extends StatefulWidget {
 class _PresenterViewScreenState extends State<PresenterViewScreen> {
   final _controller = WebviewController();
   final _tools = PresentToolsService();
+  final _broadcaster = WifiBroadcasterService();
   late int _currentSlide;
   late Timer _timer;
+  Timer? _syncTimer;
   int _elapsedSeconds = 0;
   bool _showNavigator = false;
   bool _ready = false;
   bool _failed = false;
   int _totalSlides = 0;
+  String? _broadcastUrl;
+  int _viewerCount = 0;
+  bool _broadcastStarting = false;
 
   @override
   void initState() {
@@ -47,12 +53,30 @@ class _PresenterViewScreenState extends State<PresenterViewScreen> {
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _elapsedSeconds++);
     });
+    _broadcaster.onControl = (action) {
+      if (!mounted) return;
+      if (action == 'next') {
+        _nextSlide();
+      } else if (action == 'prev') {
+        _prevSlide();
+      }
+    };
+    _broadcaster.onViewerCountChanged = (count) {
+      if (mounted && count != _viewerCount) {
+        setState(() => _viewerCount = count);
+      }
+    };
     _initWebview();
   }
 
   @override
   void dispose() {
     _timer.cancel();
+    _syncTimer?.cancel();
+    _broadcaster.onControl = null;
+    _broadcaster.onViewerCountChanged = null;
+    unawaited(_broadcaster.stopBroadcaster());
+    _tools.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -70,7 +94,9 @@ class _PresenterViewScreenState extends State<PresenterViewScreen> {
           PresentDeckCommands.installInkOverlay(
               _tools.settings.penColor.cssHex, _tools.settings.penWidth));
       final html = widget.state.buildHtmlDeck(startIndex: _currentSlide);
-      await _controller.loadStringContent(html).timeout(const Duration(seconds: 30));
+      await _controller
+          .loadStringContent(html)
+          .timeout(const Duration(seconds: 30));
       if (mounted) setState(() => _ready = true);
       _startSync();
     } catch (e) {
@@ -79,12 +105,18 @@ class _PresenterViewScreenState extends State<PresenterViewScreen> {
   }
 
   void _startSync() {
-    Timer.periodic(const Duration(milliseconds: 500), (_) async {
+    _syncTimer?.cancel();
+    _syncTimer = Timer.periodic(const Duration(milliseconds: 500), (_) async {
+      if (!mounted) return;
       try {
-        final idx =
-            await _controller.executeScript(PresentDeckCommands.getCurrentSlideExpr());
-        if (idx is int && idx != _currentSlide && idx >= 0 && idx < _totalSlides) {
+        final idx = await _controller
+            .executeScript(PresentDeckCommands.getCurrentSlideExpr());
+        if (idx is int &&
+            idx != _currentSlide &&
+            idx >= 0 &&
+            idx < _totalSlides) {
           _currentSlide = idx;
+          _syncBroadcast();
           if (mounted) setState(() {});
         }
       } catch (_) {}
@@ -95,6 +127,7 @@ class _PresenterViewScreenState extends State<PresenterViewScreen> {
     if (_currentSlide < _totalSlides - 1) {
       _currentSlide++;
       _controller.executeScript(PresentDeckCommands.goToSlide(_currentSlide));
+      _syncBroadcast();
       setState(() {});
     }
   }
@@ -103,6 +136,7 @@ class _PresenterViewScreenState extends State<PresenterViewScreen> {
     if (_currentSlide > 0) {
       _currentSlide--;
       _controller.executeScript(PresentDeckCommands.goToSlide(_currentSlide));
+      _syncBroadcast();
       setState(() {});
     }
   }
@@ -110,7 +144,69 @@ class _PresenterViewScreenState extends State<PresenterViewScreen> {
   void _jumpTo(int index) {
     _currentSlide = index;
     _controller.executeScript(PresentDeckCommands.goToSlide(index));
+    _syncBroadcast();
     setState(() {});
+  }
+
+  Future<void> _startBroadcast() async {
+    if (_broadcastStarting || _broadcastUrl != null) return;
+    setState(() => _broadcastStarting = true);
+    final url = await _broadcaster.startBroadcaster(
+      allowControl: true,
+      includeNotes: false,
+    );
+    if (!mounted) {
+      await _broadcaster.stopBroadcaster();
+      return;
+    }
+    setState(() {
+      _broadcastStarting = false;
+      _broadcastUrl = url;
+    });
+    if (url == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.presenterBroadcastFailed)),
+      );
+      return;
+    }
+    _syncBroadcast();
+    await Clipboard.setData(ClipboardData(text: url));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.presenterBroadcastCopied)),
+      );
+    }
+  }
+
+  Future<void> _copyBroadcastUrl() async {
+    final url = _broadcastUrl;
+    if (url == null) return;
+    await Clipboard.setData(ClipboardData(text: url));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.presenterBroadcastCopied)),
+      );
+    }
+  }
+
+  Future<void> _stopBroadcast() async {
+    await _broadcaster.stopBroadcaster();
+    if (!mounted) return;
+    setState(() {
+      _broadcastUrl = null;
+      _viewerCount = 0;
+    });
+  }
+
+  void _syncBroadcast() {
+    if (_broadcastUrl == null || widget.state.slides.isEmpty) return;
+    final slide = widget.state.slides[_currentSlide];
+    _broadcaster.updateActiveSlide(
+      slide.htmlContent,
+      currentSlide: _currentSlide,
+      totalSlides: _totalSlides,
+      notes: slide.notes,
+    );
   }
 
   String _formatTime(int seconds) {
@@ -193,7 +289,8 @@ class _PresenterViewScreenState extends State<PresenterViewScreen> {
                               ? Center(
                                   child: Text(
                                     l10n.presentLaunchFailed,
-                                    style: TextStyle(color: Colors.grey.shade500),
+                                    style:
+                                        TextStyle(color: Colors.grey.shade500),
                                   ),
                                 )
                               : const Center(
@@ -286,7 +383,9 @@ class _PresenterViewScreenState extends State<PresenterViewScreen> {
                               color: Colors.grey.shade300,
                               fontSize: 14,
                               fontFamily: 'monospace',
-                              fontFeatures: const [FontFeature.tabularFigures()],
+                              fontFeatures: const [
+                                FontFeature.tabularFigures()
+                              ],
                             ),
                           ),
                         ],
@@ -355,6 +454,46 @@ class _PresenterViewScreenState extends State<PresenterViewScreen> {
             style: TextStyle(color: Colors.grey.shade300, fontSize: 13),
           ),
           const Spacer(),
+          if (_broadcastStarting)
+            const SizedBox(
+              width: 28,
+              height: 28,
+              child: Padding(
+                padding: EdgeInsets.all(6),
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else
+            IconButton(
+              icon: Icon(
+                _broadcastUrl == null
+                    ? Icons.wifi_tethering
+                    : Icons.content_copy,
+                size: 18,
+                color: _broadcastUrl == null
+                    ? Colors.grey.shade400
+                    : Colors.lightGreenAccent,
+              ),
+              tooltip: _broadcastUrl == null
+                  ? l10n.presenterBroadcastStart
+                  : l10n.presenterBroadcastCopy,
+              onPressed:
+                  _broadcastUrl == null ? _startBroadcast : _copyBroadcastUrl,
+              visualDensity: VisualDensity.compact,
+            ),
+          if (_broadcastUrl != null) ...[
+            Text(
+              l10n.presenterViewerCount(_viewerCount),
+              style: TextStyle(color: Colors.grey.shade300, fontSize: 11),
+            ),
+            IconButton(
+              icon: const Icon(Icons.stop_circle_outlined,
+                  size: 18, color: Colors.redAccent),
+              tooltip: l10n.presenterBroadcastStop,
+              onPressed: _stopBroadcast,
+              visualDensity: VisualDensity.compact,
+            ),
+          ],
           IconButton(
             icon: Icon(
               Icons.chevron_left,

@@ -36,8 +36,7 @@ class _ProfileDialogState extends State<ProfileDialog> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.initial.name);
-    _emojiController =
-        TextEditingController(text: widget.initial.avatarEmoji);
+    _emojiController = TextEditingController(text: widget.initial.avatarEmoji);
     _color = widget.initial.color;
   }
 
@@ -80,9 +79,10 @@ class _ProfileDialogState extends State<ProfileDialog> {
                 CircleAvatar(
                   radius: 28,
                   backgroundColor: _parseColor(_color),
-                  child: Text(_emojiController.text.isEmpty
-                      ? '👤'
-                      : _emojiController.text,
+                  child: Text(
+                      _emojiController.text.isEmpty
+                          ? '👤'
+                          : _emojiController.text,
                       style: const TextStyle(fontSize: 24)),
                 ),
                 const SizedBox(width: 16),
@@ -150,8 +150,7 @@ class _ProfileDialogState extends State<ProfileDialog> {
 
   Color _parseColor(String hex) {
     final clean = hex.replaceAll('#', '');
-    final v = int.tryParse(
-            clean.length >= 6 ? clean.substring(0, 6) : 'FF9800',
+    final v = int.tryParse(clean.length >= 6 ? clean.substring(0, 6) : 'FF9800',
             radix: 16) ??
         0xFF9800;
     return Color(0xFF000000 | v);
@@ -216,8 +215,8 @@ class _CloudSyncDialogState extends State<CloudSyncDialog> {
     final creds = _creds;
     if (creds == null) return;
     setState(() => _busy = true);
-    final versions = await CloudSyncService.listVersions(
-        creds, widget.projectName);
+    final versions =
+        await CloudSyncService.listVersions(creds, widget.projectName);
     if (!mounted) return;
     setState(() {
       _versions = versions;
@@ -231,12 +230,20 @@ class _CloudSyncDialogState extends State<CloudSyncDialog> {
       setState(() => _message = 'URL + username required');
       return;
     }
-    final creds = CloudCredentials(
-      baseUrl: CloudSyncService.normalizedBaseUrl(_urlController.text.trim()),
-      username: _userController.text.trim(),
-      password: _passController.text,
-      projectName: widget.projectName,
-    );
+    late final CloudCredentials creds;
+    try {
+      creds = CloudCredentials(
+        baseUrl: CloudSyncService.normalizedBaseUrl(
+          _urlController.text.trim(),
+        ),
+        username: _userController.text.trim(),
+        password: _passController.text,
+        projectName: widget.projectName,
+      );
+    } on FormatException catch (error) {
+      setState(() => _message = error.message);
+      return;
+    }
     await CloudSyncService.saveCredentials(
       baseUrl: creds.baseUrl,
       username: creds.username,
@@ -273,14 +280,14 @@ class _CloudSyncDialogState extends State<CloudSyncDialog> {
     final creds = _creds;
     if (creds == null) return;
     setState(() => _busy = true);
-    final bytes = await CloudSyncService.downloadVersion(creds,
-        widget.projectName,
+    final bytes = await CloudSyncService.downloadVersion(
+        creds, widget.projectName,
         version: v.version);
     if (!mounted) return;
     setState(() => _busy = false);
     if (bytes == null) return;
-    final dir = await FilePicker.platform.getDirectoryPath(
-        dialogTitle: 'Restore v${v.version}');
+    final dir = await FilePicker.platform
+        .getDirectoryPath(dialogTitle: 'Restore v${v.version}');
     if (dir == null) return;
     final path = '$dir${Platform.pathSeparator}'
         '${widget.projectName}_v${v.version}.ghita';
@@ -295,8 +302,7 @@ class _CloudSyncDialogState extends State<CloudSyncDialog> {
   Future<void> _delete(RemoteVersion v) async {
     final creds = _creds;
     if (creds == null) return;
-    await CloudSyncService.deleteVersion(
-        creds, widget.projectName, v.version);
+    await CloudSyncService.deleteVersion(creds, widget.projectName, v.version);
     await _refreshVersions();
   }
 
@@ -397,8 +403,8 @@ class _CloudSyncDialogState extends State<CloudSyncDialog> {
                     leading: const Icon(Icons.history),
                     title: Text('v${v.version}'
                         '${v.modifiedAt != null ? ' · ${v.modifiedAt!.toLocal()}' : ''}'),
-                    subtitle: Text(
-                        '${(v.sizeBytes / 1024).toStringAsFixed(1)} KB'),
+                    subtitle:
+                        Text('${(v.sizeBytes / 1024).toStringAsFixed(1)} KB'),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [

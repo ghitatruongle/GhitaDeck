@@ -279,7 +279,7 @@ class CollaborationService {
     return _jsonResponse(200, {
       'status': 'ok',
       'app': 'GhitaPPT',
-      'version': '2.0.0-beta',
+      'version': '2.0.0',
       'protocol': 2,
     });
   }

@@ -1,10 +1,10 @@
-# Ghita PPT Converter v2.0.0-beta
+# Ghita PPT Converter v2.0.0
 
 Flutter application for creating PowerPoint presentations with HTML support and AI-powered content generation.
 
 ## Version
-- **Current version:** `2.0.0-beta`
-- **Release status:** Internal build (no release commit/tag yet)
+- **Current version:** `2.0.0` (Official Release)
+- **Release status:** Production Ready
 
 ## Features
 

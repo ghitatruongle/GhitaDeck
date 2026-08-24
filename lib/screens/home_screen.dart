@@ -54,17 +54,8 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _focusNode = FocusNode();
     _editorState = EditorState();
-    // Track 65 OPT 28: kick the local-AI scan only after the first frame so
-    // it never blocks the Home screen; the 5-minute cache inside
-    // AIProviderManager makes later callers reuse this result.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final aiManager =
-          Provider.of<AIProviderManager>(context, listen: false);
-      aiManager
-          .scanLocalAI()
-          .then((_) {}, onError: (Object _) {});
-    });
+    // Local-AI port scan is no longer pre-warmed here; AI surfaces call
+    // scanLocalAI() on demand (served by the manager's 5-minute cache).
   }
 
   @override

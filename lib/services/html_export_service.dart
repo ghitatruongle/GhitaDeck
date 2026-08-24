@@ -331,6 +331,9 @@ class HtmlExportService {
     buffer.write('    height: auto;');
     buffer.write('    overflow: hidden;');
     buffer.write('  }');
+    // T06 follow-up parity fix: the editor preview paints white slides with
+    // dark text when a deck has no explicit background — the player must do
+    // the same or the letterbox colour bleeds through as a full-screen tint.
     buffer.write('  .slide {');
     buffer.write('    position: absolute;');
     buffer.write('    top: 0; left: 0;');
@@ -339,7 +342,8 @@ class HtmlExportService {
     buffer.write('    display: none;');
     buffer.write('    padding: 5vh 8vw;');
     buffer.write('    overflow-y: auto;');
-    buffer.write('    color: #e0e0e0;');
+    buffer.write('    background: #ffffff;');
+    buffer.write('    color: #1f2937;');
     buffer.write('    animation: fadeIn 0.5s ease;');
     buffer.write('  }');
     buffer.write(
@@ -353,23 +357,23 @@ class HtmlExportService {
     buffer.write('    font-weight: 700;');
     buffer.write('    margin-bottom: 0.3em;');
     buffer.write('    line-height: 1.2;');
-    buffer.write('    color: #ffffff;');
+    buffer.write('    color: #1f4e78;');
     buffer.write('  }');
     buffer.write('  .slide h2 {');
     buffer.write('    font-size: clamp(1.2rem, 2.5vw, 2rem);');
     buffer.write('    font-weight: 500;');
     buffer.write('    margin-bottom: 1em;');
-    buffer.write('    color: #cccccc;');
+    buffer.write('    color: #475569;');
     buffer.write('    font-style: italic;');
     buffer.write('  }');
     buffer.write('  .slide p {');
     buffer.write('    font-size: clamp(0.95rem, 1.8vw, 1.4rem);');
     buffer.write('    line-height: 1.7;');
     buffer.write('    margin-bottom: 0.8em;');
-    buffer.write('    color: #d0d0d0;');
+    buffer.write('    color: #1f2937;');
     buffer.write('  }');
-    buffer.write('  .slide b, .slide strong { color: #ffffff; }');
-    buffer.write('  .slide i, .slide em { color: #bbbbbb; }');
+    buffer.write('  .slide b, .slide strong { color: #111827; }');
+    buffer.write('  .slide i, .slide em { color: #475569; }');
     buffer.write('  .slide video {');
     buffer.write('    width: min(100%, 960px);');
     buffer.write('    max-height: 62vh;');
@@ -648,7 +652,10 @@ class HtmlExportService {
         transitionClass = ' slide-transition-$effectName';
       }
 
-      buffer.write('  <div class="slide$transitionClass" id="slide-$i">');
+      // Server-side activation: the starting slide renders even if the
+      // player script fails to run at all.
+      final activeClass = i == initIndex ? ' active' : '';
+      buffer.write('  <div class="slide$transitionClass$activeClass" id="slide-$i">');
       buffer.write('    <h1>$cleanTitle</h1>');
       buffer.write('    $processedContent');
       // Track 17, P6: free-form text/shape elements from the visualElements
@@ -696,9 +703,9 @@ class HtmlExportService {
     }
 
     buffer.write('</div>');
+    // No prev/next buttons: WebView2 swallows clicks on Flutter overlays;
+    // navigation is keyboard-only (PowerPoint-style).
     buffer.write('<div class="controls">');
-    buffer.write(
-        '  <button id="prevBtn" onclick="changeSlide(-1)" title="${t['prev']}">&#x25C0;</button>');
     buffer.write(
         '  <span class="slide-counter" id="counter">1 / ${slides.length}</span>');
     // Auto-advance toggle (only shown when the deck is configured with timing).
@@ -710,18 +717,14 @@ class HtmlExportService {
       buffer.write(
           '  <button id="notesBtn" onclick="toggleNotes()" title="${t['notes']}">Notes</button>');
     }
-    buffer.write(
-        '  <button id="nextBtn" onclick="changeSlide(1)" title="${t['next']}">&#x25B6;</button>');
     buffer.write('</div>');
     buffer.write('<script>');
-    buffer.write('  let currentSlide = 0;');
+    buffer.write('  let currentSlide = $initIndex;');
     buffer.write('  const totalSlides = ${slides.length};');
     buffer.write('  const deck = document.getElementById("deck");');
     buffer.write('  const counter = document.getElementById("counter");');
     buffer
         .write('  const progressBar = document.getElementById("progressBar");');
-    buffer.write('  const prevBtn = document.getElementById("prevBtn");');
-    buffer.write('  const nextBtn = document.getElementById("nextBtn");');
     buffer.write('  const autoBtn = document.getElementById("autoBtn");');
     buffer.write('  const notesBtn = document.getElementById("notesBtn");');
     buffer.write('  let autoMs = $autoMs;');
@@ -729,8 +732,12 @@ class HtmlExportService {
     buffer.write('  let autoPaused = false;');
     buffer.write('  const hfExcludeFirst = ${hfExcludeFirst ? 'true' : 'false'};');
     buffer.write('  const transitionMap = { $transitionBlock };');
-    buffer.write('  const ghitaImages = ${jsonEncode(lazyImages)};');
-    buffer.write('  const ghitaVideos = ${jsonEncode(lazyVideos)};');
+    // jsonEncode does not escape '/', so a '</script>' sequence inside
+    // user content could close this block and kill the whole player.
+    final closeSeq = '<${String.fromCharCode(92)}/';
+    String safeJson(String raw) => raw.replaceAll('</', closeSeq);
+    buffer.write('  const ghitaImages = ${safeJson(jsonEncode(lazyImages))};');
+    buffer.write('  const ghitaVideos = ${safeJson(jsonEncode(lazyVideos))};');
     buffer.write('  const ghitaAudios = ${jsonEncode(lazyAudios)};');
     buffer.write('  function setupAudio(el) {');
     buffer.write('    let opts = {};');
@@ -879,8 +886,6 @@ class HtmlExportService {
         .write('    counter.textContent = (index + 1) + " / " + totalSlides;');
     buffer.write(
         '    progressBar.style.width = ((index + 1) / totalSlides * 100) + "%";');
-    buffer.write('    prevBtn.disabled = index === 0;');
-    buffer.write('    nextBtn.disabled = index === totalSlides - 1;');
     buffer.write('    scheduleAuto();');
     buffer.write('  }');
     buffer.write('  function changeSlide(delta) {');
@@ -903,10 +908,10 @@ class HtmlExportService {
     buffer.write('  }');
     buffer.write('  document.addEventListener("keydown", (e) => {');
     buffer.write(
-        '    if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") {');
+        '    if (e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === " " || e.key === "PageDown") {');
     buffer.write('      e.preventDefault(); changeSlide(1);');
     buffer
-        .write('    } else if (e.key === "ArrowLeft" || e.key === "PageUp") {');
+        .write('    } else if (e.key === "ArrowLeft" || e.key === "ArrowDown" || e.key === "PageUp") {');
     buffer.write('      e.preventDefault(); changeSlide(-1);');
     buffer.write('    } else if (e.key === "Home") {');
     buffer.write('      e.preventDefault(); showSlide(0);');

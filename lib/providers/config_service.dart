@@ -80,8 +80,14 @@ class ConfigService {
   // ---- Selected provider (non-secret) ----
 
   Future<void> saveSelectedProvider(String? providerId) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_selectedProviderKey, providerId ?? '');
+    // Fire-and-forget from selectProvider: a persistence failure must never
+    // escape as an unhandled zone error mid-generation.
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_selectedProviderKey, providerId ?? '');
+    } catch (e) {
+      debugPrint('ConfigService: saving selected provider failed: $e');
+    }
   }
 
   Future<String?> getSelectedProviderId() async {

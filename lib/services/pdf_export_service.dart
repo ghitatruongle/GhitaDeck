@@ -106,6 +106,8 @@ class PdfExportService {
     bool widescreen = true,
     ExportAspectRatio? aspectRatio,
     bool includeNotes = false,
+    bool notesPages = false,
+    bool bookmarks = false,
     bool includeBackgrounds = true,
     int? imageMaxWidth,
     HtmlParseCache? parseCache,
@@ -169,6 +171,10 @@ class PdfExportService {
       scale = fit < fitHeight ? fit : fitHeight;
     }
 
+    // Track page indices as they are appended so bookmarks and interleaved
+    // notes pages stay aligned with their slides.
+    final slidePageIndices = <int>[];
+
     for (int i = 0; i < visible.length; i++) {
       // Cooperative cancellation + per-slide progress (Track 01).
       cancelToken?.throwIfCancelled();
@@ -179,7 +185,11 @@ class PdfExportService {
       final blocks = PPTGenerator.parseHtmlContentFull(rawHtml,
           parseCache: parseCache);
       final bgColor = includeBackgrounds ? _extractBgColor(slide) : null;
-      final notes = includeNotes
+      // Inline notes ride on the slide itself; dedicated notes pages are an
+      // independent axis and extract their own text.
+      final notes =
+          includeNotes ? _extractNotes(slide, rawHtml, parseCache: parseCache) : '';
+      final notesPageText = notesPages
           ? _extractNotes(slide, rawHtml, parseCache: parseCache)
           : '';
 
@@ -267,6 +277,7 @@ class PdfExportService {
       final showNum = (deckMeta?.excludeFirst ?? false) && i == 0 ? false : (deckMeta?.slideNumber ?? false);
       final showDate = (deckMeta?.excludeFirst ?? false) && i == 0 ? false : (deckMeta?.dateTime ?? false);
       final dateFormat = deckMeta?.dateTimeFormat ?? 'yyyy-MM-dd';
+      slidePageIndices.add(doc.document.pdfPageList.pages.length);
       doc.addPage(
         pw.Page(
           pageFormat: pageFormat,
@@ -288,6 +299,56 @@ class PdfExportService {
           },
         ),
       );
+
+      // T06: optional dedicated notes page right after its slide — the slide
+      // page stays clean while the speaker gets a printable script.
+      if (notesPages && notesPageText.trim().isNotEmpty) {
+        doc.addPage(
+          pw.Page(
+            pageFormat: pageFormat,
+            margin: paperSize == PdfPaperSize.matchSlide
+                ? const pw.EdgeInsets.all(36)
+                : pw.EdgeInsets.all(marginPt),
+            build: (context) => pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  'Slide ${i + 1} · $title',
+                  style: pw.TextStyle(
+                      fontSize: 16, fontWeight: pw.FontWeight.bold),
+                ),
+                pw.Divider(),
+                pw.Text(
+                  'Speaker notes',
+                  style: pw.TextStyle(
+                      fontSize: 10, fontWeight: pw.FontWeight.bold),
+                ),
+                pw.SizedBox(height: 6),
+                pw.Text(notesPageText, style: const pw.TextStyle(fontSize: 11)),
+              ],
+            ),
+          ),
+        );
+      }
+    }
+
+    // T06: PDF outline (bookmarks panel) — one entry per slide, in order.
+    if (bookmarks) {
+      final root = doc.document.outline;
+      for (int i = 0; i < visible.length; i++) {
+        if (i >= slidePageIndices.length) break;
+        final bookmarkTitle =
+            (visible[i]['title'] ?? 'Slide ${i + 1}').toString();
+        root.add(
+          PdfOutline(
+            doc.document,
+            title: '${i + 1}. $bookmarkTitle',
+            // `dest` (not the page: alias) drives the /Dest array that makes
+            // the bookmark actually jump to the slide.
+            dest: doc.document.pdfPageList.pages[slidePageIndices[i]],
+          ),
+        );
+      }
     }
 
     final outputFile = File(outputPath);

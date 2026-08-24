@@ -25,6 +25,8 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
   PdfPaperSize _pdfPaperSize = PdfPaperSize.matchSlide;
   PdfMarginPreset _pdfMarginPreset = PdfMarginPreset.standard;
   bool _pdfScaleToFit = true;
+  bool _pdfNotesPages = false;
+  bool _pdfBookmarks = false;
   bool _includeHiddenSlides = false;
   bool _allSlides = true;
   final Set<int> _selectedSlideIndices = {};
@@ -313,6 +315,20 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
         ),
         CheckboxListTile(
           dense: true,
+          title: Text(l.pdfNotesPages),
+          value: _pdfNotesPages,
+          onChanged: (v) => setState(() => _pdfNotesPages = v ?? false),
+          contentPadding: EdgeInsets.zero,
+        ),
+        CheckboxListTile(
+          dense: true,
+          title: Text(l.pdfBookmarks),
+          value: _pdfBookmarks,
+          onChanged: (v) => setState(() => _pdfBookmarks = v ?? false),
+          contentPadding: EdgeInsets.zero,
+        ),
+        CheckboxListTile(
+          dense: true,
           title: Text(l.includeHiddenSlides),
           value: _includeHiddenSlides,
           onChanged: (v) =>
@@ -370,6 +386,8 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
         pdfPaperSize: _pdfPaperSize,
         pdfMarginPreset: _pdfMarginPreset,
         pdfScaleToFit: _pdfScaleToFit,
+        pdfNotesPages: _pdfNotesPages,
+        pdfBookmarks: _pdfBookmarks,
         includeHiddenSlides: _includeHiddenSlides,
         // Track 07, P9: deck player strings follow the app locale.
         htmlPlayerLocale:

@@ -9,8 +9,12 @@ class MermaidDiagramService {
       .replaceAll('"', '&quot;');
 
   /// Generates a Mermaid flowchart HTML block.
-  String generateFlowchartHtml(List<String> steps) {
+  ///
+  /// [accentColor] tints the step chips so diagrams follow the deck theme
+  /// (defaults to the original blue when omitted).
+  String generateFlowchartHtml(List<String> steps, {String? accentColor}) {
     if (steps.isEmpty) return '';
+    final fill = _safeColor(accentColor) ?? '#3B82F6';
     final buffer = StringBuffer();
     buffer.writeln('<div class="diagram-flowchart" style="padding: 16px; background: rgba(0,0,0,0.03); border-radius: 12px; margin-top: 16px;">');
     buffer.writeln('<h3>Sơ Đồ Quy Trình (Flowchart)</h3>');
@@ -18,7 +22,7 @@ class MermaidDiagramService {
 
     for (var i = 0; i < steps.length; i++) {
       buffer.writeln(
-        '<div style="padding: 12px 18px; background: #3B82F6; color: white; border-radius: 8px; font-weight: bold;">'
+        '<div style="padding: 12px 18px; background: $fill; color: white; border-radius: 8px; font-weight: bold;">'
         '${i + 1}. ${_esc(steps[i])}'
         '</div>',
       );
@@ -32,7 +36,11 @@ class MermaidDiagramService {
   }
 
   /// Generates a Mermaid mindmap HTML block.
-  String generateMindmapHtml(String centralTopic, List<String> subtopics) {
+  ///
+  /// [accentColor] tints the subtopic cards (defaults to the original green).
+  String generateMindmapHtml(String centralTopic, List<String> subtopics,
+      {String? accentColor}) {
+    final fill = _safeColor(accentColor) ?? '#10B981';
     final buffer = StringBuffer();
     buffer.writeln('<div class="diagram-mindmap" style="padding: 16px; background: rgba(0,0,0,0.03); border-radius: 12px; margin-top: 16px;">');
     buffer.writeln('<h3>Sơ Đồ Tư Duy (Mindmap): ${_esc(centralTopic)}</h3>');
@@ -40,7 +48,7 @@ class MermaidDiagramService {
 
     for (final topic in subtopics) {
       buffer.writeln(
-        '<div style="padding: 14px; background: #10B981; color: white; border-radius: 8px; text-align: center; font-weight: 500;">'
+        '<div style="padding: 14px; background: $fill; color: white; border-radius: 8px; text-align: center; font-weight: 500;">'
         '📌 ${_esc(topic)}'
         '</div>',
       );
@@ -48,5 +56,13 @@ class MermaidDiagramService {
 
     buffer.writeln('</div></div>');
     return buffer.toString();
+  }
+
+  /// Only well-formed #RRGGBB values are accepted as accents; anything else
+  /// falls back to the built-in colour instead of injecting raw markup.
+  static String? _safeColor(String? hex) {
+    if (hex == null) return null;
+    final value = hex.trim();
+    return RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(value) ? value : null;
   }
 }

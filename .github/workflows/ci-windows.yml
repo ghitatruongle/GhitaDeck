@@ -41,7 +41,10 @@ jobs:
         run: dart run tool/l10n_audit.dart
 
       - name: Run tests
-        run: flutter test --reporter compact
+        run: flutter test --coverage --reporter compact
+
+      - name: Coverage summary (soft ratchet)
+        run: dart run tool/coverage_summary.dart
 
       - name: Build Windows release
         run: flutter build windows --release

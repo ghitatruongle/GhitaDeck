@@ -169,7 +169,9 @@ class PptChartWriter {
       ..write('<c:val><c:numRef><c:f>Sheet1!\$${_col(seriesIndex)}\$2:\$${_col(seriesIndex)}\$${n + 1}</c:f>')
       ..write('<c:numCache><c:formatCode>General</c:formatCode><c:ptCount val="$n"/>');
     for (var c = 0; c < n; c++) {
-      final v = c < series.values.length ? series.values[c] : 0;
+      // Pad with an explicit double so cached values keep one format
+      // (ChartSeries.values is List<double>).
+      final v = c < series.values.length ? series.values[c] : 0.0;
       b.write('<c:pt idx="$c"><c:v>$v</c:v></c:pt>');
     }
     b.write('</c:numCache></c:numRef></c:val>');

@@ -252,11 +252,14 @@ class _Polygon {
           list
             ..add(clip.getPoints())
             ..add(getPoints());
-        } else if (clipInSource) {
-          list
-            ..add(getPoints())
-            ..add(clip.getPoints());
-        } else {
+      } else if (clipInSource) {
+        list
+          ..add(getPoints())
+          // The hole must wind opposite the outer loop (library contract):
+          // PowerPoint custGeom fills with the nonzero rule, so a same-winding
+          // hole would be filled over instead of cut out.
+          ..add(clip.getPoints().reversed.toList());
+      } else {
           list.add(getPoints());
         }
       }

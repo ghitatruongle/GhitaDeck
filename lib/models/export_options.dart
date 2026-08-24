@@ -121,6 +121,8 @@ class ExportOptions {
     this.pdfPaperSize = PdfPaperSize.matchSlide,
     this.pdfMarginPreset = PdfMarginPreset.standard,
     this.pdfScaleToFit = true,
+    this.pdfNotesPages = false,
+    this.pdfBookmarks = false,
     this.includeHiddenSlides = false,
     this.htmlPlayerLocale = 'en',
     this.allSlides = true,
@@ -148,6 +150,12 @@ class ExportOptions {
 
   /// PDF only: scale the slide to fit page size minus margins.
   final bool pdfScaleToFit;
+
+  /// T06: dedicated speaker-notes pages in the PDF (one per slide with notes).
+  final bool pdfNotesPages;
+
+  /// T06: PDF outline entries (bookmarks panel), one per slide.
+  final bool pdfBookmarks;
 
   /// PDF only: keep slides marked hidden in the exported document.
   final bool includeHiddenSlides;

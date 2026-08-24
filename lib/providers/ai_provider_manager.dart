@@ -90,25 +90,36 @@ class AIProviderConfig {
   }
 
   factory AIProviderConfig.fromMap(Map<String, dynamic> map) {
-    final modelsList = (map['availableModels'] as List<dynamic>?)
-            ?.map((e) => e.toString())
-            .toList() ??
-        [];
+    // `is` checks instead of casts: one malformed persisted field (an int
+    // id, a String maxTokens…) must degrade to a default instead of throwing
+    // a TypeError that wipes the whole saved provider list back to defaults.
+    final rawModels = map['availableModels'];
+    final modelsList = rawModels is List
+        ? rawModels.map((e) => e.toString()).toList()
+        : <String>[];
+    int? asInt(dynamic v) =>
+        v is num ? v.toInt() : int.tryParse(v?.toString() ?? '');
+    double? asDouble(dynamic v) =>
+        v is num ? v.toDouble() : double.tryParse(v?.toString() ?? '');
     return AIProviderConfig(
-      id: map['id'] ?? '',
-      name: map['name'] ?? '',
-      baseUrl: map['baseUrl'] ?? '',
+      id: map['id']?.toString() ?? '',
+      name: map['name']?.toString() ?? '',
+      baseUrl: map['baseUrl']?.toString() ?? '',
       apiKey: '', // apiKey is loaded separately from secure storage
-      availableModels: modelsList.isNotEmpty ? modelsList : [map['model'] ?? ''],
-      selectedModel: map['selectedModel'] ??
-          (modelsList.isNotEmpty ? modelsList.first : (map['model'] ?? '')),
-      contextWindow: map['contextWindow'] ?? 4096,
-      formatType: map['formatType'] ?? 'openai',
-      temperature: (map['temperature'] as num?)?.toDouble() ?? 0.7,
-      maxTokens: map['maxTokens'] as int? ?? 4096,
+      availableModels: modelsList.isNotEmpty
+          ? modelsList
+          : [map['model']?.toString() ?? ''],
+      selectedModel: map['selectedModel']?.toString() ??
+          (modelsList.isNotEmpty
+              ? modelsList.first
+              : map['model']?.toString() ?? ''),
+      contextWindow: asInt(map['contextWindow']) ?? 4096,
+      formatType: map['formatType']?.toString() ?? 'openai',
+      temperature: asDouble(map['temperature']) ?? 0.7,
+      maxTokens: asInt(map['maxTokens']) ?? 4096,
       healthStatus: _parseHealthStatus(map['healthStatus']),
       lastHealthCheck: map['lastHealthCheck'] != null
-          ? DateTime.tryParse(map['lastHealthCheck'])
+          ? DateTime.tryParse(map['lastHealthCheck'].toString())
           : null,
     );
   }
@@ -493,6 +504,7 @@ class AIProviderManager with ChangeNotifier {
     // also avoids ConcurrentModificationError when a check removes a
     // provider mid-flight.
     final providers = List.of(_providers);
+    if (providers.isEmpty) return; // P3: nothing to ping, no sockets opened.
     await Future.wait(providers.map((p) => testProviderPing(p)));
   }
 
@@ -875,6 +887,11 @@ class AIProviderManager with ChangeNotifier {
   bool _streamCancelled = false;
   static const Duration _streamDeadline = Duration(minutes: 2);
 
+  /// Test hook: shortens the overall streaming deadline so the suite can
+  /// simulate expiry instead of waiting out the production two-minute window.
+  @visibleForTesting
+  static Duration? streamDeadlineOverride;
+
   void cancelStream() {
     _streamCancelled = true;
     _streamClient?.close();
@@ -1013,11 +1030,16 @@ class AIProviderManager with ChangeNotifier {
       await for (final chunk in response.stream
           .transform(utf8.decoder)
           .timeout(const Duration(seconds: 30))) {
-        if (deadline.elapsed > _streamDeadline) {
+        if (deadline.elapsed > (streamDeadlineOverride ?? _streamDeadline)) {
           throw TimeoutException('AI streaming exceeded the overall deadline.');
         }
+        // client.close() alone cannot abort an in-flight SSE response, so
+        // the cancellation flag must be honoured here for Stop to work.
+        if (_streamCancelled) return;
         buffer += chunk;
-        final lines = buffer.split('\\n');
+        // Split on REAL newlines — SSE events are LF-delimited and a single
+        // network chunk routinely carries several of them (or half of one).
+        final lines = buffer.split('\n');
         buffer = lines.removeLast();
         for (final line in lines) {
           final delta = parseStreamLine(provider.formatType, line);
@@ -1339,7 +1361,7 @@ class AIProviderManager with ChangeNotifier {
         }
         final parts = candidates[0]['content']?['parts'] as List?;
         if (parts == null || parts.isEmpty) return '';
-        return parts[0]['text'] ?? '';
+        return parts[0]['text']?.toString() ?? '';
       } else {
         throw Exception(_friendlyErrorMessage(response.statusCode, response.body));
       }

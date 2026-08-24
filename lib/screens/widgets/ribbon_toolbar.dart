@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../providers/presentation_state.dart';
 import '../../utils/effect_helpers.dart';
+import 'diagram_dialog.dart';
 import '../../utils/error_mapper.dart';
 
 /// PowerPoint-style Ribbon toolbar with tabbed interface.
@@ -539,6 +540,12 @@ class _RibbonToolbarState extends State<RibbonToolbar>
                       label: 'SmartArt',
                       compact: true,
                       onPressed: () => _showSmartArtDialog(context),
+                    ),
+                    _RibbonButton(
+                      icon: Icons.schema_outlined,
+                      label: 'Diagram',
+                      compact: true,
+                      onPressed: () => _showDiagramDialog(context),
                     ),
                   ],
                 ),
@@ -1406,6 +1413,16 @@ class _RibbonToolbarState extends State<RibbonToolbar>
   }
 
   /// SmartArt dialog — generates flowchart/mindmap HTML.
+  /// T05: build a themed flowchart/mindmap block and insert it at the caret.
+  Future<void> _showDiagramDialog(BuildContext context) async {
+    final html = await showDialog<String>(
+      context: context,
+      builder: (_) => const DiagramDialog(),
+    );
+    if (html == null || html.isEmpty) return;
+    widget.onInsertHtml?.call(html);
+  }
+
   void _showSmartArtDialog(BuildContext context) {
     String selectedType = 'flowchart';
     showDialog(

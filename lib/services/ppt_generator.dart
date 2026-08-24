@@ -1079,7 +1079,9 @@ class PPTGenerator {
     DeckMeta? deckMeta,
   }) {
     final rawTitle = slide['title'] ?? 'Slide $slideNum';
-    final rawHtml = slide['htmlContent'] ?? '';
+    // toString() keeps the whole generator type-safe even when an
+    // imported/hand-edited deck carries a non-string htmlContent.
+    final rawHtml = (slide['htmlContent'] ?? '').toString();
 
     final cleanTitle = _xmlEscape(rawTitle.toString());
     // Single-pass HTML parse — served from the session cache when available.

@@ -4945,6 +4945,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} viewers'**
   String presenterViewerCount(int count);
+
+  /// No description provided for @diagramDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert Diagram'**
+  String get diagramDialogTitle;
+
+  /// No description provided for @diagramModeFlowchart.
+  ///
+  /// In en, this message translates to:
+  /// **'Flowchart'**
+  String get diagramModeFlowchart;
+
+  /// No description provided for @diagramModeMindmap.
+  ///
+  /// In en, this message translates to:
+  /// **'Mindmap'**
+  String get diagramModeMindmap;
+
+  /// No description provided for @diagramTopicLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Central topic'**
+  String get diagramTopicLabel;
+
+  /// No description provided for @diagramAccentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Accent colour'**
+  String get diagramAccentLabel;
+
+  /// No description provided for @diagramStepsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Steps (in order)'**
+  String get diagramStepsLabel;
+
+  /// No description provided for @diagramSubtopicsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtopics'**
+  String get diagramSubtopicsLabel;
+
+  /// No description provided for @diagramAddStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Add step'**
+  String get diagramAddStep;
+
+  /// No description provided for @diagramAddSubtopic.
+  ///
+  /// In en, this message translates to:
+  /// **'Add subtopic'**
+  String get diagramAddSubtopic;
+
+  /// No description provided for @diagramRemoveField.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove last'**
+  String get diagramRemoveField;
+
+  /// No description provided for @diagramPreviewLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get diagramPreviewLabel;
+
+  /// No description provided for @diagramCentralChip.
+  ///
+  /// In en, this message translates to:
+  /// **'Central topic'**
+  String get diagramCentralChip;
+
+  /// No description provided for @diagramInsert.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert into slide'**
+  String get diagramInsert;
+
+  /// No description provided for @pdfNotesPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Speaker-notes pages'**
+  String get pdfNotesPages;
+
+  /// No description provided for @pdfBookmarks.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF bookmarks (outline)'**
+  String get pdfBookmarks;
 }
 
 class _AppLocalizationsDelegate

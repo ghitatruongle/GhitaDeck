@@ -936,5 +936,20 @@
     "placeholders": {
       "count": {"type": "int"}
     }
-  }
+  },
+  "diagramDialogTitle": "Chèn Sơ đồ",
+  "diagramModeFlowchart": "Sơ đồ quy trình",
+  "diagramModeMindmap": "Sơ đồ tư duy",
+  "diagramTopicLabel": "Chủ đề trung tâm",
+  "diagramAccentLabel": "Màu nhấn",
+  "diagramStepsLabel": "Các bước (theo thứ tự)",
+  "diagramSubtopicsLabel": "Nhánh con",
+  "diagramAddStep": "Thêm bước",
+  "diagramAddSubtopic": "Thêm nhánh",
+  "diagramRemoveField": "Bỏ ô cuối",
+  "diagramPreviewLabel": "Xem trước",
+  "diagramCentralChip": "Chủ đề chính",
+  "diagramInsert": "Chèn vào slide",
+  "pdfNotesPages": "Trang ghi chú người trình bày",
+  "pdfBookmarks": "Dấu trang PDF (outline)"
 }

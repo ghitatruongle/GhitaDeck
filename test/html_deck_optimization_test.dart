@@ -148,13 +148,14 @@ void main() {
 
   test('player strings follow the deck locale en/vi (P9)', () {
     final en = deckHtml([{'title': 'T', 'htmlContent': '<p>x</p>'}]);
-    expect(en, contains('title="Previous"'));
+    // P1b: the prev/next buttons are gone — locale parity is asserted on
+    // the strings that remain (fullscreen toggle + slide counter).
     expect(en, contains('title="Fullscreen"'));
+    expect(en, contains('1 / 1'));
     final vi = deckHtml([{'title': 'T', 'htmlContent': '<p>x</p>'}],
         locale: 'vi');
-    expect(vi, contains('title="Trước"'));
     expect(vi, contains('title="Toàn màn hình"'));
-    expect(vi, contains('title="Sau"'));
+    expect(vi, contains('1 / 1'));
   });
 
   test('a deck using all 33 effects keeps every class and parses (P10)', () {

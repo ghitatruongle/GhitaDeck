@@ -2532,4 +2532,49 @@ class AppLocalizationsVi extends AppLocalizations {
   String presenterViewerCount(int count) {
     return '$count người xem';
   }
+
+  @override
+  String get diagramDialogTitle => 'Chèn Sơ đồ';
+
+  @override
+  String get diagramModeFlowchart => 'Sơ đồ quy trình';
+
+  @override
+  String get diagramModeMindmap => 'Sơ đồ tư duy';
+
+  @override
+  String get diagramTopicLabel => 'Chủ đề trung tâm';
+
+  @override
+  String get diagramAccentLabel => 'Màu nhấn';
+
+  @override
+  String get diagramStepsLabel => 'Các bước (theo thứ tự)';
+
+  @override
+  String get diagramSubtopicsLabel => 'Nhánh con';
+
+  @override
+  String get diagramAddStep => 'Thêm bước';
+
+  @override
+  String get diagramAddSubtopic => 'Thêm nhánh';
+
+  @override
+  String get diagramRemoveField => 'Bỏ ô cuối';
+
+  @override
+  String get diagramPreviewLabel => 'Xem trước';
+
+  @override
+  String get diagramCentralChip => 'Chủ đề chính';
+
+  @override
+  String get diagramInsert => 'Chèn vào slide';
+
+  @override
+  String get pdfNotesPages => 'Trang ghi chú người trình bày';
+
+  @override
+  String get pdfBookmarks => 'Dấu trang PDF (outline)';
 }

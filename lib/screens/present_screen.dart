@@ -17,6 +17,19 @@ import '../services/webview_runtime_service.dart';
 /// events), magnifier (Ctrl+wheel), black/white screen (B/W), grid navigator
 /// (G), direct slide jump (type number + Enter), and a key help overlay (?).
 class PresentScreen extends StatefulWidget {
+  /// P3: adaptive slide-poll cadence (see _PresentScreenState._startSlidePoll).
+  static const Duration pollFast = Duration(milliseconds: 700);
+  static const Duration pollMid = Duration(milliseconds: 1200);
+  static const Duration pollIdle = Duration(milliseconds: 2000);
+  static const int pollIdleAfter = 6;
+
+  @visibleForTesting
+  static Duration pollDelay(int unchangedPolls) {
+    if (unchangedPolls >= pollIdleAfter) return pollIdle;
+    if (unchangedPolls >= 3) return pollMid;
+    return pollFast;
+  }
+
   final PresentationState state;
   final int startSlide;
 
@@ -172,23 +185,40 @@ class _PresentScreenState extends State<PresentScreen> {
     return out;
   }
 
+  int _unchangedPolls = 0; // idle backoff; cadence: PresentScreen.pollDelay
+
   void _startSlidePoll() {
     _slidePollTimer?.cancel();
-    _slidePollTimer =
-        Timer.periodic(const Duration(milliseconds: 700), (_) async {
-      if (!mounted) return;
-      try {
-        final idx = await _controller
-            .executeScript(PresentDeckCommands.getCurrentSlideExpr());
-        if (idx is int &&
-            idx != _currentSlide &&
-            idx >= 0 &&
-            idx < _totalSlides) {
-          _currentSlide = idx;
-          if (mounted) setState(() {});
-        }
-      } catch (_) {}
-    });
+    _unchangedPolls = 0;
+    void schedule() {
+      _slidePollTimer =
+          Timer(PresentScreen.pollDelay(_unchangedPolls), () async {
+        final before = _currentSlide;
+        await _pollOnce();
+        if (!mounted) return;
+        _unchangedPolls =
+            _currentSlide == before ? _unchangedPolls + 1 : 0;
+        schedule();
+      });
+    }
+
+    schedule();
+  }
+
+  Future<void> _pollOnce() async {
+    try {
+      final idx = await _controller
+          .executeScript(PresentDeckCommands.getCurrentSlideExpr());
+      if (idx is int &&
+          idx != _currentSlide &&
+          idx >= 0 &&
+          idx < _totalSlides) {
+        _currentSlide = idx;
+        if (mounted) setState(() {});
+      }
+    } catch (_) {
+      // Deck may be navigating; ignore transient JS errors.
+    }
   }
 
   void _handleAction(PresentAction action) {

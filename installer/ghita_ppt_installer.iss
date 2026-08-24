@@ -3,13 +3,13 @@
 
 #define MyAppName "GhitaPPT Converter"
 #ifndef MyAppVersion
-  #define MyAppVersion "2.0.1.1"
+  #define MyAppVersion "2.0.1.2"
 #endif
 #ifndef MyAppBuild
-  #define MyAppBuild "1"
+  #define MyAppBuild "2"
 #endif
 #ifndef MyAppDisplayVersion
-  #define MyAppDisplayVersion "2.0.1-beta.1+1"
+  #define MyAppDisplayVersion "2.0.1-beta2+2"
 #endif
 #define MyAppPublisher "Ghita"
 #define MyAppURL "https://github.com/ghitatruongle/GhitaPowerPointConverter"
@@ -31,7 +31,7 @@ DefaultDirName={localappdata}\Programs\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=output
-OutputBaseFilename=GhitaPPT-Setup-{#MyAppDisplayVersion}
+OutputBaseFilename=GhitaPPT-Setup-{#MyAppFileBase}
 SetupIconFile=app_icon.ico
 Compression=lzma2/ultra64
 SolidCompression=yes

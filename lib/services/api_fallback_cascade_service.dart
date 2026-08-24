@@ -60,21 +60,36 @@ class APIFallbackCascadeService {
     }
   }
 
-  /// Executes an AI task trying configured providers in sequence until one succeeds.
+  /// Executes an AI task trying configured providers in sequence until one
+  /// succeeds.
+  ///
+  /// [onFallback] fires every time a provider fails and the cascade moves on —
+  /// the UI uses it to surface a fallback banner. [shouldStop] is consulted
+  /// between attempts so a Stop action aborts the whole chain instead of
+  /// walking the remaining providers.
   Future<T> executeWithFallback<T>(
     List<AIProviderConfig> providers,
-    Future<T> Function(AIProviderConfig config) task,
-  ) async {
+    Future<T> Function(AIProviderConfig config) task, {
+    void Function(AIProviderConfig failed, Object error, int attempt)?
+        onFallback,
+    bool Function()? shouldStop,
+  }) async {
     if (providers.isEmpty) {
       throw Exception('No AI providers available for fallback execution.');
     }
 
     final errors = <String>[];
-    for (final provider in providers) {
+    for (var attempt = 0; attempt < providers.length; attempt++) {
+      if (shouldStop != null && shouldStop()) {
+        throw Exception('AI generation stopped by the user after '
+            '${errors.length} failed attempt(s).');
+      }
+      final provider = providers[attempt];
       try {
         return await task(provider);
       } catch (e) {
         errors.add('${provider.name}: $e');
+        onFallback?.call(provider, e, attempt + 1);
       }
     }
 

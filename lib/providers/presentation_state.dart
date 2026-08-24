@@ -1101,6 +1101,8 @@ class PresentationState with ChangeNotifier {
             marginPreset: options.pdfMarginPreset,
             scaleToFit: options.pdfScaleToFit,
             includeHiddenSlides: options.includeHiddenSlides,
+            notesPages: options.pdfNotesPages,
+            bookmarks: options.pdfBookmarks,
           );
           break;
       }

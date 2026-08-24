@@ -33,6 +33,8 @@ function Read-ProjectVersion {
 
     return [pscustomobject]@{
         Display = "$core$suffix+$build"
+        # Filename base carries no +build suffix (user-facing setup name).
+        FileBase = if ($pre) { "$core-$pre" } else { $core }
         Core = $core
         Build = $build
         Numeric = "$core.$build"
@@ -123,7 +125,7 @@ function Get-SignatureInfo {
 }
 
 $projectVersion = Read-ProjectVersion
-$expectedInstallerName = "GhitaPPT-Setup-$($projectVersion.Display).exe"
+$expectedInstallerName = "GhitaPPT-Setup-$($projectVersion.FileBase).exe"
 $expectedInstallerPath = Join-Path $OutputDir $expectedInstallerName
 $sourceRevision = (& git -C $ProjectRoot rev-parse HEAD).Trim()
 $sourceStatus = (& git -C $ProjectRoot status --porcelain | Out-String).Trim()
@@ -176,6 +178,7 @@ $compilerArguments = @(
     "/DMyAppVersion=$($projectVersion.Core)",
     "/DMyAppBuild=$($projectVersion.Build)",
     "/DMyAppDisplayVersion=$($projectVersion.Display)",
+    "/DMyAppFileBase=$($projectVersion.FileBase)",
     "`"$IssPath`""
 )
 Write-Host "Compiling $expectedInstallerName..." -ForegroundColor Yellow

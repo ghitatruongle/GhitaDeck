@@ -2533,4 +2533,49 @@ class AppLocalizationsEn extends AppLocalizations {
   String presenterViewerCount(int count) {
     return '$count viewers';
   }
+
+  @override
+  String get diagramDialogTitle => 'Insert Diagram';
+
+  @override
+  String get diagramModeFlowchart => 'Flowchart';
+
+  @override
+  String get diagramModeMindmap => 'Mindmap';
+
+  @override
+  String get diagramTopicLabel => 'Central topic';
+
+  @override
+  String get diagramAccentLabel => 'Accent colour';
+
+  @override
+  String get diagramStepsLabel => 'Steps (in order)';
+
+  @override
+  String get diagramSubtopicsLabel => 'Subtopics';
+
+  @override
+  String get diagramAddStep => 'Add step';
+
+  @override
+  String get diagramAddSubtopic => 'Add subtopic';
+
+  @override
+  String get diagramRemoveField => 'Remove last';
+
+  @override
+  String get diagramPreviewLabel => 'Preview';
+
+  @override
+  String get diagramCentralChip => 'Central topic';
+
+  @override
+  String get diagramInsert => 'Insert into slide';
+
+  @override
+  String get pdfNotesPages => 'Speaker-notes pages';
+
+  @override
+  String get pdfBookmarks => 'PDF bookmarks (outline)';
 }

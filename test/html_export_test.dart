@@ -85,8 +85,13 @@ void main() {
 
       expect(content, contains('totalSlides = 2'));
       expect(content, contains('changeSlide'));
-      expect(content, contains('prevBtn'));
-      expect(content, contains('nextBtn'));
+      // P1b: the prev/next buttons are gone (WebView2 swallowed their
+      // clicks); keyboard navigation is the contract.
+      expect(content, isNot(contains('prevBtn')));
+      expect(content, isNot(contains('nextBtn')));
+      expect(content, contains('id="counter"'));
+      expect(content, contains('"ArrowUp"'));
+      expect(content, contains('"ArrowDown"'));
       expect(content, contains('toggleFullscreen'));
     });
 
@@ -109,7 +114,9 @@ void main() {
         {'title': 'C', 'htmlContent': '<p>C</p>'},
       ];
       final html = service.buildPresentationHtml(slides, startIndex: 1);
-      expect(html, contains('let currentSlide = 0;'));
+      // currentSlide must match the visible start slide — a stale 0 made
+      // the first Next press re-show the same slide (looked like a dead key).
+      expect(html, contains('let currentSlide = 1;'));
       expect(html, contains('showSlide(1);'));
     });
 

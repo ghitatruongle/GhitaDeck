@@ -974,5 +974,20 @@
     "placeholders": {
       "count": {"type": "int"}
     }
-  }
+  },
+  "diagramDialogTitle": "Insert Diagram",
+  "diagramModeFlowchart": "Flowchart",
+  "diagramModeMindmap": "Mindmap",
+  "diagramTopicLabel": "Central topic",
+  "diagramAccentLabel": "Accent colour",
+  "diagramStepsLabel": "Steps (in order)",
+  "diagramSubtopicsLabel": "Subtopics",
+  "diagramAddStep": "Add step",
+  "diagramAddSubtopic": "Add subtopic",
+  "diagramRemoveField": "Remove last",
+  "diagramPreviewLabel": "Preview",
+  "diagramCentralChip": "Central topic",
+  "diagramInsert": "Insert into slide",
+  "pdfNotesPages": "Speaker-notes pages",
+  "pdfBookmarks": "PDF bookmarks (outline)"
 }

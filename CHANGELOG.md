@@ -1,5 +1,70 @@
 # Changelog
 
+## [2.0.1-beta.2] - đang phát triển — P1b: Dọn thanh điều khiển Present
+
+- **Xóa hai nút prev/next** khỏi thanh điều khiển nổi của Present mode: WebView2 là HWND native nuốt toàn bộ click hướng vào lớp Flutter, nên nút bấm không bao giờ ăn; PowerPoint chuẩn cũng điều hướng bằng bàn phím. Thanh chỉ còn bộ đếm "N / M" (+ Auto/Notes khi cấu hình).
+- **Điều hướng bàn phím đầy đủ**: mũi tên phải / **lên** / Space / PageDown → slide tiếp; mũi tên trái / **xuống** / PageUp → slide trước; Home/End → đầu/cuối; F → fullscreen (phím dọc mới thêm theo yêu cầu).
+- Dọn toàn bộ tham chiếu JS của nút (tránh null crash trong `ghitaShowSlide`); test P9 locale chuyển sang khẳng định trên counter + fullscreen.
+- Full suite xanh **1005/1005 × 2 lần liên tục**; `flutter analyze` 0 issues.
+
+## [2.0.1-beta.2] - đang phát triển — T06+P3: PDF Depth & AI Resilience + Performance
+
+- **P3 — Tối ưu tài nguyên & hiệu năng**:
+  - Present mode: vòng poll slide thích ứng — 700 ms khi vừa chuyển trang, lùi 1,2 s sau 3 nhịp không đổi và 2 s khi idle (trước đây ping JS 700 ms vĩnh viễn); cadence expose qua `PresentScreen.pollDelay` có test bảng.
+  - Boot nhẹ hơn: HomeScreen **không còn pre-warm quét 4 port local-AI** lúc khởi động (bỏ luôn timer nền mà test phải "đốt"); ProviderSettings/AI chat kích hoạt `scanLocalAI()` theo nhu cầu với cache 5 phút sẵn có.
+  - Healthcheck AI bỏ qua hoàn toàn khi chưa cấu hình provider nào — không mở socket cho setup rỗng.
+- **Benchmark khóa sàn** (`test/p3_performance_test.dart`): player HTML 50 slide < 5 s, 150 slide < 15 s; bảng cadence poll; JSON payload vẫn decode đúng sau escape.
+- Full suite xanh **1004/1004 × 2 lần liên tục**; `flutter analyze` 0 issues.
+- RAM trong phiên dài (< 150 MB cam kết) nằm trên checklist nghiệm thu thủ công — dart test không đo được RSS một cách khả chuyển.
+
+## [2.0.1-beta.2] - đang phát triển — T06: PDF Depth & AI Resilience
+
+- **PDF bookmarks (outline)**: tùy chọn mới trong Advanced Export — cây `/Outlines` với một mục mỗi slide ("1. Tiêu đề"), nhảy đúng trang đích; hỗ trợ tiêu đề tiếng Việt; catalog tham chiếu chuẩn.
+- **Trang ghi chú riêng biệt**: tùy chọn `notesPages` chèn một trang "Slide N · Tiêu đề + Speaker notes" ngay sau mỗi slide có ghi chú (độc lập với `includeNotes` inline hiện giữ nguyên hành vi); cả hai tùy chọn đi hết đường ống ExportOptions → isolate → service, toggle mới trong export dialog với i18n EN=VI.
+- **AI resilience chain E2E**: `executeWithFallback` thêm hook `onFallback` (báo mỗi hop thất bại — sẵn sàng cho banner UI) và `shouldStop` (Stop chặn giữa chuỗi, không đụng provider còn lại); test với HTTP loopback thật: relay chết (refused) → relay 500 → Ollama local thành công, breadcrumbs đúng thứ tự, all-fail gom đủ lỗi từng nhà cung cấp.
+- **Benchmark smoke**: deck 50 slide xuất PDF ổn định dưới 60 giây (test timeout 3 phút), đúng 50 trang.
+- README cập nhật mục Export Formats (bookmarks, notes pages, diagram blocks).
+- Phase 8 (bug sweep từ T04): không bug mới nào lộ ra — suite PDF T04 vẫn xanh sau thay đổi.
+- Full suite xanh **963/963 × 3 lần liên tục**; `flutter analyze` 0 issues; l10n audit CLEAN.
+
+## [2.0.1-beta.2] - đang phát triển — T05: Mermaid E2E & Boolean Shapes
+
+- **Tính năng Diagram mới**: nút "Diagram" trên ribbon Insert (cạnh SmartArt) mở `DiagramDialog` — chọn Flowchart/Mindmap, nhập bước/nhánh con (thêm/bớt ô động), chọn 1 trong 4 màu nhấn preset, **xem trước cấu trúc trực tiếp** (chips đánh số cùng accent như HTML sẽ chèn), rồi chèn khối HTML vào editor qua `insertHtml`. Toàn bộ chuỗi UI mới vào `.arb` EN=VI (13 key), gen-l10n lại.
+- **Theme accent cho diagram**: `MermaidDiagramService` nhận tham số tuỳ chọn `accentColor` (backward-compatible); chỉ chấp nhận `#RRGGBB` hợp lệ — giá trị lạ rơi về màu mặc định thay vì inject markup. Mặc định giữ nguyên màu cũ.
+- **Kiểm chứng boolean shapes end-to-end** qua EditorShell thật: merge dialog đã có sẵn từ Track 21 — giờ có widget test luồng chính: ≥2 shape → More tools → Merge shapes → Union → còn 1 shape với `mergeOp: union` → Undo trả lại 2 shape; và case 1 shape được từ chối kèm hint.
+- Xuất giữ nguyên diagram: PPTX (slide XML mang text các bước), HTML (khối verbatim + accent), PDF đều có test retention.
+- Manual checklist (cho sign-off): kiểm tra dialog + merge trên Windows scaling 100/125/150%.
+- Full suite xanh **952/952 × 3 lần liên tục**; `flutter analyze` 0 issues; l10n audit CLEAN.
+
+## [2.0.1-beta.2] - đang phát triển — T04: AI Manager, PDF Export & Coverage Gate
+
+- **Fix bug thật trong streaming AI**: bộ đệm SSE split trên chuỗi literal `\n` thay vì newline thật — event dính nhau trong một chunk không được parse và JSON cắt qua ranh giới chunk bị bỏ đến hết stream (chỉ "may mắn" chạy đúng khi server gói mỗi dòng một chunk). Giờ split theo LF thật; kèm test multi-byte UTF-8 cắt giữa ký tự.
+- **Hardening Stop button**: `client.close()` không ngắt được SSE đang chảy — vòng lặp stream giờ tôn trọng cờ `_streamCancelled` từng chunk.
+- **Hardening persistence**: `saveSelectedProvider` tự nuốt lỗi (fire-and-forget không bắn unhandled zone error giữa lúc generate).
+- Test mới (40): streaming 3 format OpenAI/Anthropic/Gemini với chunk dính/chia lửng, deadline override, cancel mid-stream, multi-slide "Create 3 slides" đúng thứ tự, outline, secure-storage round-trip API key qua reload, system prompt persist, provider CRUD; PDF matrix 24 test (notes, backgrounds, 12 tổ hợp paper×margin, 4:3, scale-to-fit khối nội dung lớn, freeform bezier C/S/Q/T + fill+stroke, funnel chart painter, action button, canvas shapes/freeTexts đầy đủ gradient+effect, kitchen-sink inline styling, màu hỏng fallback, cancel token, progress).
+- **Coverage gate dạng ratchet vào CI**: step `flutter test --coverage` + `tool/coverage_summary.dart` in bảng vào GitHub step summary, cảnh báo mềm khi tụt sàn (`ai_provider_manager ≥55%`, `pdf_export_service ≥65%`, repo ≥47% — sàn = giá trị đo hôm nay, mục tiêu 55% cho các track sau).
+- Coverage: `ai_provider_manager` 27,6% → **58,8%** ✓, `pdf_export_service` 45,9% → **65,1%** ✓, repo 46,3% → 47,6% (raw) / 49,8% (ex-l10n). Full suite xanh **942/942 × 3 lần liên tục**; analyze 0 issues.
+
+## [2.0.1-beta.2] - đang phát triển — T03: Stateful & AI Support Service Tests
+
+- Xóa sạch danh sách service NO-TEST: bổ sung test riêng cho 7 service — `api_key_rotation_service` (server loopback thật: 200/404 valid, 401 reject, 3 kiểu auth OpenAI/Anthropic/Gemini, connection-refused → statusCode −1), `smart_draft_manager` (round-trip draft, spill >1MB dạng pointer, dọn spill cũ, purge, JSON hỏng degradation, crash recovery qua instance mới), `local_ai_detector_service` (giả lập Ollama 11434 + LM Studio 1234 bằng server thật, đọc models từ `data[].id`, JSON hỏng bị bỏ qua), `effect_preview_service` (dedup keyframe trùng body, class alias, category group đủ mọi effect, mapping PPTX), `stock_media_service` (6 category, ~100 item, search offline, data-URI round-trip), `webview_runtime_service` (mock channel `io.jns.webview.win`: version/null/missing-plugin + state machine recheck), `eyedropper_service` (contract GDI: không bao giờ throw, định dạng #RRGGBB).
+- **Phát hiện quan trọng cho test network**: `TestWidgetsFlutterBinding.ensureInitialized()` cài `_MockHttpOverrides` toàn cục khiến mọi HTTP thật trong test nhận 400 rỗng — file test dùng loopback server phải KHÔNG cài binding.
+- Full suite xanh **902/902 chạy 3 lần liên tục**; `flutter analyze` 0 issues; chỉ còn 3 file data thuần (`mdi_icons_data`, `speaker_icon_data`, `stock_media_variants`) không cần test.
+
+## [2.0.1-beta.2] - đang phát triển — T02: Pure-Dart Engine Service Tests
+
+- Bổ sung test riêng cho 4 service chưa từng có test: `polygon_boolean` (union/intersect/difference/combine + degenerate/bowtie, coverage **94,9%**), `ppt_chart_writer` (XML bar/line/pie/donut/combo + workbook round-trip, **89,2%**), `ppt_smartart_writer` (data/layout/colors + 20-node stress, **98,0%**), `mermaid_diagram_service` (flowchart/mindmap + escape chống XSS, **100%**).
+- Round-trip PPTX end-to-end: slide chứa chart + SmartArt + shape merge xuất PPTX đủ part (`chart1.xml`, `data1.xml`, embeddings, content-types, `dgm:relIds`).
+- **Fix bug lộ ra từ test**: (1) `PolygonBoolean.clip` — hole của difference-containment chưa đảo chiều winding như contract ("reversed winding"), gây fill sai với nonzero-rule renderer như custGeom PowerPoint; (2) `PptChartWriter._ser` — padding giá trị thiếu dùng int `0` trong khi `ChartSeries.values` là double, XML in không nhất quán (`0` vs `7.0`).
+- Full suite xanh **848/848 chạy 3 lần liên tục**; `flutter analyze` 0 issues.
+
+## [2.0.1-beta.2] - đang phát triển — T01: Presentation State & Editor Lifecycle Tests
+
+- Thêm 46 test mới phủ vòng đời tài liệu: hydrate/readiness, dirty revision + saving state, persistence error path (spill save fail, JSON hỏng, pointer file mất), mutation history undo/redo, họ `upsert*`/shapes/layers/groups, `buildHtmlDeck`.
+- Test state machine `EditorState` (selection/scribble/zoom/format painter/handleSlideRemoved) và tích hợp time machine (cap 30 snapshot).
+- Widget test `EditorShell`: cổng hydrate loader, thu gọn sidebar, bảng binding Ctrl+S/Ctrl+Z/Ctrl+Y, Ctrl+Enter báo lỗi validate, Ctrl+Shift+C format painter.
+- Coverage full suite: `presentation_state` 11,8% → **64,0%**, `editor_state` 16,2% → **73,8%**; full suite xanh 805/805 chạy 3 lần liên tục; `flutter analyze` 0 issues.
+
 ## [2.0.1-beta.1] - 2026-08-19 — Stability & Hardening Beta
 
 ### Đã triển khai trong đợt beta

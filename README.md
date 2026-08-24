@@ -21,8 +21,9 @@ Write custom HTML for slides — the engine preserves rich content in the output
 
 ### 2. **Export Formats**
 - **PPTX** — full OOXML package (theme, notes slides, embedded media)
-- **PDF** — one landscape page per slide, same HTML interpretation as PPTX, with embedded Unicode system font (full Vietnamese support)
+- **PDF** — one landscape page per slide, same HTML interpretation as PPTX, with embedded Unicode system font (full Vietnamese support); optional **PDF bookmarks** (outline panel, one entry per slide) and **dedicated speaker-notes pages** interleaved after their slides
 - **HTML** — standalone browser deck with keyboard/touch navigation, progress bar, fullscreen
+- **Diagram blocks** — themed flowchart/mindmap inserts (Insert ribbon → Diagram) carried across all three export formats
 
 ### 3. **Live Preview & Present Mode**
 - Live rendered preview beside the HTML editor (WebView2)

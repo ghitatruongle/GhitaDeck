@@ -25,6 +25,10 @@ class ConfigService {
   // Non-secret preferences remain in SharedPreferences.
   static const _secureStorage = FlutterSecureStorage();
 
+  // A single writer prevents overlapping debounce/manual saves from racing.
+  Future<void> _slidesWriteQueue = Future<void>.value();
+  int _slidesWriteGeneration = 0;
+
   // ---- Providers (non-secret config stored in SharedPreferences) ----
 
   Future<void> saveProviders(List<AIProviderConfig> providers) async {
@@ -92,7 +96,28 @@ class ConfigService {
   /// then holds only a file pointer (and a legacy inline key is removed).
   /// Load is backward compatible with decks saved inline before this change.
   Future<void> saveSlides(List<Map<String, dynamic>> slides, String effectName,
-      [String? deckMeta]) async {
+      [String? deckMeta]) {
+    final generation = ++_slidesWriteGeneration;
+    final snapshot = slides.map((slide) => Map<String, dynamic>.from(slide)).toList();
+    final previous = _slidesWriteQueue;
+    final next = previous.catchError((_) {}).then((_) => _saveSlidesNow(
+          snapshot,
+          effectName,
+          deckMeta,
+          generation,
+        ));
+    _slidesWriteQueue = next;
+    return next;
+  }
+
+  Future<void> _saveSlidesNow(
+    List<Map<String, dynamic>> slides,
+    String effectName,
+    String? deckMeta,
+    int generation,
+  ) async {
+    // A newer request supersedes a queued older snapshot before it touches disk.
+    if (generation != _slidesWriteGeneration) return;
     final prefs = await SharedPreferences.getInstance();
     final jsonStr = jsonEncode(slides);
     if (utf8.encode(jsonStr).length > _largeDeckThreshold) {
@@ -100,7 +125,7 @@ class ConfigService {
       final decksDir = Directory(p.join(dir.path, 'GhitaPPT', 'decks'));
       await decksDir.create(recursive: true);
       final file = File(p.join(decksDir.path, 'presentation_slides.json'));
-      await file.writeAsString(jsonStr, flush: true);
+      await _writeTextAtomically(file, jsonStr);
       await prefs.setString(_slidesFilePointerKey, file.path);
       await prefs.remove(_slidesKey);
     } else {
@@ -110,6 +135,34 @@ class ConfigService {
     await prefs.setString(_effectKey, effectName);
     if (deckMeta != null) {
       await prefs.setString('presentation_deck_meta', deckMeta);
+    }
+  }
+
+  Future<void> _writeTextAtomically(File target, String content) async {
+    final nonce = '${pid}_${DateTime.now().microsecondsSinceEpoch}';
+    final temp = File('${target.path}.$nonce.tmp');
+    File? backup;
+    await temp.parent.create(recursive: true);
+    try {
+      await temp.writeAsString(content, flush: true);
+      if (await target.exists()) {
+        backup = File('${target.path}.$nonce.bak');
+        await target.rename(backup.path);
+      }
+      try {
+        await temp.rename(target.path);
+      } catch (_) {
+        if (backup != null &&
+            await backup.exists() &&
+            !await target.exists()) {
+          await backup.rename(target.path);
+        }
+        rethrow;
+      }
+      if (backup != null && await backup.exists()) await backup.delete();
+    } finally {
+      if (await temp.exists()) await temp.delete();
+      if (backup != null && await backup.exists()) await backup.delete();
     }
   }
 

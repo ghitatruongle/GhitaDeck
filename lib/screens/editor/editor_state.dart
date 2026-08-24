@@ -6,6 +6,7 @@ import '../../providers/presentation_state.dart';
 import '../../models/drawn_shape.dart';
 import '../../models/slide_template.dart';
 import '../../services/format_painter_service.dart';
+import '../../services/html_sanitizer_service.dart';
 import '../../utils/effect_helpers.dart';
 import '../../utils/error_mapper.dart';
 import '../../l10n/l10n.dart';
@@ -261,42 +262,10 @@ class EditorState with ChangeNotifier {
 
   /// Validate and sanitize HTML. Returns error message on failure, null on success.
   String? validateAndSanitizeHtml(String rawHtml) {
-    if (rawHtml.isEmpty) return 'HTML content cannot be empty.';
-    // Track 12, P2: the length cap applies to *text content* only — base64
-    // payloads inside data: URIs (images, Track 11/12 videos) are exempt, so
-    // a slide carrying a multi-MB embedded video still passes validation.
-    if (_textContentLength(rawHtml) > 100000) {
-      return 'HTML content is too long (max 100KB).';
-    }
-
-    final sanitizedHtml = rawHtml
-        .replaceAll(
-            RegExp(r'<script[\s\S]*?<\/script>', caseSensitive: false), '')
-        .replaceAll(
-            RegExp(r'<iframe[\s\S]*?<\/iframe>', caseSensitive: false), '')
-        .replaceAll(
-            RegExp(r'<object[\s\S]*?<\/object>', caseSensitive: false), '')
-        .replaceAll(
-            RegExp(r'<embed[\s\S]*?\/>', caseSensitive: false), '');
-
-    if (sanitizedHtml.trim().isEmpty) {
-      return 'HTML contains only blocked elements.';
-    }
-    _lastSanitizedHtml = sanitizedHtml;
+    final error = HtmlSanitizerService.validate(rawHtml);
+    if (error != null) return error;
+    _lastSanitizedHtml = HtmlSanitizerService.sanitize(rawHtml).html;
     return null; // null = no error
-  }
-
-  /// Length of [rawHtml] with every base64 payload (data:…;base64,…)
-  /// collapsed to a fixed placeholder, so media bytes don't count against
-  /// the text cap.
-  static int _textContentLength(String rawHtml) {
-    const placeholder = 'data:payload';
-    return rawHtml
-        .replaceAllMapped(
-          RegExp(r'data:[^;]+;base64,[A-Za-z0-9+/=\s]+', caseSensitive: false),
-          (_) => placeholder,
-        )
-        .length;
   }
 
   /// Get the last sanitized HTML (call after validateAndSanitizeHtml returns null).

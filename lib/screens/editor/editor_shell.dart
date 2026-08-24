@@ -897,6 +897,18 @@ class _EditorShellState extends State<EditorShell> {
     final presentationState = Provider.of<PresentationState>(context);
     final theme = Theme.of(context);
 
+    if (presentationState.isHydrating) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (presentationState.lastPersistenceError != null &&
+        presentationState.slides.isEmpty) {
+      return Center(
+        child: SelectableText(
+          'Không thể khôi phục dữ liệu: ${presentationState.lastPersistenceError}',
+        ),
+      );
+    }
+
     return ChangeNotifierProvider.value(
       value: _editorState,
       child: CallbackShortcuts(

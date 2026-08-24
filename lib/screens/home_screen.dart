@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'widgets/setup_show_dialog.dart';
@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 import '../providers/app_provider.dart';
+import '../config/build_info.dart';
 import '../providers/ai_provider_manager.dart';
 import '../providers/presentation_state.dart';
 import '../providers/shortcuts_provider.dart';
@@ -30,7 +31,7 @@ import 'widgets/office_buttons.dart';
 import '../theme/office_colors.dart';
 import '../l10n/l10n.dart';
 
-/// HomeScreen — Microsoft Office 365 style layout
+/// HomeScreen ΓÇö Microsoft Office 365 style layout
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -448,7 +449,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             onToggleRuler: () =>
                                 setState(() => _showRuler = !_showRuler),
                             onToggleFullscreen: _toggleFullscreen,
-                            // Editor formatting wiring — without these the
+                            // Editor formatting wiring ΓÇö without these the
                             // ribbon's Bold/Italic/lists/insert actions were
                             // silently no-ops (rendered enabled, did nothing).
                             onInsertHtmlTag: _editorState.insertHtmlTag,
@@ -792,8 +793,8 @@ class _HomeScreenState extends State<HomeScreen> {
             tooltip: context.l10n.help,
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text('GhitaPPT v2.0.0 — Office 365 Style')),
+                                SnackBar(
+                    content: Text('${BuildInfo.productName} v${BuildInfo.displayVersion} ΓÇö Office 365 Style')),
               );
             },
             isDark: isDark,
@@ -872,7 +873,7 @@ class _HomeScreenState extends State<HomeScreen> {
           .showSnackBar(SnackBar(content: Text(context.l10n.noSlides)));
       return;
     }
-    // Track 36: Set Up Show dialog — mode, options, pen colour, custom show.
+    // Track 36: Set Up Show dialog ΓÇö mode, options, pen colour, custom show.
     final result = await showSetupShowDialog(
       context,
       initial: state.setupShow,
@@ -934,7 +935,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     TextButton(
                       onPressed: () => _editorState.zoomOut(),
-                      child: const Text('−'),
+                      child: const Text('ΓêÆ'),
                     ),
                     TextButton(
                       onPressed: () => _editorState.setZoom(1.0),
@@ -969,7 +970,7 @@ class _HomeScreenState extends State<HomeScreen> {
         await windowManager.setFullScreen(true);
       }
     } catch (_) {
-      // window_manager not initialized (e.g. tests) — ignore silently.
+      // window_manager not initialized (e.g. tests) ΓÇö ignore silently.
     }
   }
 

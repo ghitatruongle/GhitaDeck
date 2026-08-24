@@ -6,19 +6,51 @@ on:
   pull_request:
     branches: [main]
 
-jobs:
-  test-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
+permissions:
+  contents: read
 
-      - uses: subosito/flutter-action@v2
+concurrency:
+  group: windows-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      # Flutter tooling on Windows expects this variable to exist even when
+      # the runner exposes the equivalent ProgramFiles(x86) path differently.
+      PROGRAMFILES(X86): 'C:\Program Files (x86)'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
 
-      - run: flutter pub get
+      - name: Install dependencies
+        run: flutter pub get
 
-      - run: flutter analyze
+      - name: Static analysis
+        run: flutter analyze --no-fatal-infos
 
-      - run: flutter test
+      - name: Localization audit
+        run: dart run tool/l10n_audit.dart
+
+      - name: Run tests
+        run: flutter test --reporter compact
+
+      - name: Build Windows release
+        run: flutter build windows --release
+
+      - name: Upload Windows build
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ghitappt-windows-${{ github.sha }}
+          path: build/windows/x64/runner/Release
+          if-no-files-found: error
+          retention-days: 7

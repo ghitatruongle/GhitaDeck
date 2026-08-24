@@ -8,6 +8,7 @@ import 'package:ghita_ppt_converter/models/slide.dart';
 import 'package:ghita_ppt_converter/services/html_export_service.dart';
 import 'package:ghita_ppt_converter/services/ppt_generator.dart';
 import 'package:ghita_ppt_converter/services/project_bundle_service.dart';
+import 'package:ghita_ppt_converter/config/build_info.dart';
 import 'package:xml/xml.dart' as xml;
 
 /// Track 13 tests — Audio & Narration gắn slide (FEAT 8, 9 + OPT 31).
@@ -306,7 +307,7 @@ void main() {
         path,
         extractDir: '${tmpDir.path}/sanitize_extract',
       );
-      expect(loaded?['manifest']['version'], '2.0.0');
+      expect(loaded?['manifest']['version'], BuildInfo.appVersion);
       final slide = (loaded?['slides'] as List<Slide>).single;
       expect(slide.htmlContent.toLowerCase(), isNot(contains('<script')));
       expect(slide.htmlContent.toLowerCase(), isNot(contains('onclick')));

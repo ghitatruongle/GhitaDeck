@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/build_info.dart';
 import '../providers/app_provider.dart';
 import '../providers/ai_provider_manager.dart';
 import 'provider_settings_screen.dart';
@@ -420,8 +421,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Ghita PPT Converter'),
-                    subtitle: Text(l10n.versionInfo('2.0.0', '2026')),
-                    trailing: const Chip(label: Text('v2.0.0')),
+                    subtitle: Text(l10n.versionInfo(BuildInfo.appVersion, '2026')),
+                    trailing: const Chip(label: Text('v${BuildInfo.appVersion}')),
                   ),
                 ],
               ),
@@ -441,7 +442,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       // Collect all settings
       final backup = {
-        'version': '2.0.0',
+        'version': BuildInfo.appVersion,
         'exportedAt': DateTime.now().toIso8601String(),
         'themeMode':
             Provider.of<AppProvider>(context, listen: false).themeMode.name,

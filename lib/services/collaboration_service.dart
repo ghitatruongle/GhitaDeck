@@ -11,6 +11,7 @@ import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_router/shelf_router.dart';
 
 import '../providers/presentation_state.dart';
+import '../config/build_info.dart';
 
 /// Authenticated local-network collaboration with revisioned snapshot sync.
 ///
@@ -20,6 +21,7 @@ import '../providers/presentation_state.dart';
 /// rejected with the authoritative snapshot.
 class CollaborationService {
   static const int maxPayloadBytes = 2 * 1024 * 1024;
+
   /// Maximum concurrent collaborators before the oldest is evicted. Without
   /// this, repeated /join calls grow memory and mint tokens without bound.
   static const int defaultMaxCollaborators = 20;
@@ -29,12 +31,15 @@ class CollaborationService {
   static const int maxNotesLength = 50000;
   static const Duration requestTimeout = Duration(seconds: 5);
   static const Duration defaultPollInterval = Duration(milliseconds: 900);
+
   /// After a local edit the next poll fires almost immediately so priority
   /// events (content edits) propagate in well under a second.
   static const Duration fastPollInterval = Duration(milliseconds: 250);
+
   /// Poll failures back off 1s → 2s → 4s → 8s and then stay at 8s.
   static const Duration reconnectMaxBackoff = Duration(seconds: 8);
   static const int maxSyncLogEntries = 200;
+  static const Duration sessionLifetime = Duration(hours: 8);
 
   bool _disposed = false;
   HttpServer? _server;
@@ -43,9 +48,11 @@ class CollaborationService {
   CollaborationMode _mode = CollaborationMode.idle;
   final List<CollaboratorInfo> _collaborators = [];
   final Map<String, CollaboratorInfo> _accessTokens = {};
+
   /// View-only access token (separate from edit tokens — T49).
   String? _viewToken;
   final Map<String, CollaboratorInfo> _viewTokens = {};
+
   /// Guards against overlapping polls: the adaptive timer must not fire
   /// while a slow poll is still in flight.
   bool _polling = false;
@@ -57,27 +64,34 @@ class CollaborationService {
   int _maxCollaborators = defaultMaxCollaborators;
   int _maxSlides = defaultMaxSlides;
   final Duration _pollInterval = defaultPollInterval;
+
   /// When true the host refuses new joins (session is committed).
   bool _sessionLocked = false;
 
   // ---- T47: per-slide merge, presence, locks, history. --------------------
   /// Slide index → revision when that slide was last written.
   final Map<int, int> _slideRevisions = {};
+
   /// Slide index → {name, color, at} of the last writer (conflict UI).
   final Map<int, Map<String, dynamic>> _lastWriters = {};
+
   /// Collaborator id → {name, color, slideIndex, x, y, lastSeen}.
   final Map<String, Map<String, dynamic>> _presence = {};
+
   /// Slide index → collaborator id holding a soft lock.
   final Map<int, String> _locks = {};
+
   /// Append-only "who changed what when" log (cap [_maxSyncLogEntries]).
   final List<Map<String, dynamic>> _syncLog = [];
 
   String? _sessionToken;
+  DateTime? _sessionExpiresAt;
   String? _clientAccessToken;
   String? _remoteHost;
   int? _remotePort;
   CollaborationRole _role = CollaborationRole.editor;
   int _revision = 0;
+
   /// Client-side mirror of the server per-slide revisions.
   final Map<int, int> _clientSlideRevisions = {};
 
@@ -114,8 +128,7 @@ class CollaborationService {
   String? get localIp => _localIp;
   int get port => _port;
   int get revision => _revision;
-  List<CollaboratorInfo> get collaborators =>
-      List.unmodifiable(_collaborators);
+  List<CollaboratorInfo> get collaborators => List.unmodifiable(_collaborators);
   Stream<CollaborationEvent> get eventStream => _eventController.stream;
 
   /// Connects collaboration to the real presentation model. Rebinding is safe
@@ -186,6 +199,7 @@ class CollaborationService {
       _port = port;
       _localIp = await getLocalIpAddress();
       _sessionToken = _newToken(32);
+      _sessionExpiresAt = DateTime.now().toUtc().add(sessionLifetime);
       _viewToken = (viewToken != null && viewToken.isNotEmpty)
           ? viewToken
           : _newToken(8);
@@ -245,8 +259,7 @@ class CollaborationService {
 
   /// Tunable session config (OPT 36): bounds are clamped sanely.
   void updateSessionConfig({int? maxCollaborators, int? maxSlides}) {
-    _maxCollaborators =
-        (maxCollaborators ?? _maxCollaborators).clamp(1, 100);
+    _maxCollaborators = (maxCollaborators ?? _maxCollaborators).clamp(1, 100);
     _maxSlides = (maxSlides ?? _maxSlides).clamp(1, 1000);
   }
 
@@ -278,13 +291,15 @@ class CollaborationService {
   Future<shelf.Response> _handleHealth(shelf.Request request) async {
     return _jsonResponse(200, {
       'status': 'ok',
-      'app': 'GhitaPPT',
-      'version': '2.0.0',
-      'protocol': 2,
+      'app': BuildInfo.productName,
+      'version': BuildInfo.appVersion,
+      'protocol': BuildInfo.collaborationProtocolVersion,
+      'expiresAt': _sessionExpiresAt?.toIso8601String(),
     });
   }
 
   Future<shelf.Response> _handleJoin(shelf.Request request) async {
+    if (_sessionExpired) return _errorResponse(410, 'session_expired');
     final headerToken = request.headers['x-ghita-session-token'] ?? '';
     final isViewJoin = _constantTimeEquals(headerToken, _viewToken ?? '');
     final isEditJoin = _constantTimeEquals(headerToken, _sessionToken ?? '');
@@ -416,9 +431,8 @@ class CollaborationService {
           // Soft lock: refuse to overwrite a slide another editor holds.
           final lockOwnerId = _locks[index];
           if (lockOwnerId != null && lockOwnerId != collab.id) {
-            final owner = _collaborators
-                .where((c) => c.id == lockOwnerId)
-                .firstOrNull;
+            final owner =
+                _collaborators.where((c) => c.id == lockOwnerId).firstOrNull;
             return _jsonResponse(409, {
               'error': 'slide_locked',
               'index': index,
@@ -509,14 +523,16 @@ class CollaborationService {
     if (collab == null) return _errorResponse(401, 'unauthorized');
     try {
       final body = await _readJsonObject(request);
-      final entry = _presence.putIfAbsent(collab.id, () => {
-            'name': collab.name,
-            'color': collab.color,
-            'slideIndex': 0,
-            'x': null,
-            'y': null,
-            'lastSeen': DateTime.now().toUtc().toIso8601String(),
-          });
+      final entry = _presence.putIfAbsent(
+          collab.id,
+          () => {
+                'name': collab.name,
+                'color': collab.color,
+                'slideIndex': 0,
+                'x': null,
+                'y': null,
+                'lastSeen': DateTime.now().toUtc().toIso8601String(),
+              });
       final slideIndex = body['slideIndex'];
       if (slideIndex is int && slideIndex >= 0) {
         entry['slideIndex'] = slideIndex;
@@ -562,8 +578,7 @@ class CollaborationService {
       if (acquire) {
         final holder = _locks[index];
         if (holder != null && holder != collab.id) {
-          final owner =
-              _collaborators.where((c) => c.id == holder).firstOrNull;
+          final owner = _collaborators.where((c) => c.id == holder).firstOrNull;
           return _jsonResponse(409, {
             'error': 'slide_locked',
             'owner': owner?.name ?? 'another user',
@@ -657,9 +672,7 @@ class CollaborationService {
     if (normalizedHost == null || port < 1 || port > 65535) return false;
     // Edit tokens are 32+ chars; the short view token (≥8) is allowed so
     // view-only links can join (T49).
-    if (sessionToken.length < 8 ||
-        name.trim().isEmpty ||
-        name.length > 64) {
+    if (sessionToken.length < 8 || name.trim().isEmpty || name.length > 64) {
       return false;
     }
 
@@ -756,9 +769,7 @@ class CollaborationService {
       if (delta is List && delta.isNotEmpty) {
         final merged = List<Map<String, dynamic>>.from(_slides);
         for (final item in delta) {
-          if (item is Map &&
-              item['index'] is int &&
-              item['slide'] is Map) {
+          if (item is Map && item['index'] is int && item['slide'] is Map) {
             final index = item['index'] as int;
             final slide = _validatedSlide(item['slide']);
             while (merged.length <= index) {
@@ -855,9 +866,8 @@ class CollaborationService {
     // Delta sync: compute the changed slide indexes vs our last-known server
     // snapshot and send only those. Unchanged slides keep server revisions.
     final delta = <Map<String, dynamic>>[];
-    final length = current.length > _slides.length
-        ? current.length
-        : _slides.length;
+    final length =
+        current.length > _slides.length ? current.length : _slides.length;
     for (var i = 0; i < length; i++) {
       final before = i < _slides.length ? _slides[i] : null;
       final after = i < current.length ? current[i] : null;
@@ -1072,9 +1082,8 @@ class CollaborationService {
     if (fingerprint == _slidesFingerprint) return;
     // Compute the changed indexes so the host records per-slide revisions
     // (the same bookkeeping a client delta push performs).
-    final length = current.length > _slides.length
-        ? current.length
-        : _slides.length;
+    final length =
+        current.length > _slides.length ? current.length : _slides.length;
     final changed = <int>[];
     for (var i = 0; i < length; i++) {
       final before = i < _slides.length ? _slides[i] : null;
@@ -1206,6 +1215,7 @@ class CollaborationService {
   }
 
   CollaboratorInfo? _authorizedCollaborator(shelf.Request request) {
+    if (_sessionExpired) return null;
     final authorization = request.headers[HttpHeaders.authorizationHeader];
     if (authorization == null || !authorization.startsWith('Bearer ')) {
       return null;
@@ -1219,6 +1229,9 @@ class CollaborationService {
     }
     return null;
   }
+
+  bool get _sessionExpired =>
+      _sessionExpiresAt != null && DateTime.now().toUtc().isAfter(_sessionExpiresAt!);
 
   String? _normalizeHost(String value) {
     final trimmed = value.trim();
@@ -1252,11 +1265,13 @@ class CollaborationService {
   shelf.Middleware _gzipMiddleware() {
     return (shelf.Handler innerHandler) {
       return (shelf.Request request) async {
-        final accepts = (request.headers['accept-encoding'] ?? '').toLowerCase();
+        final accepts =
+            (request.headers['accept-encoding'] ?? '').toLowerCase();
         final response = await innerHandler(request);
         if (!accepts.contains('gzip')) return response;
-        final bytes = await response.read().fold<List<int>>(
-            <int>[], (acc, chunk) => acc..addAll(chunk));
+        final bytes = await response
+            .read()
+            .fold<List<int>>(<int>[], (acc, chunk) => acc..addAll(chunk));
         if (bytes.isEmpty) return response;
         final compressed = gzip.encode(bytes);
         // `change` keeps the original Content-Length (that of the plain JSON

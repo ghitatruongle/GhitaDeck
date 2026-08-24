@@ -54,6 +54,16 @@ class PresentationState with ChangeNotifier {
   String? exportStatus;
   String? lastExportedPath;
 
+  // Document lifecycle state. The editor can render a recovery/loading state
+  // instead of guessing while the first asynchronous hydrate is in flight.
+  bool _isHydrating = true;
+  bool _isSaving = false;
+  bool _hasUnsavedChanges = false;
+  String? _lastPersistenceError;
+  int _documentRevision = 0;
+  int _savedRevision = 0;
+  late final Future<void> _readyFuture;
+
   // Current slide in the editor (session-only, used by "Present From Current").
   int _currentSlideIndex = 0;
   // Automatic slide advance ("Timing") — persisted across sessions.
@@ -119,9 +129,17 @@ class PresentationState with ChangeNotifier {
   List<Slide> get slides => _slides;
   SlideEffect get slideEffect => _slideEffect;
   DeckMeta get deckMeta => _deckMeta;
+  bool get isHydrating => _isHydrating;
+  bool get isSaving => _isSaving;
+  bool get hasUnsavedChanges => _hasUnsavedChanges;
+  String? get lastPersistenceError => _lastPersistenceError;
+  int get documentRevision => _documentRevision;
+  int get savedRevision => _savedRevision;
+  Future<void> get ready => _readyFuture;
 
   void setDeckMeta(DeckMeta meta) {
     _deckMeta = meta;
+    _recordHistory('Sửa thông tin Deck');
     notifyListeners();
     _debouncedSave();
   }
@@ -130,6 +148,7 @@ class PresentationState with ChangeNotifier {
   /// ruler) stored as deck meta.
   void updateGuideSettings(GuideSettings settings) {
     _deckMeta = _deckMeta.copyWith(guides: settings);
+    _recordHistory('Sửa hướng dẫn Canvas');
     notifyListeners();
     _debouncedSave();
   }
@@ -196,8 +215,25 @@ class PresentationState with ChangeNotifier {
   String get currentTheme => _slideEffect.name;
 
   PresentationState() {
-    loadPresentation();
-    _loadAutoAdvance();
+    _readyFuture = _initialize();
+  }
+
+  Future<void> _initialize() async {
+    try {
+      await Future.wait<void>([
+        loadPresentation(),
+        _loadAutoAdvance(),
+        loadCustomShows(),
+      ]);
+      _lastPersistenceError = null;
+    } catch (error, stack) {
+      _lastPersistenceError = error.toString();
+      debugPrint('PresentationState initialization failed: $error');
+      debugPrint('$stack');
+    } finally {
+      _isHydrating = false;
+      notifyListeners();
+    }
   }
 
   // ---- Auto advance ("Timing") ----
@@ -260,6 +296,7 @@ class PresentationState with ChangeNotifier {
     if (previous != null) {
       _slides = previous.map((s) => s.copyWith()).toList();
       _keepCurrentSlideInRange();
+      _markDirty();
       notifyListeners();
       savePresentation('Undo');
     }
@@ -270,6 +307,7 @@ class PresentationState with ChangeNotifier {
     if (next != null) {
       _slides = next.map((s) => s.copyWith()).toList();
       _keepCurrentSlideInRange();
+      _markDirty();
       notifyListeners();
       savePresentation('Redo');
     }
@@ -279,8 +317,15 @@ class PresentationState with ChangeNotifier {
     _historyService.recordSnapshot(action, _slides);
   }
 
+  void _markDirty() {
+    _documentRevision++;
+    _hasUnsavedChanges = true;
+    _lastPersistenceError = null;
+  }
+
   /// Debounced save to avoid excessive disk I/O during rapid edits (drag-reorder, typing).
   void _debouncedSave() {
+    _markDirty();
     _saveDebounce?.cancel();
     _saveDebounce = Timer(const Duration(milliseconds: 400), () {
       _saveDebounce = null;
@@ -411,6 +456,7 @@ class PresentationState with ChangeNotifier {
   void updateSlide(int index, Slide updatedSlide) {
     if (index >= 0 && index < _slides.length) {
       _slides[index] = updatedSlide;
+      _recordHistory('Cập nhật Slide');
       notifyListeners();
       _debouncedSave();
     }
@@ -900,6 +946,7 @@ class PresentationState with ChangeNotifier {
         timestamp: DateTime.now().millisecondsSinceEpoch,
       );
       _slides.insert(index + 1, duplicate);
+      _recordHistory('Nhân bản Slide');
       notifyListeners();
       _debouncedSave();
     }
@@ -911,8 +958,9 @@ class PresentationState with ChangeNotifier {
     if (newIndex < 0 || newIndex >= _slides.length) return;
     if (oldIndex == newIndex) return;
 
-    final slide = _slides.removeAt(oldIndex);
+    final slide =     _slides.removeAt(oldIndex);
     _slides.insert(newIndex, slide);
+    _recordHistory('Di chuyển Slide');
     notifyListeners();
     _debouncedSave();
   }
@@ -942,6 +990,8 @@ class PresentationState with ChangeNotifier {
 
   void setEffect(SlideEffect effect) {
     _slideEffect = effect;
+    _recordHistory('Đổi hiệu ứng Deck');
+    _markDirty();
     notifyListeners();
     savePresentation();
   }
@@ -951,6 +1001,8 @@ class PresentationState with ChangeNotifier {
     if (index >= 0 && index < _slides.length) {
       _slides[index] =
           _slides[index].copyWith(effect: effect, clearEffect: effect == null);
+      _recordHistory('Đổi hiệu ứng Slide');
+      _markDirty();
       notifyListeners();
       savePresentation();
     }
@@ -960,6 +1012,8 @@ class PresentationState with ChangeNotifier {
   void setSlideMorph(int index, bool enabled) {
     if (index < 0 || index >= _slides.length) return;
     _slides[index] = _slides[index].copyWith(morphFromPrevious: enabled);
+    _recordHistory('Đổi Morph Slide');
+    _markDirty();
     notifyListeners();
     savePresentation();
   }
@@ -978,6 +1032,8 @@ class PresentationState with ChangeNotifier {
       transitionSound: sound,
       autoAdvanceMs: autoAdvanceMs,
     );
+    _recordHistory('Sửa thiết lập chuyển Slide');
+    _markDirty();
     notifyListeners();
     savePresentation();
   }
@@ -1064,8 +1120,26 @@ class PresentationState with ChangeNotifier {
   // ---- Persistence ----
 
   Future<void> savePresentation([String? title]) async {
-    await _configService.saveSlides(
-        _slideMaps(), _slideEffect.name, _deckMeta.toJson());
+    final revisionBeingSaved = _documentRevision;
+    _isSaving = true;
+    notifyListeners();
+    try {
+      await _configService.saveSlides(
+          _slideMaps(), _slideEffect.name, _deckMeta.toJson());
+      _savedRevision = revisionBeingSaved;
+      if (_documentRevision == revisionBeingSaved) {
+        _hasUnsavedChanges = false;
+      }
+      _lastPersistenceError = null;
+    } catch (error, stack) {
+      _lastPersistenceError = error.toString();
+      debugPrint('PresentationState save failed: $error');
+      debugPrint('$stack');
+      rethrow;
+    } finally {
+      _isSaving = false;
+      notifyListeners();
+    }
   }
 
   Future<void> loadPresentation([String? title]) async {
@@ -1082,6 +1156,10 @@ class PresentationState with ChangeNotifier {
     _deckMeta = data['deckMeta'] is String
         ? DeckMeta.fromJson(data['deckMeta'] as String)
         : const DeckMeta();
+    _historyService.clear();
+    _recordHistory('Trạng thái ban đầu');
+    _savedRevision = _documentRevision;
+    _hasUnsavedChanges = false;
     notifyListeners();
   }
 

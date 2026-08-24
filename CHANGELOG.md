@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.0.1-beta.1] - 2026-08-19 — Stability & Hardening Beta
+
+### Đã triển khai trong đợt beta
+- Chuẩn hóa metadata build, version ứng dụng, collaboration protocol và `.ghita` schema.
+- Project bundle mới ghi `appVersion` và `schemaVersion`; bundle từ schema tương lai bị từ chối an toàn.
+- Presentation lifecycle có readiness, dirty revision, saving state và persistence error để UI không thao tác trước khi hydrate hoàn tất.
+- Các mutation slide cốt lõi được ghi history nhất quán hơn; persistence queue và atomic spill-file write giảm rủi ro save race.
+- Editor, AI và project loader dùng chung HTML safety policy; AI streaming có overall deadline.
+- LAN collaboration có session expiry metadata và authorization hết hạn.
+- Windows CI bổ sung l10n audit, build release và artifact upload.
+
+### Kiểm định
+- `flutter analyze --no-fatal-infos`: No issues found.
+- Full Flutter test suite vẫn cần xử lý Windows runner hang trước khi beta sign-off.
+
 ## [2.0.0] - 2026-08-15 — Official Production Release
 
 ### 🚀 Phát hành chính thức v2.0.0

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ghita_ppt_converter/models/slide.dart';
+import 'package:ghita_ppt_converter/config/build_info.dart';
 import 'package:ghita_ppt_converter/services/project_bundle_service.dart';
 import 'package:ghita_ppt_converter/services/wysiwyg_service.dart';
 import 'package:ghita_ppt_converter/services/designer_service.dart';
@@ -13,25 +14,27 @@ import 'package:ghita_ppt_converter/screens/widgets/slide_preview.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('Official Release 2.0.0 Quality Gate', () {
-    test('pubspec.yaml version is set to 2.0.0+1', () {
+  group('v2.0.1-beta Quality Gate', () {
+    test('pubspec.yaml version matches the centralized beta contract', () {
       final pubspecFile = File('pubspec.yaml');
       expect(pubspecFile.existsSync(), isTrue);
       final content = pubspecFile.readAsStringSync();
-      expect(content, contains('version: 2.0.0+1'));
-      expect(content, isNot(contains('version: 2.0.0-beta')));
+      expect(content, contains('version: 2.0.1-beta.1+1'));
+      expect(content, contains(BuildInfo.coreVersion));
     });
 
-    test('Installer definition MyAppDisplayVersion is set to 2.0.0', () {
+    test('Installer definition uses the beta display version', () {
       final issFile = File('installer/ghita_ppt_installer.iss');
       expect(issFile.existsSync(), isTrue);
       final content = issFile.readAsStringSync();
-      expect(content, contains('#define MyAppDisplayVersion "2.0.0"'));
-      expect(content, isNot(contains('2.0.0-beta')));
+      expect(content, contains('#define MyAppDisplayVersion "2.0.1-beta.1+1"'));
+      expect(content, contains('#define MyAppVersion "2.0.1.1"'));
     });
 
-    test('ProjectBundleService manifest uses official version 2.0.0', () async {
-      final tempDir = await Directory.systemTemp.createTemp('ghita_release_test_');
+    test('ProjectBundleService manifest uses app and schema versions',
+        () async {
+      final tempDir =
+          await Directory.systemTemp.createTemp('ghita_release_test_');
       try {
         final bundlePath = '${tempDir.path}/test_bundle.ghita';
         final slides = [
@@ -45,9 +48,13 @@ void main() {
         );
         expect(success, isTrue);
 
-        final bundle = await service.loadProjectBundle(bundlePath, extractDir: tempDir.path);
+        final bundle = await service.loadProjectBundle(bundlePath,
+            extractDir: tempDir.path);
         expect(bundle, isNotNull);
-        expect(bundle!['manifest']['version'], equals('2.0.0'));
+        expect(bundle!['manifest']['version'], equals(BuildInfo.appVersion));
+        expect(bundle['manifest']['appVersion'], equals(BuildInfo.appVersion));
+        expect(bundle['manifest']['schemaVersion'],
+            equals(BuildInfo.bundleSchemaVersion));
         expect(bundle['manifest']['appName'], contains('Ghita'));
       } finally {
         await tempDir.delete(recursive: true);
@@ -69,13 +76,18 @@ void main() {
       final missingInVi = enKeys.difference(viKeys);
       final missingInEn = viKeys.difference(enKeys);
 
-      expect(missingInVi, isEmpty, reason: 'Keys in EN but missing in VI: $missingInVi');
-      expect(missingInEn, isEmpty, reason: 'Keys in VI but missing in EN: $missingInEn');
+      expect(missingInVi, isEmpty,
+          reason: 'Keys in EN but missing in VI: $missingInVi');
+      expect(missingInEn, isEmpty,
+          reason: 'Keys in VI but missing in EN: $missingInEn');
       expect(enKeys.length, equals(viKeys.length));
     });
 
-    test('WYSIWYG service wraps and formats text correctly without tag corruption', () {
-      const initialHtml = '<h1>Quarterly Report</h1><p>Sales revenue increased by 25 percent.</p>';
+    test(
+        'WYSIWYG service wraps and formats text correctly without tag corruption',
+        () {
+      const initialHtml =
+          '<h1>Quarterly Report</h1><p>Sales revenue increased by 25 percent.</p>';
       final wrapped = WysiwygService.wrapSelection(
         initialHtml,
         31,
@@ -116,7 +128,9 @@ Welcome to the release.
       expect(slides[1].htmlContent, contains('<table'));
     });
 
-    test('AIProviderConfig allows custom model assignment and persists model ID', () {
+    test(
+        'AIProviderConfig allows custom model assignment and persists model ID',
+        () {
       final config = AIProviderConfig(
         id: 'test_provider',
         name: 'Custom DeepSeek',
@@ -135,8 +149,11 @@ Welcome to the release.
       expect(updated.baseUrl, equals('https://api.deepseek.com/v1'));
     });
 
-    test('SlidePreview.wrapSlideHtml creates a 16:9 responsive presentation wrapper with slide-canvas class', () {
-      const html = '<h1>Vision 2030</h1><p>Sustainable growth and innovation.</p>';
+    test(
+        'SlidePreview.wrapSlideHtml creates a 16:9 responsive presentation wrapper with slide-canvas class',
+        () {
+      const html =
+          '<h1>Vision 2030</h1><p>Sustainable growth and innovation.</p>';
       final wrapped = SlidePreview.wrapSlideHtml('Vision 2030', html);
 
       expect(wrapped, contains('class="slide-canvas"'));
@@ -145,25 +162,33 @@ Welcome to the release.
       expect(wrapped, contains('font-family:'));
     });
 
-    test('AIProviderManager.buildEndpointUrl safely normalizes URLs and prevents duplicate /v1/v1/', () {
+    test(
+        'AIProviderManager.buildEndpointUrl safely normalizes URLs and prevents duplicate /v1/v1/',
+        () {
       expect(
-        AIProviderManager.buildEndpointUrl('https://integrate.api.nvidia.com/v1', '/v1/chat/completions'),
+        AIProviderManager.buildEndpointUrl(
+            'https://integrate.api.nvidia.com/v1', '/v1/chat/completions'),
         equals('https://integrate.api.nvidia.com/v1/chat/completions'),
       );
       expect(
-        AIProviderManager.buildEndpointUrl('https://integrate.api.nvidia.com/v1/', '/v1/chat/completions'),
+        AIProviderManager.buildEndpointUrl(
+            'https://integrate.api.nvidia.com/v1/', '/v1/chat/completions'),
         equals('https://integrate.api.nvidia.com/v1/chat/completions'),
       );
       expect(
-        AIProviderManager.buildEndpointUrl('https://api.openai.com', '/v1/chat/completions'),
+        AIProviderManager.buildEndpointUrl(
+            'https://api.openai.com', '/v1/chat/completions'),
         equals('https://api.openai.com/v1/chat/completions'),
       );
       expect(
-        AIProviderManager.buildEndpointUrl('https://integrate.api.nvidia.com/v1/chat/completions', '/v1/chat/completions'),
+        AIProviderManager.buildEndpointUrl(
+            'https://integrate.api.nvidia.com/v1/chat/completions',
+            '/v1/chat/completions'),
         equals('https://integrate.api.nvidia.com/v1/chat/completions'),
       );
       expect(
-        AIProviderManager.buildEndpointUrl('https://integrate.api.nvidia.com/v1', '/v1/models'),
+        AIProviderManager.buildEndpointUrl(
+            'https://integrate.api.nvidia.com/v1', '/v1/models'),
         equals('https://integrate.api.nvidia.com/v1/models'),
       );
     });

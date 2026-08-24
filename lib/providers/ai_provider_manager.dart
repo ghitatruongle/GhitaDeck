@@ -315,6 +315,14 @@ class AIProviderManager with ChangeNotifier {
 
   /// Build the deck-context block appended to the system prompt when
   /// [useDeckContext] is on. Pure static so it is unit-testable.
+  static const int maxDeckContextCharacters = 20000;
+
+  static String _boundedContext(String value) {
+    final trimmed = value.trim();
+    if (trimmed.length <= maxDeckContextCharacters) return trimmed;
+    return '${trimmed.substring(0, maxDeckContextCharacters)}\n[context truncated]';
+  }
+
   static String buildDeckContextPrompt({
     required String layoutType,
     required String themeSummary,
@@ -324,14 +332,14 @@ class AIProviderManager with ChangeNotifier {
   }) {
     final buf = StringBuffer()
       ..writeln('\n--- Deck context (follow it exactly) ---')
-      ..writeln('Current slide layout: $layoutType')
-      ..writeln('Theme: $themeSummary')
-      ..writeln('UI language: $uiLanguage');
+      ..writeln('Current slide layout: ${_boundedContext(layoutType)}')
+      ..writeln('Theme: ${_boundedContext(themeSummary)}')
+      ..writeln('UI language: ${_boundedContext(uiLanguage)}');
     if (currentSlideSummary != null && currentSlideSummary.trim().isNotEmpty) {
-      buf.writeln('Current slide content: ${currentSlideSummary.trim()}');
+      buf.writeln('Current slide content: ${_boundedContext(currentSlideSummary)}');
     }
     if (deckOutline != null && deckOutline.trim().isNotEmpty) {
-      buf.writeln('Deck outline: ${deckOutline.trim()}');
+      buf.writeln('Deck outline: ${_boundedContext(deckOutline)}');
     }
     buf.writeln(
         'Style your generated HTML to match this theme (colors/fonts/classes) '
@@ -865,6 +873,7 @@ class AIProviderManager with ChangeNotifier {
 
   http.Client? _streamClient;
   bool _streamCancelled = false;
+  static const Duration _streamDeadline = Duration(minutes: 2);
 
   void cancelStream() {
     _streamCancelled = true;
@@ -1000,11 +1009,15 @@ class AIProviderManager with ChangeNotifier {
       // Parse SSE lines across chunk boundaries.
       // v1.2.0: Also handle Anthropic event: lines
       var buffer = '';
+      final deadline = Stopwatch()..start();
       await for (final chunk in response.stream
           .transform(utf8.decoder)
           .timeout(const Duration(seconds: 30))) {
+        if (deadline.elapsed > _streamDeadline) {
+          throw TimeoutException('AI streaming exceeded the overall deadline.');
+        }
         buffer += chunk;
-        final lines = buffer.split('\n');
+        final lines = buffer.split('\\n');
         buffer = lines.removeLast();
         for (final line in lines) {
           final delta = parseStreamLine(provider.formatType, line);

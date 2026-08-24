@@ -7,6 +7,9 @@ library;
 
 import 'dart:async';
 
+/// Lifecycle state exposed by export orchestration and UI.
+enum ExportLifecycleState { idle, exporting, success, failed, cancelled }
+
 /// Thrown when an export is cancelled through its [ExportCancelToken].
 class ExportCancelledException implements Exception {
   const ExportCancelledException();

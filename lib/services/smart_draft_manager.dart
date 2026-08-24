@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../config/build_info.dart';
 import '../models/slide.dart';
 
 /// Smart Draft Manager — v1.2.0 + Track 65 (OPT 26/27).
@@ -51,7 +52,7 @@ class SmartDraftManager {
       final file = await _getDraftFile();
       final slidesJson = jsonEncode(slides.map((s) => s.toMap()).toList());
       final draftData = <String, dynamic>{
-        'version': '2.0.0',
+        'version': BuildInfo.appVersion,
         'timestamp': DateTime.now().millisecondsSinceEpoch,
         'metadata': metadata ?? {},
       };

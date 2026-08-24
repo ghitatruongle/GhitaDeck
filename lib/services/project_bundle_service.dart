@@ -6,7 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import '../models/slide.dart';
-import 'ai_html_guard.dart';
+import '../config/build_info.dart';
+import 'html_sanitizer_service.dart';
 
 /// Service for packing and unpacking `.ghita` project bundle files.
 /// A `.ghita` file is an encoded ZIP archive containing:
@@ -44,6 +45,7 @@ class ProjectBundleService {
     String title = 'Untitled Presentation',
     String author = 'Ghita User',
     String aspectRatio = '16:9',
+    int schemaVersion = BuildInfo.bundleSchemaVersion,
     Map<String, dynamic>? extraManifest,
     List<Map<String, dynamic>>? historySnapshots,
     List<MapEntry<String, Uint8List>>? mediaFiles,
@@ -56,8 +58,10 @@ class ProjectBundleService {
       // 1. Manifest
       final manifestMap = {
         if (extraManifest != null) ...extraManifest,
-        'appName': 'Ghita PowerPoint Converter',
-        'version': '2.0.0',
+        'appName': BuildInfo.productName,
+        'version': BuildInfo.appVersion,
+        'appVersion': BuildInfo.appVersion,
+        'schemaVersion': schemaVersion,
         'title': title,
         'author': author,
         'aspectRatio': aspectRatio,
@@ -229,9 +233,7 @@ class ProjectBundleService {
             slides = rawList
                 .map((e) => Slide.fromMap(Map<String, dynamic>.from(e as Map)))
                 .map((slide) => slide.copyWith(
-                      htmlContent: AIHtmlGuard.guard(slide.htmlContent,
-                              maxBytes: AIHtmlGuard.presentationMaxBytes)
-                          .html,
+htmlContent: HtmlSanitizerService.sanitize(slide.htmlContent).html,
                     ))
                 .toList();
           } else if (archiveFile.name == 'history.json') {
@@ -277,6 +279,20 @@ class ProjectBundleService {
 
       if (!slidesSeen) {
         throw const FormatException('Project bundle has no slides.json.');
+      }
+
+      // Bundles without schemaVersion are legacy schema 1 documents. They are
+      // still accepted, while future schemas are rejected rather than being
+      // silently misread.
+      final rawSchemaVersion = manifest?['schemaVersion'];
+      final schemaVersion = rawSchemaVersion is num
+          ? rawSchemaVersion.toInt()
+          : int.tryParse(rawSchemaVersion?.toString() ?? '') ?? 1;
+      if (schemaVersion > BuildInfo.bundleSchemaVersion) {
+        throw FormatException(
+          'Project bundle schema $schemaVersion is newer than supported '
+          '${BuildInfo.bundleSchemaVersion}.',
+        );
       }
 
       // Rewrite slides whose audioPath is a bundle-relative media reference

@@ -1,6 +1,6 @@
 name: ghita_ppt_converter
 description: A Flutter app for creating PowerPoint presentations with HTML support and AI chat integration
-version: 2.0.1-beta2+2
+version: 2.0.1+3
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -16,20 +16,17 @@ dependencies:
   crypto: ^3.0.3
   collection: ^1.19.0
   path: ^1.8.3
-  uuid: ^4.2.1
   html: ^0.15.2
   image: ^4.1.0
   pdf: ^3.10.0
   printing: ^5.14.0
   http: ^1.1.0
   provider: ^6.0.5
-  cupertino_icons: ^1.0.6
 
   # Storage & Persistence
   flutter_secure_storage: ^9.0.0
   shared_preferences: ^2.2.2
   path_provider: ^2.1.1
-  file: ^7.0.0
 
   # UI & Animation
   flutter_animate: ^4.2.0
@@ -38,16 +35,12 @@ dependencies:
   # v1.2.0 — New dependencies
   ffi: ^2.1.0                  # Win32 eyedropper bindings (Track 24)
   file_picker: ^8.0.0          # Open/Save file dialogs
-  record: ^7.1.1               # Audio recording
-  audioplayers: ^6.0.0         # Audio playback
+  record: ^7.1.1               # Audio recording (narration capture)
   xml: ^6.5.0                  # PPTX/DOCX parsing (Track 66)
   shelf: ^1.4.0                # HTTP server for collaboration
   shelf_router: ^1.1.0         # Router for shelf server
   network_info_plus: ^5.0.0    # Local IP for collaboration/broadcast
   qr_flutter: ^4.1.0           # QR code generation
-  highlight: ^0.7.0            # Code syntax highlighting
-  flutter_highlight: ^0.7.0    # Flutter syntax highlighting widget
-  url_launcher: ^6.2.0         # Open URLs externally
   window_manager: ^0.3.0       # Window management (resize, fullscreen)
 
   # v1.5.0 — New dependencies

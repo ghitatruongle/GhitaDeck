@@ -5,6 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ghita_ppt_converter/services/wifi_broadcaster_service.dart';
 
 /// Track 40 tests — Real-time broadcast via SSE (FEAT 64 + OPT 33).
+///
+/// T08 auth contract: the share-link token (?t=) is a bootstrap credential
+/// only. The first page load mints an HttpOnly ghita_broadcast cookie; every
+/// later request authenticates via that cookie or the X-Ghita-Token header.
 void main() {
   late WifiBroadcasterService svc;
   late String base;
@@ -24,14 +28,39 @@ void main() {
 
   HttpClient directClient() => HttpClient()..findProxy = (_) => 'DIRECT';
 
-  Future<HttpClientResponse> get(String path) {
+  Future<HttpClientResponse> getWithQuery(String path) {
     final separator = path.contains('?') ? '&' : '?';
     return directClient()
         .getUrl(Uri.parse('$base$path${separator}t=$accessToken'))
         .then((r) => r.close());
   }
 
-  test('endpoints reject requests without an access token', () async {
+  Future<HttpClientResponse> getAsSession(
+    String path, {
+    String? cookie,
+    String? headerToken,
+  }) async {
+    final req = await directClient().getUrl(Uri.parse('$base$path'));
+    if (cookie != null) req.headers.set(HttpHeaders.cookieHeader, cookie);
+    if (headerToken != null) req.headers.set('X-Ghita-Token', headerToken);
+    return req.close();
+  }
+
+  /// Load /view?t=<token> exactly once like a real browser following the QR
+  /// link, and return the ghita_broadcast session cookie it mints.
+  Future<String> mintSession() async {
+    final resp = await getWithQuery('/view');
+    expect(resp.statusCode, 200);
+    final setCookies = resp.headers[HttpHeaders.setCookieHeader];
+    expect(setCookies, isNotNull);
+    final setCookie = setCookies!
+        .singleWhere((c) => c.startsWith('ghita_broadcast='));
+    expect(setCookie, contains('HttpOnly'));
+    expect(setCookie, contains('SameSite=Strict'));
+    return setCookie.split(';').first;
+  }
+
+  test('endpoints reject requests without any credential', () async {
     final resp = await directClient()
         .getUrl(Uri.parse('$base/view'))
         .then((r) => r.close());
@@ -62,15 +91,17 @@ void main() {
   }
 
   test('view page serves HTML with EventSource (no reload flicker)', () async {
-    final resp = await get('/view');
+    final resp = await getWithQuery('/view');
     final body = await resp.transform(utf8.decoder).join();
     expect(resp.statusCode, 200);
     expect(body, contains('EventSource'));
     expect(body, contains('/events'));
   });
 
-  test('SSE endpoint pushes current state on connect', () async {
-    final resp = await get('/events');
+  test('SSE endpoint pushes current state on connect (cookie session)',
+      () async {
+    final cookie = await mintSession();
+    final resp = await getAsSession('/events', cookie: cookie);
     expect(resp.statusCode, 200);
     expect(resp.headers.contentType?.mimeType, 'text/event-stream');
     final text = await readUntil(resp, 'data:');
@@ -78,8 +109,38 @@ void main() {
     expect(text, contains('currentSlide'));
   });
 
+  test('share-link token alone cannot open data endpoints (T08)', () async {
+    // A bare query token must NOT authorize the stream or control anymore.
+    final events = await directClient()
+        .getUrl(Uri.parse('$base/events?t=$accessToken'))
+        .then((r) => r.close());
+    expect(events.statusCode, 401);
+    final control = await directClient()
+        .getUrl(Uri.parse('$base/control?action=next&t=$accessToken'))
+        .then((r) => r.close());
+    expect(control.statusCode, 401);
+  });
+
+  test('X-Ghita-Token header authorizes the slide stream (T08)', () async {
+    final resp =
+        await getAsSession('/events', headerToken: accessToken);
+    expect(resp.statusCode, 200);
+    expect(resp.headers.contentType?.mimeType, 'text/event-stream');
+    final text = await readUntil(resp, 'data:');
+    expect(text, contains('currentSlide'));
+  });
+
+  test('a wrong session cookie is rejected (T08)', () async {
+    final resp = await getAsSession(
+      '/events',
+      cookie: 'ghita_broadcast=${'ab' * 32}',
+    );
+    expect(resp.statusCode, 401);
+  });
+
   test('SSE pushes slide updates live without reconnect', () async {
-    final resp = await get('/events');
+    final cookie = await mintSession();
+    final resp = await getAsSession('/events', cookie: cookie);
     final sb = StringBuffer();
     final sawInitial = Completer<String>();
     final sawUpdate = Completer<String>();
@@ -107,14 +168,17 @@ void main() {
 
   test('viewer count tracks connected SSE clients', () async {
     final before = svc.viewerCount;
-    final resp = await get('/events');
+    final cookie = await mintSession();
+    final resp = await getAsSession('/events', cookie: cookie);
     await Future<void>.delayed(const Duration(milliseconds: 200));
     expect(svc.viewerCount, greaterThanOrEqualTo(before + 1));
     resp.detachSocket();
   });
 
   test('control endpoint accepts next when allowControl is on', () async {
-    final resp = await get('/control?action=next');
+    final cookie = await mintSession();
+    final resp =
+        await getAsSession('/control?action=next', cookie: cookie);
     final body = await resp.transform(utf8.decoder).join();
     expect(resp.statusCode, 200);
     expect(body, 'ok');
@@ -124,22 +188,43 @@ void main() {
     final svc2 = WifiBroadcasterService();
     final url = await svc2.startBroadcaster(port: 8060, allowControl: false);
     final token = Uri.parse(url!).queryParameters['t'];
-    final resp = await directClient()
-        .getUrl(Uri.parse('http://127.0.0.1:8060/control?action=next&t=$token'))
+    // Mint a valid session first: this must be a 403 "control disabled",
+    // not a 401 authentication failure.
+    final view = await directClient()
+        .getUrl(Uri.parse('http://127.0.0.1:8060/view?t=$token'))
         .then((r) => r.close());
+    expect(view.statusCode, 200);
+    final cookie = view.headers[HttpHeaders.setCookieHeader]!
+        .singleWhere((c) => c.startsWith('ghita_broadcast='))
+        .split(';')
+        .first;
+    final req = await directClient()
+        .getUrl(Uri.parse('http://127.0.0.1:8060/control?action=next'));
+    req.headers.set(HttpHeaders.cookieHeader, cookie);
+    final resp = await req.close();
     expect(resp.statusCode, 403);
     await svc2.stopBroadcaster();
   });
 
-  test('one-time link is single use', () async {
+  test('one-time link mints a session and is single use', () async {
     final svc2 = WifiBroadcasterService();
     await svc2.startBroadcaster(port: 8070, allowControl: false);
     final token = svc2.createOneTimeLink();
-    final res1 = await directClient()
-        .getUrl(Uri.parse('http://127.0.0.1:8070/once?t=$token'))
-        .then((r) => r.close());
-    // Followed the redirect to the view page (and consumed the token).
-    expect(res1.redirects.any((r) => r.location.path == '/view'), isTrue);
+    // Don't auto-follow: the 302 is where the session cookie is minted.
+    final req = await directClient()
+        .getUrl(Uri.parse('http://127.0.0.1:8070/once?t=$token'));
+    req.followRedirects = false;
+    final res1 = await req.close();
+    expect(res1.statusCode, HttpStatus.found);
+    expect(
+      res1.headers.value(HttpHeaders.locationHeader),
+      '/view',
+    );
+    expect(
+      res1.headers[HttpHeaders.setCookieHeader]!
+          .any((c) => c.startsWith('ghita_broadcast=')),
+      isTrue,
+    );
     final res2 = await directClient()
         .getUrl(Uri.parse('http://127.0.0.1:8070/once?t=$token'))
         .then((r) => r.close());

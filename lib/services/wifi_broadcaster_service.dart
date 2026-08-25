@@ -40,6 +40,12 @@ class BroadcastState {
 /// it changes, so viewers see updates instantly with no reload flicker.
 /// Optional control buttons (next/prev) when the host enables them, a viewer
 /// counter, and an optional expiring one-time link.
+///
+/// Authentication model (T08): the share link (`?t=` or `/once?t=`) is a
+/// bootstrap credential — the first page load mints an HttpOnly, SameSite=Strict
+/// session cookie; all subsequent slide/SSE/control requests authenticate via
+/// that cookie (or the `X-Ghita-Token` header for non-browser clients). The
+/// access token is never accepted as a standing URL parameter on data endpoints.
 class WifiBroadcasterService {
   HttpServer? _server;
   String _currentSlideHtml = '<h1>Waiting for presentation...</h1>';
@@ -233,7 +239,15 @@ class WifiBroadcasterService {
       await request.response.close();
       return;
     }
-    if (!_isAuthorized(request)) {
+    // T08: the share-link token (?t=) is a BOOTSTRAP credential only — valid
+    // solely on the entry pages (/view or /), exactly once, to mint the
+    // HttpOnly session cookie. Every later request (slide stream, control,
+    // reload without the link) authenticates via the ghita_broadcast cookie
+    // or the X-Ghita-Token header, so the access token stops recurring in
+    // URLs, browser history and server logs.
+    final viaBootstrapQuery = (path == '/view' || path == '/') &&
+        _queryTokenValid(request);
+    if (!viaBootstrapQuery && !_sessionAuthorized(request)) {
       request.response
         ..statusCode = HttpStatus.unauthorized
         ..headers.set(HttpHeaders.cacheControlHeader, 'no-store')
@@ -241,7 +255,7 @@ class WifiBroadcasterService {
       await request.response.close();
       return;
     }
-    if (request.uri.queryParameters['t'] == _accessToken) {
+    if (viaBootstrapQuery) {
       _setAccessCookie(request.response);
     }
     // SSE stream (Track 40, OPT 33).
@@ -385,10 +399,21 @@ class WifiBroadcasterService {
     await request.response.close();
   }
 
-  bool _isAuthorized(HttpRequest request) {
+  /// The share-link query token is accepted only as a bootstrap credential
+  /// (T08) — never as a standing credential for slide/control traffic.
+  bool _queryTokenValid(HttpRequest request) {
+    final accessToken = _accessToken;
+    return accessToken != null &&
+        request.uri.queryParameters['t'] == accessToken;
+  }
+
+  /// Session credentials minted after the first page load: the HttpOnly
+  /// ghita_broadcast cookie (browsers send it automatically for same-origin
+  /// EventSource/fetch) or the X-Ghita-Token header for non-browser clients.
+  bool _sessionAuthorized(HttpRequest request) {
     final accessToken = _accessToken;
     if (accessToken == null) return false;
-    if (request.uri.queryParameters['t'] == accessToken) return true;
+    if (request.headers.value('X-Ghita-Token') == accessToken) return true;
     return request.cookies.any(
       (cookie) =>
           cookie.name == 'ghita_broadcast' && cookie.value == accessToken,

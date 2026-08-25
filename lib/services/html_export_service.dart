@@ -254,6 +254,24 @@ class HtmlExportService {
     final bgStylesBlock = slideBgStyles.join('\n  ');
     final transitionBlock = slideTransitions.join(',');
 
+    // v2.0.1 P3b: media player weight ships only when the deck actually
+    // contains those elements — the same "emit what the deck uses" principle
+    // Track 07 applied to effect CSS. A text-only deck no longer carries the
+    // video/audio/model3d player code (~3 KB).
+    //
+    // Audio reaches a deck through two paths, both checked here: inline
+    // <audio> markup in the slide HTML, and the slide['audioPath'] narration
+    // field (hoisted into ghitaAudios later in this method).
+    final deckHtmlBlob =
+        slides.map((s) => s['htmlContent'] as String? ?? '').join('\n');
+    final hasVideoMedia = deckHtmlBlob.contains('<video');
+    final hasAudioMedia = deckHtmlBlob.contains('<audio') ||
+        slides.any((s) {
+          final p = (s['audioPath'] ?? '').toString();
+          return p.isNotEmpty && File(p).existsSync();
+        });
+    final hasModel3dMedia = deckHtmlBlob.contains('data-model3d');
+
     // Generate CSS for the effects this deck actually uses (Track 07, P2):
     // one short class per effect, duplicated keyframes emitted only once.
     final effectsCss = EffectPreviewService.generateEffectsCss(
@@ -374,85 +392,92 @@ class HtmlExportService {
     buffer.write('  }');
     buffer.write('  .slide b, .slide strong { color: #111827; }');
     buffer.write('  .slide i, .slide em { color: #475569; }');
-    buffer.write('  .slide video {');
-    buffer.write('    width: min(100%, 960px);');
-    buffer.write('    max-height: 62vh;');
-    buffer.write('    display: block;');
-    buffer.write('    margin: 0 auto 0.4em auto;');
-    buffer.write('    border-radius: 8px;');
-    buffer.write('    background: #000;');
-    buffer.write('  }');
-    buffer.write('  .ghita-video-bookmarks {');
-    buffer.write('    display: flex;');
-    buffer.write('    flex-wrap: wrap;');
-    buffer.write('    gap: 0.5em;');
-    buffer.write('    justify-content: center;');
-    buffer.write('    margin-bottom: 0.8em;');
-    buffer.write('  }');
-    buffer.write('  .ghita-video-bookmarks button {');
-    buffer.write('    background: rgba(255,255,255,0.12);');
-    buffer.write('    color: #e0e0e0;');
-    buffer.write('    border: 1px solid rgba(255,255,255,0.25);');
-    buffer.write('    border-radius: 999px;');
-    buffer.write('    padding: 0.25em 0.8em;');
-    buffer.write('    font-size: 0.85rem;');
-    buffer.write('    cursor: pointer;');
-    buffer.write('  }');
-    buffer.write('  .ghita-video-bookmarks button:hover { background: rgba(255,255,255,0.25); }');
-    buffer.write('  .ghita-video-youtube {');
-    buffer.write('    position: relative;');
-    buffer.write('    display: block;');
-    buffer.write('    width: min(100%, 960px);');
-    buffer.write('    margin: 0 auto;');
-    buffer.write('    border-radius: 8px;');
-    buffer.write('    overflow: hidden;');
-    buffer.write('    text-decoration: none;');
-    buffer.write('  }');
-    buffer.write('  .ghita-video-youtube img { width: 100%; display: block; }');
-    buffer.write('  .ghita-video-play {');
-    buffer.write('    position: absolute;');
-    buffer.write('    top: 50%; left: 50%;');
-    buffer.write('    transform: translate(-50%, -50%);');
-    buffer.write('    width: 3.2em; height: 3.2em;');
-    buffer.write('    border-radius: 50%;');
-    buffer.write('    background: rgba(0,0,0,0.65);');
-    buffer.write('    color: #fff;');
-    buffer.write('    display: grid; place-items: center;');
-    buffer.write('    font-size: 1.1rem;');
-    buffer.write('    border: 2px solid rgba(255,255,255,0.9);');
-    buffer.write('  }');
-    buffer.write('  .slide audio {');
-    buffer.write('    width: min(100%, 420px);');
-    buffer.write('    display: block;');
-    buffer.write('    margin: 0.4em auto 0.2em auto;');
-    buffer.write('  }');
-    buffer.write('  .ghita-audio-toggle {');
-    buffer.write('    background: rgba(255,255,255,0.14);');
-    buffer.write('    border: 1px solid rgba(255,255,255,0.3);');
-    buffer.write('    color: #fff;');
-    buffer.write('    border-radius: 50%;');
-    buffer.write('    width: 2.6em; height: 2.6em;');
-    buffer.write('    font-size: 1.05rem;');
-    buffer.write('    cursor: pointer;');
-    buffer.write('    display: block;');
-    buffer.write('    margin: 0 auto;');
-    buffer.write('  }');
-    buffer.write('  .ghita-audio-toggle:hover { background: rgba(255,255,255,0.3); }');
-    buffer.write('  .ghita-model3d {');
-    buffer.write('    margin: 0 auto 0.6em auto;');
-    buffer.write('    max-width: min(100%, 720px);');
-    buffer.write('  }');
-    buffer.write('  .ghita-model3d svg {');
-    buffer.write('    width: 100%;');
-    buffer.write('    display: block;');
-    buffer.write('    border-radius: 8px;');
-    buffer.write('  }');
-    buffer.write('  .ghita-model3d-note {');
-    buffer.write('    text-align: center;');
-    buffer.write('    font-size: 0.8rem;');
-    buffer.write('    color: #9aa5c0;');
-    buffer.write('    margin-top: 0.3em;');
-    buffer.write('  }');
+    if (hasVideoMedia) {
+      buffer.write('  .slide video {');
+      buffer.write('    width: min(100%, 960px);');
+      buffer.write('    max-height: 62vh;');
+      buffer.write('    display: block;');
+      buffer.write('    margin: 0 auto 0.4em auto;');
+      buffer.write('    border-radius: 8px;');
+      buffer.write('    background: #000;');
+      buffer.write('  }');
+      buffer.write('  .ghita-video-bookmarks {');
+      buffer.write('    display: flex;');
+      buffer.write('    flex-wrap: wrap;');
+      buffer.write('    gap: 0.5em;');
+      buffer.write('    justify-content: center;');
+      buffer.write('    margin-bottom: 0.8em;');
+      buffer.write('  }');
+      buffer.write('  .ghita-video-bookmarks button {');
+      buffer.write('    background: rgba(255,255,255,0.12);');
+      buffer.write('    color: #e0e0e0;');
+      buffer.write('    border: 1px solid rgba(255,255,255,0.25);');
+      buffer.write('    border-radius: 999px;');
+      buffer.write('    padding: 0.25em 0.8em;');
+      buffer.write('    font-size: 0.85rem;');
+      buffer.write('    cursor: pointer;');
+      buffer.write('  }');
+      buffer.write('  .ghita-video-bookmarks button:hover { background: rgba(255,255,255,0.25); }');
+      buffer.write('  .ghita-video-youtube {');
+      buffer.write('    position: relative;');
+      buffer.write('    display: block;');
+      buffer.write('    width: min(100%, 960px);');
+      buffer.write('    margin: 0 auto;');
+      buffer.write('    border-radius: 8px;');
+      buffer.write('    overflow: hidden;');
+      buffer.write('    text-decoration: none;');
+      buffer.write('  }');
+      buffer.write('  .ghita-video-youtube img { width: 100%; display: block; }');
+      buffer.write('  .ghita-video-play {');
+      buffer.write('    position: absolute;');
+      buffer.write('    top: 50%; left: 50%;');
+      buffer.write('    transform: translate(-50%, -50%);');
+      buffer.write('    width: 3.2em; height: 3.2em;');
+      buffer.write('    border-radius: 50%;');
+      buffer.write('    background: rgba(0,0,0,0.65);');
+      buffer.write('    color: #fff;');
+      buffer.write('    display: grid; place-items: center;');
+      buffer.write('    font-size: 1.1rem;');
+      buffer.write('    border: 2px solid rgba(255,255,255,0.9);');
+      buffer.write('  }');
+    }
+    if (hasAudioMedia) {
+      buffer.write('  .slide audio {');
+      buffer.write('    width: min(100%, 420px);');
+      buffer.write('    display: block;');
+      buffer.write('    margin: 0.4em auto 0.2em auto;');
+      buffer.write('  }');
+      buffer.write('  .ghita-audio-toggle {');
+      buffer.write('    background: rgba(255,255,255,0.14);');
+      buffer.write('    border: 1px solid rgba(255,255,255,0.3);');
+      buffer.write('    color: #fff;');
+      buffer.write('    border-radius: 50%;');
+      buffer.write('    width: 2.6em; height: 2.6em;');
+      buffer.write('    font-size: 1.05rem;');
+      buffer.write('    cursor: pointer;');
+      buffer.write('    display: block;');
+      buffer.write('    margin: 0 auto;');
+      buffer.write('  }');
+      buffer
+          .write('  .ghita-audio-toggle:hover { background: rgba(255,255,255,0.3); }');
+    }
+    if (hasModel3dMedia) {
+      buffer.write('  .ghita-model3d {');
+      buffer.write('    margin: 0 auto 0.6em auto;');
+      buffer.write('    max-width: min(100%, 720px);');
+      buffer.write('  }');
+      buffer.write('  .ghita-model3d svg {');
+      buffer.write('    width: 100%;');
+      buffer.write('    display: block;');
+      buffer.write('    border-radius: 8px;');
+      buffer.write('  }');
+      buffer.write('  .ghita-model3d-note {');
+      buffer.write('    text-align: center;');
+      buffer.write('    font-size: 0.8rem;');
+      buffer.write('    color: #9aa5c0;');
+      buffer.write('    margin-top: 0.3em;');
+      buffer.write('  }');
+    }
     buffer.write('  .slide ul, .slide ol {');
     buffer.write('    margin: 0.5em 0 0.5em 1.5em;');
     buffer.write('    font-size: clamp(0.95rem, 1.8vw, 1.4rem);');
@@ -737,85 +762,91 @@ class HtmlExportService {
     final closeSeq = '<${String.fromCharCode(92)}/';
     String safeJson(String raw) => raw.replaceAll('</', closeSeq);
     buffer.write('  const ghitaImages = ${safeJson(jsonEncode(lazyImages))};');
-    buffer.write('  const ghitaVideos = ${safeJson(jsonEncode(lazyVideos))};');
-    buffer.write('  const ghitaAudios = ${jsonEncode(lazyAudios)};');
-    buffer.write('  function setupAudio(el) {');
-    buffer.write('    let opts = {};');
-    buffer.write('    try { opts = JSON.parse(el.dataset.audio || "{}"); } catch (e) {}');
-    buffer.write('    // Track 13, P3/P6/P7: loop, trim window, hide icon.\n');
-    buffer.write('    if (opts.loop) el.loop = true;');
-    buffer.write('    const ts = parseFloat(opts.trimStart) || 0;');
-    buffer.write('    const te = parseFloat(opts.trimEnd) || 0;');
-    buffer.write('    if (ts > 0) el.addEventListener("loadedmetadata", () => { el.currentTime = ts; });');
-    buffer.write('    if (te > ts && te > 0) {');
-    buffer.write('      el.addEventListener("timeupdate", () => {');
-    buffer.write('        if (el.currentTime >= te) { el.currentTime = Math.max(ts, 0); if (!el.loop) el.pause(); }');
-    buffer.write('      });');
-    buffer.write('    }');
-    buffer.write('    if (el.dataset.hideicon) {');
-    buffer.write('      el.removeAttribute("controls");');
-    buffer.write('      const b = document.createElement("button");');
-    buffer.write('      b.type = "button"; b.className = "ghita-audio-toggle";');
-    buffer.write('      b.innerHTML = "&#128266;";');
-    buffer.write('      b.title = opts.autoplay ? "" : "Play narration";');
-    buffer.write('      b.onclick = () => { if (el.paused) { el.play().catch(() => {}); } else { el.pause(); } };');
-    buffer.write('      el.parentNode.insertBefore(b, el.nextSibling);');
-    buffer.write('    }');
-    buffer.write('    if (opts.autoplay) el.play().catch(() => {});');
-    buffer.write('  }');
-    buffer.write('  function fmtTime(s) {');
-    buffer.write('    const m = Math.floor(s / 60); const sec = Math.floor(s % 60);');
-    buffer.write('    return m + ":" + (sec < 10 ? "0" : "") + sec;');
-    buffer.write('  }');
-    buffer.write('  function setupVideo(vd) {');
-    buffer.write('    let opts = {};');
-    buffer.write('    try { opts = JSON.parse(vd.dataset.video || "{}"); } catch (e) {}');
-    buffer.write('    // Track 11, P7: online videos become a thumbnail that\n');
-    buffer.write('    // opens YouTube (the deck stays iframe-free).\n');
-    buffer.write('    if (opts.youtubeId) {');
-    buffer.write('      const a = document.createElement("a");');
-    buffer.write('      a.href = "https://www.youtube.com/watch?v=" + opts.youtubeId;');
-    buffer.write('      a.target = "_blank"; a.rel = "noopener";');
-    buffer.write('      a.className = "ghita-video-youtube";');
-    buffer.write('      const img = document.createElement("img");');
-    buffer.write('      if (vd.dataset.poster) { const pv = ghitaVideos[vd.dataset.poster]; if (pv) img.src = pv; }');
-    buffer.write('      img.alt = "YouTube";');
-    buffer.write('      const play = document.createElement("span");');
-    buffer.write('      play.className = "ghita-video-play"; play.innerHTML = "&#9654;";');
-    buffer.write('      a.append(img, play);');
-    buffer.write('      vd.parentNode.replaceChild(a, vd);');
-    buffer.write('      return;');
-    buffer.write('    }');
-    buffer.write('    // Track 11, P4/P6/P3: trim window, bookmarks, loop, autoplay.\n');
-    buffer.write('    const ts = parseFloat(opts.trimStart) || 0;');
-    buffer.write('    const te = parseFloat(opts.trimEnd) || 0;');
-    buffer.write('    if (ts > 0) {');
-    buffer.write('      vd.addEventListener("loadedmetadata", () => { if (vd.duration > ts) vd.currentTime = ts; });');
-    buffer.write('    }');
-    buffer.write('    if (te > ts && te > 0) {');
-    buffer.write('      vd.addEventListener("timeupdate", () => {');
-    buffer.write('        if (vd.currentTime >= te) { vd.currentTime = Math.max(ts, 0); if (!vd.loop) vd.pause(); }');
-    buffer.write('      });');
-    buffer.write('    }');
-    buffer.write('    if (opts.loop) vd.loop = true;');
-    buffer.write('    if (opts.autoplay) {');
-    buffer.write('      vd.muted = true;');
-    buffer.write('      vd.play().catch(() => {});');
-    buffer.write('    }');
-    buffer.write('    const marks = opts.bookmarks || [];');
-    buffer.write('    if (marks.length) {');
-    buffer.write('      const bar = document.createElement("div");');
-    buffer.write('      bar.className = "ghita-video-bookmarks";');
-    buffer.write('      marks.forEach(m => {');
-    buffer.write('        const b = document.createElement("button");');
-    buffer.write('        b.type = "button";');
-    buffer.write('        b.textContent = (m.label || "") + " " + fmtTime(m.time);');
-    buffer.write('        b.onclick = () => { vd.currentTime = m.time; vd.play().catch(() => {}); };');
-    buffer.write('        bar.appendChild(b);');
-    buffer.write('      });');
-    buffer.write('      vd.parentNode.insertBefore(bar, vd.nextSibling);');
-    buffer.write('    }');
-    buffer.write('  }');
+    if (hasVideoMedia) {
+      buffer.write('  const ghitaVideos = ${safeJson(jsonEncode(lazyVideos))};');
+    }
+    if (hasAudioMedia) {
+      buffer.write('  const ghitaAudios = ${jsonEncode(lazyAudios)};');
+      buffer.write('  function setupAudio(el) {');
+      buffer.write('    let opts = {};');
+      buffer.write('    try { opts = JSON.parse(el.dataset.audio || "{}"); } catch (e) {}');
+      buffer.write('    // Track 13, P3/P6/P7: loop, trim window, hide icon.\n');
+      buffer.write('    if (opts.loop) el.loop = true;');
+      buffer.write('    const ts = parseFloat(opts.trimStart) || 0;');
+      buffer.write('    const te = parseFloat(opts.trimEnd) || 0;');
+      buffer.write('    if (ts > 0) el.addEventListener("loadedmetadata", () => { el.currentTime = ts; });');
+      buffer.write('    if (te > ts && te > 0) {');
+      buffer.write('      el.addEventListener("timeupdate", () => {');
+      buffer.write('        if (el.currentTime >= te) { el.currentTime = Math.max(ts, 0); if (!el.loop) el.pause(); }');
+      buffer.write('      });');
+      buffer.write('    }');
+      buffer.write('    if (el.dataset.hideicon) {');
+      buffer.write('      el.removeAttribute("controls");');
+      buffer.write('      const b = document.createElement("button");');
+      buffer.write('      b.type = "button"; b.className = "ghita-audio-toggle";');
+      buffer.write('      b.innerHTML = "&#128266;";');
+      buffer.write('      b.title = opts.autoplay ? "" : "Play narration";');
+      buffer.write('      b.onclick = () => { if (el.paused) { el.play().catch(() => {}); } else { el.pause(); } };');
+      buffer.write('      el.parentNode.insertBefore(b, el.nextSibling);');
+      buffer.write('    }');
+      buffer.write('    if (opts.autoplay) el.play().catch(() => {});');
+      buffer.write('  }');
+    }
+    if (hasVideoMedia) {
+      buffer.write('  function fmtTime(s) {');
+      buffer.write('    const m = Math.floor(s / 60); const sec = Math.floor(s % 60);');
+      buffer.write('    return m + ":" + (sec < 10 ? "0" : "") + sec;');
+      buffer.write('  }');
+      buffer.write('  function setupVideo(vd) {');
+      buffer.write('    let opts = {};');
+      buffer.write('    try { opts = JSON.parse(vd.dataset.video || "{}"); } catch (e) {}');
+      buffer.write('    // Track 11, P7: online videos become a thumbnail that\n');
+      buffer.write('    // opens YouTube (the deck stays iframe-free).\n');
+      buffer.write('    if (opts.youtubeId) {');
+      buffer.write('      const a = document.createElement("a");');
+      buffer.write('      a.href = "https://www.youtube.com/watch?v=" + opts.youtubeId;');
+      buffer.write('      a.target = "_blank"; a.rel = "noopener";');
+      buffer.write('      a.className = "ghita-video-youtube";');
+      buffer.write('      const img = document.createElement("img");');
+      buffer.write('      if (vd.dataset.poster) { const pv = ghitaVideos[vd.dataset.poster]; if (pv) img.src = pv; }');
+      buffer.write('      img.alt = "YouTube";');
+      buffer.write('      const play = document.createElement("span");');
+      buffer.write('      play.className = "ghita-video-play"; play.innerHTML = "&#9654;";');
+      buffer.write('      a.append(img, play);');
+      buffer.write('      vd.parentNode.replaceChild(a, vd);');
+      buffer.write('      return;');
+      buffer.write('    }');
+      buffer.write('    // Track 11, P4/P6/P3: trim window, bookmarks, loop, autoplay.\n');
+      buffer.write('    const ts = parseFloat(opts.trimStart) || 0;');
+      buffer.write('    const te = parseFloat(opts.trimEnd) || 0;');
+      buffer.write('    if (ts > 0) {');
+      buffer.write('      vd.addEventListener("loadedmetadata", () => { if (vd.duration > ts) vd.currentTime = ts; });');
+      buffer.write('    }');
+      buffer.write('    if (te > ts && te > 0) {');
+      buffer.write('      vd.addEventListener("timeupdate", () => {');
+      buffer.write('        if (vd.currentTime >= te) { vd.currentTime = Math.max(ts, 0); if (!vd.loop) vd.pause(); }');
+      buffer.write('      });');
+      buffer.write('    }');
+      buffer.write('    if (opts.loop) vd.loop = true;');
+      buffer.write('    if (opts.autoplay) {');
+      buffer.write('      vd.muted = true;');
+      buffer.write('      vd.play().catch(() => {});');
+      buffer.write('    }');
+      buffer.write('    const marks = opts.bookmarks || [];');
+      buffer.write('    if (marks.length) {');
+      buffer.write('      const bar = document.createElement("div");');
+      buffer.write('      bar.className = "ghita-video-bookmarks";');
+      buffer.write('      marks.forEach(m => {');
+      buffer.write('        const b = document.createElement("button");');
+      buffer.write('        b.type = "button";');
+      buffer.write('        b.textContent = (m.label || "") + " " + fmtTime(m.time);');
+      buffer.write('        b.onclick = () => { vd.currentTime = m.time; vd.play().catch(() => {}); };');
+      buffer.write('        bar.appendChild(b);');
+      buffer.write('      });');
+      buffer.write('      vd.parentNode.insertBefore(bar, vd.nextSibling);');
+      buffer.write('    }');
+      buffer.write('  }');
+    }
     buffer.write('  function scheduleAuto() {');
     buffer.write(
         '    if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }');
@@ -838,10 +869,14 @@ class HtmlExportService {
     buffer.write('  }');
     buffer.write('  function ghitaShowSlide(index) {');
     buffer.write('    if (index < 0 || index >= totalSlides) return;');
-    buffer.write('    // Track 11, P8: pause every video before switching slides.\n');
-    buffer.write('    deck.querySelectorAll("video").forEach(v => v.pause());');
-    buffer.write('    // Track 13, P6: pause narration audio unless it plays across slides.\n');
-    buffer.write('    deck.querySelectorAll("audio[data-src]").forEach(a => { if (a.dataset.across !== "1") a.pause(); });');
+    if (hasVideoMedia) {
+      buffer.write('    // Track 11, P8: pause every video before switching slides.\n');
+      buffer.write('    deck.querySelectorAll("video").forEach(v => v.pause());');
+    }
+    if (hasAudioMedia) {
+      buffer.write('    // Track 13, P6: pause narration audio unless it plays across slides.\n');
+      buffer.write('    deck.querySelectorAll("audio[data-src]").forEach(a => { if (a.dataset.across !== "1") a.pause(); });');
+    }
     buffer.write('    deck.querySelectorAll(".slide").forEach(s => {');
     buffer.write('      s.classList.remove("active");');
     buffer.write(
@@ -856,18 +891,22 @@ class HtmlExportService {
     buffer.write('      // Track 07, P3: lazy-load this slide\'s images now.\n');
     buffer.write(
         '      slide.querySelectorAll("img[data-src]").forEach(im => { const v = ghitaImages[im.dataset.src]; if (v) { im.src = v; im.decoding = "async"; im.loading = "lazy"; im.removeAttribute("data-src"); } });');
-    buffer.write(
-        '      // Track 11, P8: inject this slide\'s video + poster payloads.\n');
-    buffer.write(
-        '      slide.querySelectorAll("video[data-src]").forEach(vd => { const v = ghitaVideos[vd.dataset.src]; if (v) { vd.src = v; vd.removeAttribute("data-src"); } });');
-    buffer.write(
-        '      slide.querySelectorAll("video[data-poster]").forEach(vd => { const v = ghitaVideos[vd.dataset.poster]; if (v) { vd.poster = v; vd.removeAttribute("data-poster"); } });');
-    buffer.write(
-        '      slide.querySelectorAll("video[data-video]").forEach(vd => setupVideo(vd));');
-    buffer.write(
-        '      // Track 13, P5: inject narration audio + apply its options.\n');
-    buffer.write(
-        '      slide.querySelectorAll("audio[data-src]").forEach(a => { const v = ghitaAudios[a.dataset.src]; if (v) { a.src = v; a.removeAttribute("data-src"); setupAudio(a); } });');
+    if (hasVideoMedia) {
+      buffer.write(
+          '      // Track 11, P8: inject this slide\'s video + poster payloads.\n');
+      buffer.write(
+          '      slide.querySelectorAll("video[data-src]").forEach(vd => { const v = ghitaVideos[vd.dataset.src]; if (v) { vd.src = v; vd.removeAttribute("data-src"); } });');
+      buffer.write(
+          '      slide.querySelectorAll("video[data-poster]").forEach(vd => { const v = ghitaVideos[vd.dataset.poster]; if (v) { vd.poster = v; vd.removeAttribute("data-poster"); } });');
+      buffer.write(
+          '      slide.querySelectorAll("video[data-video]").forEach(vd => setupVideo(vd));');
+    }
+    if (hasAudioMedia) {
+      buffer.write(
+          '      // Track 13, P5: inject narration audio + apply its options.\n');
+      buffer.write(
+          '      slide.querySelectorAll("audio[data-src]").forEach(a => { const v = ghitaAudios[a.dataset.src]; if (v) { a.src = v; a.removeAttribute("data-src"); setupAudio(a); } });');
+    }
     buffer.write('      // Force reflow to restart animation\n');
     buffer.write('      void slide.offsetWidth;');
     buffer.write('      // Re-apply transition class\n');

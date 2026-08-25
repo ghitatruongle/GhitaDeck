@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.0.1] - 2026-08-25 — Bản ổn định chính thức
+
+Bản phát hành chính thức đầu tiên sau 2.0.0: hoàn thiện nốt tính năng bảo mật còn treo, một vòng tối ưu hiệu năng/tài nguyên có số đo chứng minh, và gia cố toàn bộ kiểm định. Nền tảng: v2.0.1-beta.2 (đã gồm T01–T06, P1/P1b/P2/P3 — xem mục beta bên dưới).
+
+### 🔐 Bảo mật
+
+- **Wi-Fi broadcast: token chuyển sang phiên cookie (T08)** — share-link `?t=` giờ chỉ là bootstrap credential trên trang entry (`/view`, `/once`), cấp một lần **cookie phiên `ghita_broadcast`** (HttpOnly, SameSite=Strict). Mọi request sau đó (SSE `/events`, `/control`, reload) xác thực bằng cookie hoặc header `X-Ghita-Token`; token trần trên URL của data endpoint bị từ chối 401. Access token không còn lặp lại trong URL, browser history và server log. Luồng người dùng không đổi: QR/link chia sẻ vẫn hoạt động như trước.
+
+### ⚡ Tối ưu hiệu năng & tài nguyên
+
+- **HTML deck gọn hơn 19,7%**: CSS/JS player của video/audio/model3d chỉ được nhúng khi deck thực sự chứa phần tử đó (deck chuẩn 10 slide / 10 ảnh: **25.418 → 20.413 B**, thời gian parse slide đầu **37,4 → 23,4 ms**). Deck có media vẫn giữ nguyên đầy đủ player.
+- **Logo app: 468 KB → 30 KB (−93,5%)** — file cũ là JPEG 1024×1024 mang đuôi `.png` trong khi chỉ hiển thị 20×20 px; nay là PNG 128×128 thật. Tổng assets giảm 541 KB → ~103 KB.
+- **Gỡ 7 dependencies không dùng** (`uuid`, `cupertino_icons`, `file`, `audioplayers`, `highlight`, `flutter_highlight`, `url_launcher`) — Windows build nhẹ đi theo.
+- Mọi tối ưu đều có số đo trước/sau lưu trong `tool/benchmark_results_*.md`; export PPTX ~35 ms / PDF ~270 ms / HTML ~90–100 ms cho deck 20 slide được chốt làm mốc sàn.
+
+### ✅ Chất lượng
+
+- Full suite **1010/1010 test xanh ×2 lần liên tục**; `flutter analyze` 0 issues; l10n audit CLEAN.
+- Coverage (ex-generated l10n): **49,8% → 51,0%**; sàn ratchet cho `ai_provider_manager` (58,1%) và `pdf_export_service` (66,0%) giữ vững.
+- Sửa bug công cụ release: `verify_release.ps1` đòi tên artifact kèm `+build` trái với quy ước đặt tên của `build_installer.ps1` — đã thống nhất về một quy ước.
+
 ## [2.0.1-beta.2] - đang phát triển — P1b: Dọn thanh điều khiển Present
 
 - **Xóa hai nút prev/next** khỏi thanh điều khiển nổi của Present mode: WebView2 là HWND native nuốt toàn bộ click hướng vào lớp Flutter, nên nút bấm không bao giờ ăn; PowerPoint chuẩn cũng điều hướng bằng bàn phím. Thanh chỉ còn bộ đếm "N / M" (+ Auto/Notes khi cấu hình).

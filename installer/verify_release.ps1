@@ -25,10 +25,13 @@ $build = if ($Matches[5]) { $Matches[5] } else { '0' }
 $suffix = if ($pre) { "-$pre" } else { '' }
 $displayVersion = "$major.$minor.$patch$suffix+$build"
 $numericVersion = "$major.$minor.$patch.$build"
-$installerName = "GhitaPPT-Setup-$displayVersion.exe"
+# Artifact filenames carry no +build suffix — mirror build_installer.ps1's
+# FileBase ("GhitaPPT-Setup-2.0.1-beta2.exe", "GhitaPPT-Setup-2.0.0.exe").
+$fileBase = if ($pre) { "$major.$minor.$patch-$pre" } else { "$major.$minor.$patch" }
+$installerName = "GhitaPPT-Setup-$fileBase.exe"
 $installerPath = Join-Path $OutputDir $installerName
-$checksumPath = Join-Path $OutputDir "GhitaPPT-Setup-$displayVersion.sha256"
-$metadataPath = Join-Path $OutputDir "GhitaPPT-Setup-$displayVersion.release.json"
+$checksumPath = Join-Path $OutputDir "GhitaPPT-Setup-$fileBase.sha256"
+$metadataPath = Join-Path $OutputDir "GhitaPPT-Setup-$fileBase.release.json"
 
 foreach ($path in @($ReleaseExe, $installerPath, $checksumPath, $metadataPath)) {
     if (-not (Test-Path -LiteralPath $path)) { throw "Required release artifact is missing: $path" }

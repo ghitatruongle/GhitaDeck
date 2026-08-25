@@ -14,21 +14,21 @@ import 'package:ghita_ppt_converter/screens/widgets/slide_preview.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('v2.0.1-beta Quality Gate', () {
-    test('pubspec.yaml version matches the centralized beta contract', () {
+  group('v2.0.1 Quality Gate', () {
+    test('pubspec.yaml version matches the centralized release contract', () {
       final pubspecFile = File('pubspec.yaml');
       expect(pubspecFile.existsSync(), isTrue);
       final content = pubspecFile.readAsStringSync();
-      expect(content, contains('version: 2.0.1-beta2+2'));
+      expect(content, contains('version: 2.0.1+3'));
       expect(content, contains(BuildInfo.coreVersion));
     });
 
-    test('Installer definition uses the beta display version', () {
+    test('Installer definition uses the stable display version', () {
       final issFile = File('installer/ghita_ppt_installer.iss');
       expect(issFile.existsSync(), isTrue);
       final content = issFile.readAsStringSync();
-      expect(content, contains('#define MyAppDisplayVersion "2.0.1-beta2+2"'));
-      expect(content, contains('#define MyAppVersion "2.0.1.2"'));
+      expect(content, contains('#define MyAppDisplayVersion "2.0.1+3"'));
+      expect(content, contains('#define MyAppVersion "2.0.1.3"'));
     });
 
     test('ProjectBundleService manifest uses app and schema versions',

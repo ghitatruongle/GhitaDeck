@@ -3,12 +3,10 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  audioplayers_windows
   flutter_secure_storage_windows
   printing
   record_windows
   screen_retriever
-  url_launcher_windows
   webview_windows
   window_manager
 )

@@ -159,8 +159,10 @@ void main() {
       }
     });
 
-    test('build info still reports the beta2 identity', () {
-      expect(BuildInfo.appVersion, '2.0.1-beta2');
+    test('build info reports the stable release identity', () {
+      expect(BuildInfo.appVersion, '2.0.1');
+      expect(BuildInfo.channel, 'stable');
+      expect(BuildInfo.numericVersion, '2.0.1.3');
     });
   });
 }

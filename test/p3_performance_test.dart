@@ -59,7 +59,10 @@ void main() {
       final watch = Stopwatch()..start();
       final html = service.buildPresentationHtml(deck(150));
       watch.stop();
-      expect(html.length, greaterThan(40000));
+      // v2.0.1 P3b: media player code is gated by content, so the text-only
+      // deck shrank from ~44 KB to ~35.5 KB. The floor still catches a
+      // truncated deck (~237 B/slide of real content).
+      expect(html.length, greaterThan(30000));
       expect(html, contains('Slide 150'));
       expect(watch.elapsed, lessThan(const Duration(seconds: 15)),
           reason: '150 slides took ${watch.elapsed}');

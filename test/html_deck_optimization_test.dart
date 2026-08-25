@@ -189,4 +189,60 @@ void main() {
     expect(HtmlExportService.deckCacheHits, 1);
     expect(HtmlExportService.deckCacheMisses, 1);
   });
+
+  test('text-only decks carry no media player weight (v2.0.1 P3b)', () {
+    HtmlExportService.clearDeckCache();
+    final plain = deckHtml([
+      {'title': 'A', 'htmlContent': '<p>text only</p>'},
+      {'title': 'B', 'htmlContent': '<p>more text</p>'},
+    ]);
+    for (final absent in [
+      'function setupVideo',
+      'function setupAudio',
+      'const ghitaVideos',
+      'const ghitaAudios',
+      '.ghita-video-bookmarks',
+      '.ghita-video-youtube',
+      '.ghita-audio-toggle',
+      '.ghita-model3d',
+      'video[data-src]',
+      'audio[data-src]',
+    ]) {
+      expect(plain, isNot(contains(absent)), reason: absent);
+    }
+    // The core player must remain fully intact.
+    for (final present in [
+      'function ghitaShowSlide',
+      'addEventListener("keydown"',
+      '@keyframes fadeIn',
+      'function toggleFullscreen',
+      'function scheduleAuto',
+    ]) {
+      expect(plain, contains(present));
+    }
+  });
+
+  test('decks using media keep their full player (v2.0.1 P3b)', () {
+    HtmlExportService.clearDeckCache();
+    final html = deckHtml([
+      {
+        'title': 'Media',
+        'htmlContent': '<video data-video=\'{"youtubeId":"abc"}\'></video>'
+            '<audio controls></audio>'
+            '<div data-model3d="{}"></div>',
+      },
+    ]);
+    for (final present in [
+      'function setupVideo',
+      'function setupAudio',
+      'const ghitaVideos',
+      'const ghitaAudios',
+      '.ghita-video-youtube',
+      '.ghita-audio-toggle',
+      '.ghita-model3d',
+      'video[data-video]',
+    ]) {
+      expect(html, contains(present), reason: present);
+    }
+  });
 }

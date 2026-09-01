@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'widgets/setup_show_dialog.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../utils/snackbar_helper.dart';
 import 'package:window_manager/window_manager.dart';
 import '../providers/app_provider.dart';
 import '../config/build_info.dart';
@@ -235,17 +236,15 @@ class _HomeScreenState extends State<HomeScreen> {
           final title = slide.title;
           ps.removeSlide(idx);
           _editorState.handleSlideRemoved(idx, ps.slides.length);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Deleted "$title"'),
-              action: SnackBarAction(
-                label: context.l10n.undoAction,
-                onPressed: () => ps.insertSlide(
-                    idx,
-                    slide.copyWith(
-                        timestamp: DateTime.now().millisecondsSinceEpoch)),
-              ),
-            ),
+          showAppSnackBar(
+            context,
+            context.l10n.deletedWithUndo(title),
+            duration: const Duration(seconds: 3),
+            actionLabel: context.l10n.undoAction,
+            onAction: () => ps.insertSlide(
+                idx,
+                slide.copyWith(
+                    timestamp: DateTime.now().millisecondsSinceEpoch)),
           );
           return null;
         },

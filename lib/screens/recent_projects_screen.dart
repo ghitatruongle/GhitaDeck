@@ -1,6 +1,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../utils/snackbar_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../providers/presentation_state.dart';
@@ -185,12 +186,12 @@ class _RecentProjectsScreenState extends State<RecentProjectsScreen> {
                   label: const Text('Dự Án Mới'),
                   onPressed: () {
                     state.clearSlides();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text('Đã tạo dự án mới!'),
-                        action: SnackBarAction(label: 'Hoàn tác', onPressed: () => state.undo()),
-                        duration: const Duration(seconds: 4),
-                      ),
+                    showAppSnackBar(
+                      context,
+                      'Đã tạo dự án mới!',
+                      duration: const Duration(seconds: 4),
+                      actionLabel: 'Hoàn tác',
+                      onAction: () => state.undo(),
                     );
                   },
                 ),

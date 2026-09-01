@@ -2577,4 +2577,54 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get pdfBookmarks => 'Dấu trang PDF (outline)';
+
+  @override
+  String get engineTitle => 'Engine';
+
+  @override
+  String get engineSubtitle =>
+      'Lõi xử lý cho xuất file và media. Rust nhanh hơn; Dart luôn hoạt động.';
+
+  @override
+  String get engineRust => 'Rust';
+
+  @override
+  String get engineDart => 'Dart';
+
+  @override
+  String engineStatusRust(String version) {
+    return 'Đang chạy trên engine Rust ($version)';
+  }
+
+  @override
+  String get engineStatusDart =>
+      'Đang chạy trên engine Dart (chế độ tương thích)';
+
+  @override
+  String engineRustAvailable(String version) {
+    return 'Engine Rust sẵn sàng ($version)';
+  }
+
+  @override
+  String engineStatusFallback(String reason) {
+    return 'Không dùng được engine Rust ($reason); đang chạy Dart';
+  }
+
+  @override
+  String get docxReportOptions => 'Tùy chọn báo cáo Word';
+
+  @override
+  String get docxIncludeSlideList => 'Kèm danh sách slide ở cuối báo cáo';
+
+  @override
+  String get imageOptimizerBetaTitle => 'Tối ưu ảnh (beta)';
+
+  @override
+  String get imageOptimizerBetaSubtitle =>
+      'Thử nghiệm: chuyển ảnh PNG lớn không trong suốt sang JPEG khi xuất (PNG trong suốt giữ nguyên); hiện thống kê tiết kiệm sau mỗi lần xuất';
+
+  @override
+  String imageSavings(String summary, String count) {
+    return 'Tiết kiệm: $summary ($count ảnh)';
+  }
 }

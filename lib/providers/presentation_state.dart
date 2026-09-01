@@ -39,6 +39,7 @@ import '../services/smart_draft_manager.dart';
 import '../services/time_machine_history_service.dart';
 import '../services/project_bundle_service.dart';
 import '../services/header_footer_service.dart';
+import '../services/docx_report_service.dart';
 import 'config_service.dart';
 
 // SlideEffect moved to models/slide.dart in 0.3.0; re-export so existing
@@ -391,6 +392,7 @@ class PresentationState with ChangeNotifier {
       aspectRatio: _aspectRatio,
       mediaFiles: mediaFiles,
       mediaPathNames: mediaPathNames,
+      useEngineZip: true,
     );
     if (success) {
       // PURGE temporary draft from sandbox after official save
@@ -1103,6 +1105,14 @@ class PresentationState with ChangeNotifier {
             includeHiddenSlides: options.includeHiddenSlides,
             notesPages: options.pdfNotesPages,
             bookmarks: options.pdfBookmarks,
+          );
+          break;
+        case PresentationExportFormat.docx:
+          path = await DocxReportService.exportReport(
+            selectedSlides,
+            outputPath,
+            includeNotes: options.includeNotes,
+            includeSlideList: options.docxIncludeSlideList,
           );
           break;
       }

@@ -3,13 +3,13 @@
 
 #define MyAppName "GhitaPPT Converter"
 #ifndef MyAppVersion
-  #define MyAppVersion "2.0.1.3"
+  #define MyAppVersion "2.0.5.4"
 #endif
 #ifndef MyAppBuild
   #define MyAppBuild "2"
 #endif
 #ifndef MyAppDisplayVersion
-  #define MyAppDisplayVersion "2.0.1+3"
+  #define MyAppDisplayVersion "2.0.5-demo+4"
 #endif
 #define MyAppPublisher "Ghita"
 #define MyAppURL "https://github.com/ghitatruongle/GhitaPowerPointConverter"
@@ -27,7 +27,7 @@ AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
 AppCopyright={#MyAppCopyright}
-DefaultDirName={localappdata}\Programs\{#MyAppName}
+DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=output
@@ -38,7 +38,11 @@ SolidCompression=yes
 WizardStyle=modern
 WizardSizePercent=110
 DisableWelcomePage=no
-PrivilegesRequired=lowest
+; Default install = Program Files (system-wide, UAC); the wizard still lets the
+; user browse to any custom directory (DirPage stays enabled) and, with the
+; override dialog, choose per-user for machines without admin rights.
+PrivilegesRequired=admin
+PrivilegesRequiredOverridesAllowed=dialog
 Uninstallable=yes
 UninstallDisplayIcon={app}\{#MyAppExeName}
 UninstallDisplayName={#MyAppName}

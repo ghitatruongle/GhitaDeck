@@ -1,5 +1,32 @@
 # Changelog
 
+## [2.0.5-demo] - đang phát triển — T04: N2 Image Optimizer v2 (beta flag)
+
+- **Tối ưu ảnh (beta)** trong Settings → Engine: bật "Image optimizer (beta)" để điều khiển chất lượng tối ưu ảnh khi xuất (PNG lớn không trong suốt ≥512px → JPEG; PNG trong suốt giữ nguyên; EXIF luôn được xoay đúng). Tắt = hành vi cũ **bit-perfect** (đã test: hai lần xuất cùng byte). Trạng thái bật/tắt persist qua SharedPreferences, truyền qua worker isolate trong job message.
+- **Thống kê tiết kiệm**: sau mỗi lần xuất thành công, snackbar hiện "Tiết kiệm: X KB (Y%) (N ảnh)" (số liệu truyền ngược từ worker qua reply).
+- **Kiểm chứng**: deck 10 ảnh PNG nhiễu 600×450 → **tiết kiệm 54,0% (4.462 KB → 2.053 KB)** — đạt gate ≥40% (test khóa trong `test/image_optimizer_optimization_test.dart` 5/5: gate, bit-perfect off, alpha/small giữ PNG, EXIF vẫn bake khi bật flag, ảnh hỏng không crash); `flutter analyze` 0; suite **1034/1034 xanh**; l10n audit CLEAN (3 key mới EN=VI).
+
+## [2.0.5-demo] - đang phát triển — T03: N1 DOCX Report Export
+
+- **Báo cáo Word (.docx)** — tính năng beta chính thức của demo: xuất deck thành báo cáo Word (WordprocessingML, ECMA-376) gồm tiêu đề + nội dung paragraph/list từng slide, ghi chú người trình bày (tùy chọn) và danh sách slide đánh số (tùy chọn). Package tối giản chuẩn: `[Content_Types].xml` + `_rels/.rels` + `word/document.xml` + `docProps/core.xml`; format trực tiếp (bold/size) không tham chiếu styles ngoài nên Word/LibreOffice mở không cần repair. Trong Advanced Export chọn "Word report (.docx)".
+- **Kiểm chứng**: unit 6 test (cấu trúc package, escape/tiếng Việt, notes dài + deck 100 slide, tắt tùy chọn, deck rỗng bị từ chối); **mở bằng Microsoft Word 16.0 thật (COM): OPEN_OK, 15 paragraph, chữ đầu "Báo cáo demo" — không repair prompt** (file build/t03_docx_probe.docx).
+
+## [2.0.5-demo] - đang phát triển — T02: ghita_zip (Rust ZIP module)
+
+- **Module `ghita_zip`** (crate `zip` 8.6.0 / zlib-rs): nén ZIP với text deflate mức 9 + media stored — cùng ngữ nghĩa với đường Dart hiện tại; `zip_archive()` + `ZipCodec` facade có fallback tự động, settings vẫn cho chọn Engine. Wire vào đường PPTX (generatePPT/export isolate/dialog xuất) và `.ghita` (saveProjectBundle), worker nhận lựa chọn engine qua job message.
+- **Kết quả đo (tool/benchmark_results_media.md, deck 20 slide / 21,1 MB):**
+  - Deck media: **Dart 105–119 ms** vs **Rust 132–142 ms** — Rust chậm hơn (FRB copy 21 MB nuốt lợi thế; media stored nên không có gì để nén thêm).
+  - Text-only 4,5 MB: **Rust 19,1 ms (nhanh 3,6×)** vs Dart 68,7 ms.
+  - **Quyết định theo nguyên tắc "đo rồi mới sửa": mặc định giữ Dart** (đường nhanh đã đo), Rust dùng khi user chọn trong Settings (vẫn có fallback). Đề xuất cải tiến cho beta2: API streaming file→file để bỏ chi phí copy — chỉ làm nếu có lợi theo profile. Gate "media ≥30% nhanh hơn" KHÔNG đạt — ghi nhận trung thực.
+- Test: crate Rust 2/2; `test/zip_codec_test.dart` 6 test routing/fallback/round-trip; integration probe **4/4** E2E qua DLL thật (codec round-trip + PPTX encoding đầy đủ + **`.ghita` bundle save→load round-trip**). PPTX engine còn được **mở bằng PowerPoint 16.0 thật (COM): OPEN_OK, không repair prompt** (kill: strict OOXML validation toàn gói chạy trong probe — mọi XML parse, Content_Types phủ đủ, rels resolve); benchmark tool chạy mỗi suite (khóa sàn tính đúng).
+
+## [2.0.5-demo] - đang phát triển — T01: Rust Foundation
+
+- **Rust core** (flutter_rust_bridge 2.13.0 + cargokit): crate `rust/ghita_core` được build cùng app Windows nhờ glue plugin `rust_builder`; CI `ci-windows.yml` cài Rust toolchain trước `flutter build`; installer/`verify_release.ps1` đi kèm `ghita_core.dll`.
+- **Settings → Engine**: chọn lõi xử lý Rust (mặc định) hoặc Dart; trạng thái hiển thị phiên bản crate khi Rust sẵn sàng, hoặc lý do fallback.
+- **Auto-fallback**: DLL thiếu/hỏng → tự rơi về Dart, không crash; Rust nạp **lazy** khi mở Settings (không chạm đường khởi động, giữ zero-network posture).
+- Test đồng bộ: `test/rust_engine_test.dart` (6 test fallback/retry/prefs).
+
 ## [2.0.1] - 2026-08-25 — Bản ổn định chính thức
 
 Bản phát hành chính thức đầu tiên sau 2.0.0: hoàn thiện nốt tính năng bảo mật còn treo, một vòng tối ưu hiệu năng/tài nguyên có số đo chứng minh, và gia cố toàn bộ kiểm định. Nền tảng: v2.0.1-beta.2 (đã gồm T01–T06, P1/P1b/P2/P3 — xem mục beta bên dưới).

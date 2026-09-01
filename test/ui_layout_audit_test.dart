@@ -19,6 +19,7 @@ import 'package:ghita_ppt_converter/providers/presentation_state.dart';
 import 'package:ghita_ppt_converter/providers/shortcuts_provider.dart';
 import 'package:ghita_ppt_converter/providers/theme_provider.dart';
 import 'package:ghita_ppt_converter/screens/editor/editor_shell.dart';
+import 'package:ghita_ppt_converter/services/rust_engine.dart';
 import 'package:ghita_ppt_converter/screens/editor/editor_state.dart';
 import 'package:ghita_ppt_converter/screens/recent_projects_screen.dart';
 import 'package:ghita_ppt_converter/screens/settings_screen.dart';
@@ -52,6 +53,7 @@ Widget _app(Widget home, double textScale) => MultiProvider(
             create: (_) => ShortcutsProvider()),
         ChangeNotifierProvider<ThemeProvider>(create: (_) => ThemeProvider()),
         ChangeNotifierProvider<LocaleProvider>(create: (_) => LocaleProvider()),
+        ChangeNotifierProvider<RustEngineService>(create: (_) => RustEngineService()),
         ChangeNotifierProvider<EditorState>(create: (_) => EditorState()),
       ],
       child: MaterialApp(
@@ -160,9 +162,9 @@ void main() {
     });
 
     test('build info reports the stable release identity', () {
-      expect(BuildInfo.appVersion, '2.0.1');
+      expect(BuildInfo.appVersion, '2.0.5-demo');
       expect(BuildInfo.channel, 'stable');
-      expect(BuildInfo.numericVersion, '2.0.1.3');
+      expect(BuildInfo.numericVersion, '2.0.5.4');
     });
   });
 }

@@ -216,7 +216,8 @@ $metadata = [ordered]@{
     applicationSignerSubject = $releaseSignature.Subject
     generatedAtUtc = (Get-Date).ToUniversalTime().ToString("o")
     architecture = "x64"
-    installScope = "per-user"
+    # Mirrors PrivilegesRequired=admin (Program Files default, UAC) in the .iss.
+    installScope = "per-machine"
     sourceRevision = $sourceRevision
     sourceDirty = $sourceDirty
 } | ConvertTo-Json

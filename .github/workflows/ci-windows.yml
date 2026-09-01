@@ -31,6 +31,13 @@ jobs:
           channel: stable
           cache: true
 
+      # Rust toolchain for the rust/ghita_core module built by cargokit
+      # inside flutter build (see windows/CMakeLists.txt + rust_builder).
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          profile: minimal
+
       - name: Install dependencies
         run: flutter pub get
 

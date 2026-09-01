@@ -6,6 +6,7 @@ import '../../providers/presentation_state.dart';
 import '../../screens/widgets/slide_preview.dart';
 import '../../l10n/l10n.dart';
 import '../../services/thumbnail_service.dart';
+import '../../utils/snackbar_helper.dart';
 import '../editor/editor_state.dart';
 
 /// Left panel showing slide thumbnails with drag-to-reorder,
@@ -221,20 +222,18 @@ class SlideListPanel extends StatelessWidget {
     // update a different slide or touch an out-of-range index.
     editorState.handleSlideRemoved(index, state.slides.length);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Deleted "$title"'),
-        action: SnackBarAction(
-          label: 'Undo',
-          onPressed: () {
-            // Restore at the ORIGINAL position (not appended at the end).
-            state.insertSlide(
-                index,
-                slide.copyWith(
-                    timestamp: DateTime.now().millisecondsSinceEpoch));
-          },
-        ),
-      ),
+    showAppSnackBar(
+      context,
+      context.l10n.deletedWithUndo(title),
+      duration: const Duration(seconds: 3),
+      actionLabel: context.l10n.undoAction,
+      onAction: () {
+        // Restore at the ORIGINAL position (not appended at the end).
+        state.insertSlide(
+            index,
+            slide.copyWith(
+                timestamp: DateTime.now().millisecondsSinceEpoch));
+      },
     );
   }
 

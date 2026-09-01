@@ -7,8 +7,10 @@ import '../models/slide.dart';
 import 'export_primitives.dart';
 import 'html_export_service.dart';
 import 'html_image_loader.dart';
+import 'image_optimizer_service.dart';
 import 'pdf_export_service.dart';
 import 'ppt_generator.dart';
+import 'zip_codec.dart';
 
 // Background-isolate entry points for the heavy export pipeline.
 //
@@ -63,8 +65,17 @@ Future<String> runPptExportInIsolate(
     'autoAdvanceMs': autoAdvance?.inMilliseconds ?? 0,
     'fitContent': fitContent,
     'theme': theme?.toMap(),
+    // T02: engine preference snapshot — providers/prefs don't cross isolates,
+    // this bool does; the worker feeds it back into ZipEngineConfig.
+    'engineRustPreferred': ZipEngineConfig.preferredRust,
+    // T04: N2 image optimizer beta flag snapshot.
+    'optimizeImages': ImageOptimizerConfig.betaEnabled,
   }, onProgress: onProgress, cancelToken: cancelToken);
-  if (result['ok'] == true) return result['path'] as String;
+  if (result['ok'] == true) {
+    ImageOptimizationStats.importWorkerSummary(
+        result['imageSavings'] as String?, (result['imageCount'] as num?)?.toInt() ?? 0);
+    return result['path'] as String;
+  }
   throw Exception(result['error'] ?? 'PPT export failed');
 }
 
@@ -104,8 +115,13 @@ Future<String> runPdfExportInIsolate(
     'marginPreset': marginPreset.name,
     'scaleToFit': scaleToFit,
     'includeHiddenSlides': includeHiddenSlides,
+    'optimizeImages': ImageOptimizerConfig.betaEnabled,
   }, onProgress: onProgress, cancelToken: cancelToken);
-  if (result['ok'] == true) return result['path'] as String;
+  if (result['ok'] == true) {
+    ImageOptimizationStats.importWorkerSummary(
+        result['imageSavings'] as String?, (result['imageCount'] as num?)?.toInt() ?? 0);
+    return result['path'] as String;
+  }
   throw Exception(result['error'] ?? 'PDF export failed');
 }
 
@@ -134,8 +150,13 @@ Future<String> runHtmlExportInIsolate(
     'imageMaxWidth': imageMaxWidth,
     'autoAdvanceMs': 0,
     'playerLocale': playerLocale,
+    'optimizeImages': ImageOptimizerConfig.betaEnabled,
   }, onProgress: onProgress, cancelToken: cancelToken);
-  if (result['ok'] == true) return result['path'] as String;
+  if (result['ok'] == true) {
+    ImageOptimizationStats.importWorkerSummary(
+        result['imageSavings'] as String?, (result['imageCount'] as num?)?.toInt() ?? 0);
+    return result['path'] as String;
+  }
   throw Exception(result['error'] ?? 'HTML export failed');
 }
 
@@ -373,7 +394,13 @@ Future<void> _isolateMain(SendPort initialPort) async {
         cancelToken: activeToken,
         onProgress: onProgress,
       );
-      replyPort.send(<String, dynamic>{'ok': true, 'path': path});
+      replyPort.send(<String, dynamic>{
+        'ok': true,
+        'path': path,
+        // N2: worker-side savings, invisible to the host isolate.
+        'imageSavings': ImageOptimizationStats.summary(),
+        'imageCount': ImageOptimizationStats.processedCount,
+      });
     } on ExportCancelledException {
       replyPort.send(<String, dynamic>{
         'ok': false,
@@ -413,6 +440,12 @@ Future<String> _doExport(
       : PptThemeSetting.fromMap(
           Map<String, dynamic>.from(job['theme'] as Map));
 
+    // T02: engine preference comes from the host isolate via the job message.
+    ZipEngineConfig.setPreferredRust(
+        job['engineRustPreferred'] as bool? ?? true);
+    // T04: N2 beta flag (image optimizer) — same cross-isolate snapshot.
+    ImageOptimizerConfig.betaEnabled = job['optimizeImages'] as bool? ?? false;
+
   // Track 03: prefetch remote images into the session caches before the sync
   // generators run; failed fetches become warnings, never exceptions.
   HtmlImageLoader.clearWarnings();
@@ -438,6 +471,7 @@ Future<String> _doExport(
                 onProgress: onProgress,
                 fitContent: fitContent,
                 theme: theme,
+                useEngineZip: true,
               ))
           .path,
       'pdf' => await PdfExportService()

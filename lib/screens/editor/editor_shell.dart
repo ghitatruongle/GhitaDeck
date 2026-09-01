@@ -58,6 +58,7 @@ import '../widgets/m9_productivity_dialogs.dart';
 import '../widgets/import_dialog.dart';
 import '../widgets/ribbon_customize_dialog.dart';
 import '../../l10n/l10n.dart';
+import '../../utils/snackbar_helper.dart';
 import '../../models/free_shape.dart';
 import '../../models/drawn_shape.dart';
 import '../../services/action_button_service.dart';
@@ -184,10 +185,8 @@ class _EditorShellState extends State<EditorShell> {
     if (result is SmartArtGraph) {
       presentationState.upsertSmartArt(result);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.l10n.smartartInserted),
-          duration: const Duration(seconds: 1),
-        ));
+        showAppSnackBar(context, context.l10n.smartartInserted,
+            duration: const Duration(seconds: 1));
       }
     } else if (result is String && result.startsWith('edit:')) {
       final index = int.tryParse(result.substring(5)) ?? -1;
@@ -203,10 +202,8 @@ class _EditorShellState extends State<EditorShell> {
       if (editResult is SmartArtGraph) {
         presentationState.upsertSmartArt(editResult, editIndex: index);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(context.l10n.smartartUpdated),
-            duration: const Duration(seconds: 1),
-          ));
+          showAppSnackBar(context, context.l10n.smartartUpdated,
+              duration: const Duration(seconds: 1));
         }
       }
     }
@@ -225,10 +222,8 @@ class _EditorShellState extends State<EditorShell> {
     if (!mounted || result == null) return;
     presentationState.upsertVideo(result);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(context.l10n.recordInserted),
-        duration: const Duration(seconds: 1),
-      ));
+      showAppSnackBar(context, context.l10n.recordInserted,
+          duration: const Duration(seconds: 1));
     }
   }
 
@@ -255,10 +250,8 @@ class _EditorShellState extends State<EditorShell> {
       slide.copyWith(htmlContent: '${slide.htmlContent.trimRight()}\n$imgTag'),
     );
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(context.l10n.screenshotInserted),
-        duration: const Duration(seconds: 1),
-      ));
+      showAppSnackBar(context, context.l10n.screenshotInserted,
+          duration: const Duration(seconds: 1));
     }
   }
 
@@ -275,10 +268,8 @@ class _EditorShellState extends State<EditorShell> {
       presentationState.addSlide(slide);
     }
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(context.l10n.photoAlbumCreated(result.length)),
-        duration: const Duration(seconds: 2),
-      ));
+      showAppSnackBar(context, context.l10n.photoAlbumCreated(result.length),
+          duration: const Duration(seconds: 2));
     }
   }
 
@@ -314,10 +305,8 @@ class _EditorShellState extends State<EditorShell> {
       list.map(FreeTextShape.fromMap).toList(),
     );
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(context.l10n.freeTextAdded),
-        duration: const Duration(seconds: 1),
-      ));
+      showAppSnackBar(context, context.l10n.freeTextAdded,
+          duration: const Duration(seconds: 1));
     }
   }
 
@@ -332,10 +321,8 @@ class _EditorShellState extends State<EditorShell> {
     if (!mounted || result == null) return;
     presentationState.upsertActionButton(result);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(context.l10n.actionButtonInserted),
-        duration: const Duration(seconds: 1),
-      ));
+      showAppSnackBar(context, context.l10n.actionButtonInserted,
+          duration: const Duration(seconds: 1));
     }
   }
 
@@ -349,10 +336,8 @@ class _EditorShellState extends State<EditorShell> {
     if (!mounted || result == null) return;
     presentationState.upsertEquation(result);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(context.l10n.equationInserted),
-        duration: const Duration(seconds: 1),
-      ));
+      showAppSnackBar(context, context.l10n.equationInserted,
+          duration: const Duration(seconds: 1));
     }
   }
 
@@ -372,10 +357,8 @@ class _EditorShellState extends State<EditorShell> {
       ),
     );
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(context.l10n.symbolInserted),
-        duration: const Duration(seconds: 1),
-      ));
+      showAppSnackBar(context, context.l10n.symbolInserted,
+          duration: const Duration(seconds: 1));
     }
   }
 
@@ -389,10 +372,8 @@ class _EditorShellState extends State<EditorShell> {
     if (!mounted || result == null) return;
     presentationState.upsertOle(result);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(context.l10n.oleInserted),
-        duration: const Duration(seconds: 1),
-      ));
+      showAppSnackBar(context, context.l10n.oleInserted,
+          duration: const Duration(seconds: 1));
     }
   }
 
@@ -412,10 +393,8 @@ class _EditorShellState extends State<EditorShell> {
       presentationState.upsertZoom(result);
     }
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(context.l10n.zoomInserted),
-        duration: const Duration(seconds: 1),
-      ));
+      showAppSnackBar(context, context.l10n.zoomInserted,
+          duration: const Duration(seconds: 1));
     }
   }
 
@@ -429,10 +408,8 @@ class _EditorShellState extends State<EditorShell> {
     if (!mounted || result == null) return;
     presentationState.upsertCameo(result);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(context.l10n.cameoInserted),
-        duration: const Duration(seconds: 1),
-      ));
+      showAppSnackBar(context, context.l10n.cameoInserted,
+          duration: const Duration(seconds: 1));
     }
   }
 
@@ -446,10 +423,8 @@ class _EditorShellState extends State<EditorShell> {
     if (!mounted || result == null) return;
     presentationState.upsertShape(result);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(context.l10n.shapeInserted),
-        duration: const Duration(seconds: 1),
-      ));
+      showAppSnackBar(context, context.l10n.shapeInserted,
+          duration: const Duration(seconds: 1));
     }
   }
 
@@ -460,10 +435,8 @@ class _EditorShellState extends State<EditorShell> {
     final slide = presentationState.slides[presentationState.currentSlideIndex];
     final raw = slide.visualElements['shapes'];
     if (raw is! List || raw.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(context.l10n.shapeNoSelection),
-        duration: const Duration(seconds: 1),
-      ));
+      showAppSnackBar(context, context.l10n.shapeNoSelection,
+          duration: const Duration(seconds: 1));
       return;
     }
     // Edit the last shape in the list.
@@ -481,10 +454,8 @@ class _EditorShellState extends State<EditorShell> {
       copy.map(DrawnShape.fromMap).toList(),
     );
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(context.l10n.shapePropertiesUpdated),
-        duration: const Duration(seconds: 1),
-      ));
+      showAppSnackBar(context, context.l10n.shapePropertiesUpdated,
+          duration: const Duration(seconds: 1));
     }
   }
 
@@ -496,10 +467,8 @@ class _EditorShellState extends State<EditorShell> {
     final slide = presentationState.slides[presentationState.currentSlideIndex];
     final raw = slide.visualElements['shapes'];
     if (raw is! List || raw.length < 2) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(context.l10n.shapeMergeNeedTwo),
-        duration: const Duration(seconds: 2),
-      ));
+      showAppSnackBar(context, context.l10n.shapeMergeNeedTwo,
+          duration: const Duration(seconds: 2));
       return;
     }
     final ids = _editorState.selectedShapeIds.toList();
@@ -530,12 +499,11 @@ class _EditorShellState extends State<EditorShell> {
     final merged = presentationState.mergeShapes(ids, op);
     _editorState.clearShapeSelection();
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(merged == null
-          ? context.l10n.shapeMergeEmpty
-          : context.l10n.shapeMerged),
+    showAppSnackBar(
+      context,
+      merged == null ? context.l10n.shapeMergeEmpty : context.l10n.shapeMerged,
       duration: const Duration(seconds: 2),
-    ));
+    );
   }
 
   Widget _mergeOpTile(
@@ -560,10 +528,8 @@ class _EditorShellState extends State<EditorShell> {
       final meta = result.$1;
       presentationState.setDeckMeta(meta);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.l10n.hfApplied),
-          duration: const Duration(seconds: 1),
-        ));
+        showAppSnackBar(context, context.l10n.hfApplied,
+            duration: const Duration(seconds: 1));
       }
     }
   }
@@ -580,10 +546,8 @@ class _EditorShellState extends State<EditorShell> {
     if (result is Model3DData) {
       presentationState.upsertModel3d(result);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.l10n.model3dInserted),
-          duration: const Duration(seconds: 1),
-        ));
+        showAppSnackBar(context, context.l10n.model3dInserted,
+            duration: const Duration(seconds: 1));
       }
     } else if (result is String && result.startsWith('edit:')) {
       final index = int.tryParse(result.substring(5)) ?? -1;
@@ -599,10 +563,8 @@ class _EditorShellState extends State<EditorShell> {
       if (editResult is Model3DData) {
         presentationState.upsertModel3d(editResult, editIndex: index);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(context.l10n.model3dUpdated),
-            duration: const Duration(seconds: 1),
-          ));
+          showAppSnackBar(context, context.l10n.model3dUpdated,
+              duration: const Duration(seconds: 1));
         }
       }
     }
@@ -618,10 +580,8 @@ class _EditorShellState extends State<EditorShell> {
     if (!mounted || result == null) return;
     presentationState.upsertIcon(result);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(context.l10n.iconInserted),
-        duration: const Duration(seconds: 1),
-      ));
+      showAppSnackBar(context, context.l10n.iconInserted,
+          duration: const Duration(seconds: 1));
     }
   }
 
@@ -643,10 +603,8 @@ class _EditorShellState extends State<EditorShell> {
       slide.copyWith(htmlContent: html),
     );
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(context.l10n.mediaInserted),
-        duration: const Duration(seconds: 1),
-      ));
+      showAppSnackBar(context, context.l10n.mediaInserted,
+          duration: const Duration(seconds: 1));
     }
   }
 
@@ -662,10 +620,8 @@ class _EditorShellState extends State<EditorShell> {
     if (result is VideoData) {
       presentationState.upsertVideo(result);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.l10n.videoInserted),
-          duration: const Duration(seconds: 1),
-        ));
+        showAppSnackBar(context, context.l10n.videoInserted,
+            duration: const Duration(seconds: 1));
       }
     } else if (result is String && result.startsWith('edit:')) {
       final index = int.tryParse(result.substring(5)) ?? -1;
@@ -681,10 +637,8 @@ class _EditorShellState extends State<EditorShell> {
       if (editResult is VideoData) {
         presentationState.upsertVideo(editResult, editIndex: index);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(context.l10n.videoUpdated),
-            duration: const Duration(seconds: 1),
-          ));
+          showAppSnackBar(context, context.l10n.videoUpdated,
+              duration: const Duration(seconds: 1));
         }
       }
     }
@@ -702,10 +656,8 @@ class _EditorShellState extends State<EditorShell> {
     if (result is ChartData) {
       presentationState.upsertChart(result);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.l10n.chartInserted),
-          duration: const Duration(seconds: 1),
-        ));
+        showAppSnackBar(context, context.l10n.chartInserted,
+            duration: const Duration(seconds: 1));
       }
     } else if (result is String && result.startsWith('edit:')) {
       final index = int.tryParse(result.substring(5)) ?? -1;
@@ -720,10 +672,8 @@ class _EditorShellState extends State<EditorShell> {
       if (editResult is ChartData) {
         presentationState.upsertChart(editResult, editIndex: index);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(context.l10n.chartUpdated),
-            duration: const Duration(seconds: 1),
-          ));
+          showAppSnackBar(context, context.l10n.chartUpdated,
+              duration: const Duration(seconds: 1));
         }
       }
     }
@@ -736,9 +686,7 @@ class _EditorShellState extends State<EditorShell> {
     final templates = await templateService.loadTemplates();
     if (templates.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.noTemplates)),
-        );
+        showAppSnackBar(context, context.l10n.noTemplates);
       }
       return;
     }
@@ -871,19 +819,15 @@ class _EditorShellState extends State<EditorShell> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
-              final messenger = ScaffoldMessenger.of(context);
               state.clearSlides();
-              Navigator.pop(context);
-              messenger.showSnackBar(
-                SnackBar(
-                  content: Text(context.l10n.deletedAllSlides),
-                  action: SnackBarAction(
-                    label: context.l10n.undoAction,
-                    onPressed: () => state.undo(),
-                  ),
-                  duration: const Duration(seconds: 4),
-                ),
+              showAppSnackBar(
+                context,
+                context.l10n.deletedAllSlides,
+                duration: const Duration(seconds: 3),
+                actionLabel: context.l10n.undoAction,
+                onAction: () => state.undo(),
               );
+              Navigator.pop(context);
             },
             child: Text(context.l10n.clearAllSlides),
           ),
@@ -1170,11 +1114,11 @@ class _EditorShellState extends State<EditorShell> {
                     context,
                     (type) {
                       presentationState.setSlideLayout(type);
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text(context.l10n
-                            .layoutApplied(_layoutName(context, type))),
-                        duration: const Duration(seconds: 1),
-                      ));
+                      showAppSnackBar(
+                          context,
+                          context.l10n
+                              .layoutApplied(_layoutName(context, type)),
+                          duration: const Duration(seconds: 1));
                     },
                     nameOf: (type) => _layoutName(context, type),
                   ),
@@ -1653,9 +1597,9 @@ class _EditorShellState extends State<EditorShell> {
     if (locale == 'vi' && !await _dictation.localeAvailable('vi')) {
       effective = 'en';
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text(
-                'Vietnamese speech not found on this machine — using English.')));
+        showAppSnackBar(
+            context,
+            'Vietnamese speech not found on this machine — using English.');
       }
     }
     _dictation.onPhrase = (phrase) {

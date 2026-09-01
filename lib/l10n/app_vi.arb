@@ -951,5 +951,49 @@
   "diagramCentralChip": "Chủ đề chính",
   "diagramInsert": "Chèn vào slide",
   "pdfNotesPages": "Trang ghi chú người trình bày",
-  "pdfBookmarks": "Dấu trang PDF (outline)"
+  "pdfBookmarks": "Dấu trang PDF (outline)",
+  "engineTitle": "Engine",
+  "engineSubtitle": "Lõi xử lý cho xuất file và media. Rust nhanh hơn; Dart luôn hoạt động.",
+  "engineRust": "Rust",
+  "engineDart": "Dart",
+  "engineStatusRust": "Đang chạy trên engine Rust ({version})",
+  "@engineStatusRust": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "engineStatusDart": "Đang chạy trên engine Dart (chế độ tương thích)",
+  "engineRustAvailable": "Engine Rust sẵn sàng ({version})",
+  "@engineRustAvailable": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "engineStatusFallback": "Không dùng được engine Rust ({reason}); đang chạy Dart",
+  "@engineStatusFallback": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "docxReportOptions": "Tùy chọn báo cáo Word",
+  "docxIncludeSlideList": "Kèm danh sách slide ở cuối báo cáo",
+  "imageOptimizerBetaTitle": "Tối ưu ảnh (beta)",
+  "imageOptimizerBetaSubtitle": "Thử nghiệm: chuyển ảnh PNG lớn không trong suốt sang JPEG khi xuất (PNG trong suốt giữ nguyên); hiện thống kê tiết kiệm sau mỗi lần xuất",
+  "imageSavings": "Tiết kiệm: {summary} ({count} ảnh)",
+  "@imageSavings": {
+    "placeholders": {
+      "summary": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -5035,6 +5035,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'PDF bookmarks (outline)'**
   String get pdfBookmarks;
+
+  /// No description provided for @engineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Engine'**
+  String get engineTitle;
+
+  /// No description provided for @engineSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing core for export and media. Rust is faster; Dart always works.'**
+  String get engineSubtitle;
+
+  /// No description provided for @engineRust.
+  ///
+  /// In en, this message translates to:
+  /// **'Rust'**
+  String get engineRust;
+
+  /// No description provided for @engineDart.
+  ///
+  /// In en, this message translates to:
+  /// **'Dart'**
+  String get engineDart;
+
+  /// No description provided for @engineStatusRust.
+  ///
+  /// In en, this message translates to:
+  /// **'Running on the Rust engine ({version})'**
+  String engineStatusRust(String version);
+
+  /// No description provided for @engineStatusDart.
+  ///
+  /// In en, this message translates to:
+  /// **'Running on the Dart engine (compatible mode)'**
+  String get engineStatusDart;
+
+  /// No description provided for @engineRustAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Rust engine available ({version})'**
+  String engineRustAvailable(String version);
+
+  /// No description provided for @engineStatusFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Rust engine unavailable ({reason}); running on Dart'**
+  String engineStatusFallback(String reason);
+
+  /// No description provided for @docxReportOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Word report options'**
+  String get docxReportOptions;
+
+  /// No description provided for @docxIncludeSlideList.
+  ///
+  /// In en, this message translates to:
+  /// **'Include an index of all slides at the end'**
+  String get docxIncludeSlideList;
+
+  /// No description provided for @imageOptimizerBetaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Image optimizer (beta)'**
+  String get imageOptimizerBetaTitle;
+
+  /// No description provided for @imageOptimizerBetaSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Experimental: convert large opaque PNGs to JPEG on export (transparent PNGs stay PNG); shows savings in the export summary'**
+  String get imageOptimizerBetaSubtitle;
+
+  /// No description provided for @imageSavings.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved: {summary} ({count} images)'**
+  String imageSavings(String summary, String count);
 }
 
 class _AppLocalizationsDelegate

@@ -12,6 +12,7 @@ import 'providers/shortcuts_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
 import 'services/collaboration_service.dart';
+import 'services/rust_engine.dart';
 import 'theme/app_theme.dart';
 import 'l10n/app_localizations.dart';
 
@@ -67,6 +68,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ShortcutsProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
+        // Rust core: created lazily (first Settings/export access), never at
+        // startup — keeps boot light and the zero-network posture intact.
+        ChangeNotifierProvider(create: (_) => RustEngineService()),
         ProxyProvider<PresentationState, CollaborationService>(
           create: (_) => CollaborationService(),
           update: (_, presentation, service) =>

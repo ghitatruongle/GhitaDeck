@@ -2578,4 +2578,54 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pdfBookmarks => 'PDF bookmarks (outline)';
+
+  @override
+  String get engineTitle => 'Engine';
+
+  @override
+  String get engineSubtitle =>
+      'Processing core for export and media. Rust is faster; Dart always works.';
+
+  @override
+  String get engineRust => 'Rust';
+
+  @override
+  String get engineDart => 'Dart';
+
+  @override
+  String engineStatusRust(String version) {
+    return 'Running on the Rust engine ($version)';
+  }
+
+  @override
+  String get engineStatusDart => 'Running on the Dart engine (compatible mode)';
+
+  @override
+  String engineRustAvailable(String version) {
+    return 'Rust engine available ($version)';
+  }
+
+  @override
+  String engineStatusFallback(String reason) {
+    return 'Rust engine unavailable ($reason); running on Dart';
+  }
+
+  @override
+  String get docxReportOptions => 'Word report options';
+
+  @override
+  String get docxIncludeSlideList =>
+      'Include an index of all slides at the end';
+
+  @override
+  String get imageOptimizerBetaTitle => 'Image optimizer (beta)';
+
+  @override
+  String get imageOptimizerBetaSubtitle =>
+      'Experimental: convert large opaque PNGs to JPEG on export (transparent PNGs stay PNG); shows savings in the export summary';
+
+  @override
+  String imageSavings(String summary, String count) {
+    return 'Saved: $summary ($count images)';
+  }
 }

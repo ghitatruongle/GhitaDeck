@@ -13,6 +13,8 @@ import 'theme_settings_screen.dart';
 import 'widgets/shortcuts_customization_dialog.dart';
 import '../utils/error_mapper.dart';
 import '../providers/locale_provider.dart';
+import '../services/rust_engine.dart';
+import '../services/image_optimizer_service.dart';
 import '../l10n/l10n.dart';
 import '../l10n/app_localizations.dart';
 
@@ -25,6 +27,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  static const String _imageOptimizerPrefKey = 'app_image_optimizer_beta';
   final Map<String, TextEditingController> _keyControllers = {};
 
   @override
@@ -33,6 +36,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initKeyControllers();
     });
+    // Engine indicator is a status display; load preference + probe once
+    // when the user opens Settings (never at app startup).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final engine = context.read<RustEngineService>();
+      engine.loadPreference();
+      engine.ensureInitialized();
+      _loadImageOptimizerPref(context);
+    });
+  }
+
+  Future<void> _loadImageOptimizerPref(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    final enabled = prefs.getBool(_imageOptimizerPrefKey) ?? false;
+    ImageOptimizerConfig.betaEnabled = enabled;
   }
 
   void _initKeyControllers() {
@@ -179,6 +196,107 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
             ),
+          ),
+          const SizedBox(height: 16),
+
+          // Section 1b: Engine (v2.0.5-demo — Rust core)
+          Consumer<RustEngineService>(
+            builder: (context, engine, _) {
+              // The status line reports the *selected* engine; when Dart is
+              // preferred but the Rust DLL is present, that is shown as extra
+              // availability rather than claiming Rust is "running".
+              final statusText = switch (engine.preferred) {
+                EngineKind.rust => switch (engine.status) {
+                    EngineStatus.rustReady =>
+                      l10n.engineStatusRust(engine.detail),
+                    EngineStatus.dart => l10n.engineStatusDart,
+                    EngineStatus.fallingBack =>
+                      l10n.engineStatusFallback(engine.detail),
+                  },
+                EngineKind.dart => engine.status == EngineStatus.rustReady
+                    ? '${l10n.engineStatusDart} · '
+                        '${l10n.engineRustAvailable(engine.detail)}'
+                    : l10n.engineStatusDart,
+              };
+              final statusIcon = switch (engine.status) {
+                EngineStatus.rustReady => Icons.check_circle,
+                EngineStatus.dart => Icons.circle_outlined,
+                EngineStatus.fallingBack => Icons.warning_amber,
+              };
+              final statusColor = switch (engine.status) {
+                EngineStatus.rustReady => Colors.green,
+                EngineStatus.dart => theme.colorScheme.outline,
+                EngineStatus.fallingBack => Colors.orange,
+              };
+              return Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.speed_outlined,
+                              color: theme.colorScheme.primary),
+                          const SizedBox(width: 8),
+                          Text(l10n.engineTitle,
+                              style: theme.textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      const Divider(height: 24),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(l10n.engineSubtitle),
+                        trailing: SegmentedButton<EngineKind>(
+                          segments: [
+                            ButtonSegment(
+                                value: EngineKind.rust,
+                                icon: const Icon(Icons.memory),
+                                label: Text(l10n.engineRust)),
+                            ButtonSegment(
+                                value: EngineKind.dart,
+                                icon: const Icon(Icons.code),
+                                label: Text(l10n.engineDart)),
+                          ],
+                          selected: {engine.preferred},
+                          onSelectionChanged: (set) {
+                            if (set.isNotEmpty) engine.setEngine(set.first);
+                          },
+                        ),
+                      ),
+                      const Divider(height: 24),
+                      Row(
+                        children: [
+                          Icon(statusIcon, size: 16, color: statusColor),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              statusText,
+                              style: theme.textTheme.bodySmall,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 24),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(l10n.imageOptimizerBetaTitle),
+                        subtitle: Text(l10n.imageOptimizerBetaSubtitle),
+                        value: ImageOptimizerConfig.betaEnabled,
+                        onChanged: (v) async {
+                          setState(() {
+                            ImageOptimizerConfig.betaEnabled = v;
+                          });
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setBool(_imageOptimizerPrefKey, v);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
           const SizedBox(height: 16),
 

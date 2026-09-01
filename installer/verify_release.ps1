@@ -66,7 +66,7 @@ if ($metadata.schemaVersion -ne 1 -or
     $metadata.installerSha256 -ne $actualInstallerHash -or
     $metadata.applicationExeSha256 -ne $actualExeHash -or
     $metadata.architecture -ne "x64" -or
-    $metadata.installScope -ne "per-user") {
+    -not ($metadata.installScope -eq "per-machine" -or $metadata.installScope -eq "per-user")) {
     throw "Release metadata manifest validation failed."
 }
 
@@ -86,10 +86,15 @@ if ($SmokeInstall) {
     $smokeRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("GhitaPPT-release-smoke-" + [guid]::NewGuid().ToString("N"))
     if (Test-Path -LiteralPath $smokeRoot) { throw "Unexpected existing smoke-test path: $smokeRoot" }
 
-    $install = Start-Process -FilePath $installerPath -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR=`"$smokeRoot`"" -Wait -PassThru
+    # /CURRENTUSER: the installer defaults to Program Files (PrivilegesRequired
+    # = admin + UAC), which a non-elevated automation shell cannot complete.
+    # The override is allowed in the wizard (PrivilegesRequiredOverridesAllowed)
+    # so silent smoke tests install per-user into the temp dir; real end-user
+    # installs still get the Program Files default via the UAC prompt.
+    $install = Start-Process -FilePath $installerPath -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CURRENTUSER /DIR=`"$smokeRoot`"" -Wait -PassThru
     if ($install.ExitCode -ne 0) { throw "Installer smoke test failed with exit code $($install.ExitCode)." }
 
-    foreach ($relativePath in @("ghita_ppt_converter.exe", "flutter_windows.dll", "data\app.so", "data\flutter_assets\AssetManifest.bin", "unins000.exe")) {
+    foreach ($relativePath in @("ghita_ppt_converter.exe", "flutter_windows.dll", "ghita_core.dll", "data\app.so", "data\flutter_assets\AssetManifest.bin", "unins000.exe")) {
         if (-not (Test-Path -LiteralPath (Join-Path $smokeRoot $relativePath))) {
             throw "Installed file is missing: $relativePath"
         }

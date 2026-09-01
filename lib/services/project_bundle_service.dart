@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 import '../models/slide.dart';
 import '../config/build_info.dart';
 import 'html_sanitizer_service.dart';
+import 'zip_codec.dart';
 
 /// Service for packing and unpacking `.ghita` project bundle files.
 /// A `.ghita` file is an encoded ZIP archive containing:
@@ -50,6 +51,8 @@ class ProjectBundleService {
     List<Map<String, dynamic>>? historySnapshots,
     List<MapEntry<String, Uint8List>>? mediaFiles,
     Map<String, String>? mediaPathNames,
+    // T02: true → ZipCodec picks Rust ghita_zip (with Dart fallback).
+    bool useEngineZip = false,
   }) async {
     try {
       if (slides.length > maxSlides) return false;
@@ -114,8 +117,9 @@ class ProjectBundleService {
       }
 
       // 5. Encode ZIP & Write File
-      final encoder = ZipEncoder();
-      final zipBytes = encoder.encode(archive);
+      final zipBytes = useEngineZip
+          ? await ZipCodec.encode(ZipCodec.fromArchive(archive))
+          : ZipEncoder().encode(archive);
       if (zipBytes != null) {
         if (zipBytes.length > maxBundleBytes) return false;
         final outputFile = File(targetPath);

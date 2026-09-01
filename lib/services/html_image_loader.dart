@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:image/image.dart' as img;
+import 'image_optimizer_service.dart';
 
 /// A decoded image ready to be embedded into an export (PPTX/PDF).
 class LoadedImage {
@@ -73,6 +74,14 @@ class HtmlImageLoader {
   /// [writeWarningsLog] once an export finishes.
   static final List<ImageLoadWarning> warnings = [];
 
+  /// N2: per-export savings tally is cleared together with the warnings so
+  /// every export starts from a clean slate (and the dialog shows the latest
+  /// job only).
+  static void clearWarnings() {
+    warnings.clear();
+    ImageOptimizationStats.reset();
+  }
+
   static String _cacheDir() {
     final override = debugCacheDir;
     if (override != null && override.isNotEmpty) return override;
@@ -89,8 +98,6 @@ class HtmlImageLoader {
     _processedCache.clear();
     warnings.clear();
   }
-
-  static void clearWarnings() => warnings.clear();
 
   static void _warn(String src, String reason) {
     if (warnings.length >= 100) return;
@@ -293,14 +300,22 @@ class HtmlImageLoader {
     final trimmed = src.trim();
     if (trimmed.isEmpty) return null;
 
-    final optionsKey = '$trimmed\u0000$maxWidth\u0000$allowJpeg\u0000$jpegQuality';
+    // N2 beta: with the flag on the configured quality drives the PNG→JPEG
+    // re-encode (and savings are tallied); off runs exactly as before.
+    final effectiveQuality =
+        ImageOptimizerConfig.betaEnabled ? ImageOptimizerConfig.quality : jpegQuality;
+
+    final optionsKey =
+        '$trimmed\u0000$maxWidth\u0000$allowJpeg\u0000$effectiveQuality'
+        '\u0000${ImageOptimizerConfig.betaEnabled ? 1 : 0}';
     final cachedResult = _processedCache[optionsKey];
     if (cachedResult != null) return cachedResult;
 
     final raw = _rawFor(trimmed);
     if (raw == null) return null;
 
-    final result = _process(raw, maxWidth: maxWidth, allowJpeg: allowJpeg, jpegQuality: jpegQuality);
+    final result = _process(raw,
+        maxWidth: maxWidth, allowJpeg: allowJpeg, jpegQuality: effectiveQuality);
     if (result != null) {
       _cacheProcessed(optionsKey, result);
     }
@@ -408,19 +423,29 @@ class HtmlImageLoader {
         !out.hasAlpha &&
         out.width >= _jpegThreshold) {
       // Phase 5: large opaque PNG → JPEG (alpha images keep PNG).
-      final bytes = Uint8List.fromList(img.encodeJpg(out, quality: jpegQuality));
+      final bytes =
+          Uint8List.fromList(img.encodeJpg(out, quality: jpegQuality));
+      if (ImageOptimizerConfig.betaEnabled) {
+        ImageOptimizationStats.record(raw.bytes.length, bytes.length);
+      }
       return _makeResult(bytes, 'jpg', out.width, out.height);
     }
     if (outExt == 'png') {
       // Deterministic PNG re-encode (bakes orientation + resize); alpha is
       // preserved losslessly.
       final bytes = Uint8List.fromList(img.encodePng(out));
+      if (ImageOptimizerConfig.betaEnabled && resized) {
+        ImageOptimizationStats.record(raw.bytes.length, bytes.length);
+      }
       return _makeResult(bytes, 'png', out.width, out.height);
     }
     if (resized || needsRotation) {
       // Resized or rotated JPEGs must be re-encoded to land in the pixels.
       final bytes = Uint8List.fromList(
           img.encodeJpg(out, quality: jpegQuality.clamp(60, 95)));
+      if (ImageOptimizerConfig.betaEnabled && resized) {
+        ImageOptimizationStats.record(raw.bytes.length, bytes.length);
+      }
       return _makeResult(bytes, 'jpg', out.width, out.height);
     }
     // JPEG passthrough (bytes unchanged).

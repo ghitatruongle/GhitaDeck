@@ -4,7 +4,8 @@ import 'ppt_theme_setting.dart';
 enum PresentationExportFormat {
   pptx('PowerPoint (.pptx)', 'pptx'),
   html('HTML presentation (.html)', 'html'),
-  pdf('PDF document (.pdf)', 'pdf');
+  pdf('PDF document (.pdf)', 'pdf'),
+  docx('Word report (.docx)', 'docx');
 
   final String label;
   final String extension;
@@ -123,6 +124,7 @@ class ExportOptions {
     this.pdfScaleToFit = true,
     this.pdfNotesPages = false,
     this.pdfBookmarks = false,
+    this.docxIncludeSlideList = true,
     this.includeHiddenSlides = false,
     this.htmlPlayerLocale = 'en',
     this.allSlides = true,
@@ -156,6 +158,9 @@ class ExportOptions {
 
   /// T06: PDF outline entries (bookmarks panel), one per slide.
   final bool pdfBookmarks;
+
+  /// DOCX only: append the numbered slide index at the end of the report.
+  final bool docxIncludeSlideList;
 
   /// PDF only: keep slides marked hidden in the exported document.
   final bool includeHiddenSlides;

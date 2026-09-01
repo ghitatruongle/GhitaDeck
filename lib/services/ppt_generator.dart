@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
+import 'zip_codec.dart';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:html/parser.dart' as html_parser;
 import 'package:html/dom.dart' as dom;
@@ -415,6 +416,8 @@ class PPTGenerator {
     // (p:custShowLst in presentation.xml) with a sldIdLst referencing the
     // deck's slides.
     CustomShow? customShow,
+    // T02 ghita_zip: true → ZipCodec decides Rust/Dart (with fallback).
+    bool useEngineZip = false,
   }) async {
     try {
       if (slides.isEmpty) {
@@ -424,7 +427,7 @@ class PPTGenerator {
           'Cannot export an empty presentation',
         );
       }
-      final pptxBytes = _createPPTXArchive(slides,
+      final pptxBytes = await _createPPTXArchive(slides,
           effect: effect,
           widescreen: widescreen,
           aspectRatio: aspectRatio,
@@ -439,7 +442,8 @@ class PPTGenerator {
           fitContent: fitContent,
           theme: theme,
           deckMeta: deckMeta,
-          customShow: customShow);
+          customShow: customShow,
+          useEngineZip: useEngineZip);
       final outputFile = File(outputPath);
       await outputFile.create(recursive: true);
       await outputFile.writeAsBytes(pptxBytes);
@@ -451,7 +455,7 @@ class PPTGenerator {
     }
   }
 
-  static Uint8List _createPPTXArchive(
+  static Future<Uint8List> _createPPTXArchive(
     List<Map<String, dynamic>> slides, {
     SlideEffect effect = SlideEffect.none,
     bool widescreen = true,
@@ -468,7 +472,8 @@ class PPTGenerator {
     PptThemeSetting? theme,
     DeckMeta? deckMeta,
     CustomShow? customShow,
-  }) {
+    bool useEngineZip = false,
+  }) async {
     final geometry = _PptGeometry(
       aspectRatio ??
           (widescreen
@@ -759,9 +764,15 @@ class PPTGenerator {
     cancelToken?.throwIfCancelled();
     // Text/XML parts are highly compressible: deflate them at the strongest
     // level (the UTF-8 byte-length fix in _addTextFile stays untouched).
-    final encoder = ZipEncoder();
+    // T02: with the engine enabled, ghita_zip (Rust) performs the same encode
+    // — text deflated at [debugZipLevel], media stored — with the automatic
+    // Dart fallback inside ZipCodec.
     final encodeWatch = Stopwatch()..start();
-    final bytes = encoder.encode(archive, level: debugZipLevel);
+    final bytes = useEngineZip
+        ? await ZipCodec.encode(ZipCodec.fromArchive(archive),
+            level: debugZipLevel)
+        : Uint8List.fromList(
+            ZipEncoder().encode(archive, level: debugZipLevel) ?? []);
     encodeWatch.stop();
     timingsWatch.stop();
     if (timings != null) {
@@ -775,12 +786,12 @@ class PPTGenerator {
         ..buildMs = timingsWatch.elapsedMicroseconds / 1000 -
             zipMs -
             (parseCache == null ? 0.0 : parseAccumulatedMs)
-        ..bytes = bytes?.length ?? 0;
+        ..bytes = bytes.length;
     }
-    if (bytes == null || bytes.isEmpty) {
+    if (bytes.isEmpty) {
       throw StateError('Failed to encode the PPTX package');
     }
-    return Uint8List.fromList(bytes);
+    return bytes;
   }
 
   static String _buildContentTypesXml(

@@ -403,7 +403,7 @@ class _M6ExportDialogState extends State<M6ExportDialog> {
     });
     try {
       final tmp = '${Directory.systemTemp.path}/ghita_${DateTime.now().millisecondsSinceEpoch}.pptx';
-      await PPTGenerator.generatePPT(widget.slides, tmp);
+      await PPTGenerator.generatePPT(widget.slides, tmp, useEngineZip: true);
       final bytes = await File(tmp).readAsBytes();
       final rewritten =
           PackageFormatService.rewritePackageType(Uint8List.fromList(bytes), kind);
@@ -446,7 +446,7 @@ class _M6ExportDialogState extends State<M6ExportDialog> {
     });
     try {
       final tmp = '${Directory.systemTemp.path}/ghita_${DateTime.now().millisecondsSinceEpoch}.pptx';
-      await PPTGenerator.generatePPT(widget.slides, tmp);
+      await PPTGenerator.generatePPT(widget.slides, tmp, useEngineZip: true);
       final out = await PackageFormatService.convertToPpt(tmp, dir);
       if (mounted) _done(l, l.exportSuccessful(out));
     } catch (e) {
@@ -559,7 +559,7 @@ class _M6ExportDialogState extends State<M6ExportDialog> {
         removePhones: true,
         authorName: 'Ghita',
       );
-      await PPTGenerator.generatePPT(cleaned, path);
+      await PPTGenerator.generatePPT(cleaned, path, useEngineZip: true);
       if (mounted) _done(l, l.exportSuccessful(path));
     } catch (e) {
       if (mounted) _fail(l, e.toString());
@@ -577,7 +577,7 @@ class _M6ExportDialogState extends State<M6ExportDialog> {
     });
     try {
       final tmp = '${Directory.systemTemp.path}/ghita_${DateTime.now().millisecondsSinceEpoch}.pptx';
-      await PPTGenerator.generatePPT(widget.slides, tmp);
+      await PPTGenerator.generatePPT(widget.slides, tmp, useEngineZip: true);
       final out = DocSecurityService.markAsFinal(
           Uint8List.fromList(await File(tmp).readAsBytes()));
       if (out == null) throw StateError('markAsFinal failed');
@@ -599,7 +599,7 @@ class _M6ExportDialogState extends State<M6ExportDialog> {
     });
     try {
       final tmp = '${Directory.systemTemp.path}/ghita_${DateTime.now().millisecondsSinceEpoch}.pptx';
-      await PPTGenerator.generatePPT(widget.slides, tmp);
+      await PPTGenerator.generatePPT(widget.slides, tmp, useEngineZip: true);
       final out = DocSecurityService.applyModifyPassword(
           Uint8List.fromList(await File(tmp).readAsBytes()), _password);
       if (out == null) throw StateError('password protect failed');

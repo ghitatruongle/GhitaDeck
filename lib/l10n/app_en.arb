@@ -989,5 +989,49 @@
   "diagramCentralChip": "Central topic",
   "diagramInsert": "Insert into slide",
   "pdfNotesPages": "Speaker-notes pages",
-  "pdfBookmarks": "PDF bookmarks (outline)"
+  "pdfBookmarks": "PDF bookmarks (outline)",
+  "engineTitle": "Engine",
+  "engineSubtitle": "Processing core for export and media. Rust is faster; Dart always works.",
+  "engineRust": "Rust",
+  "engineDart": "Dart",
+  "engineStatusRust": "Running on the Rust engine ({version})",
+  "@engineStatusRust": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "engineStatusDart": "Running on the Dart engine (compatible mode)",
+  "engineRustAvailable": "Rust engine available ({version})",
+  "@engineRustAvailable": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "engineStatusFallback": "Rust engine unavailable ({reason}); running on Dart",
+  "@engineStatusFallback": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "docxReportOptions": "Word report options",
+  "docxIncludeSlideList": "Include an index of all slides at the end",
+  "imageOptimizerBetaTitle": "Image optimizer (beta)",
+  "imageOptimizerBetaSubtitle": "Experimental: convert large opaque PNGs to JPEG on export (transparent PNGs stay PNG); shows savings in the export summary",
+  "imageSavings": "Saved: {summary} ({count} images)",
+  "@imageSavings": {
+    "placeholders": {
+      "summary": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  }
 }

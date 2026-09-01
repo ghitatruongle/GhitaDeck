@@ -4,6 +4,7 @@ import '../../models/export_options.dart';
 import '../../models/ppt_theme_setting.dart';
 import '../../providers/presentation_state.dart';
 import '../../providers/theme_provider.dart';
+import '../../services/image_optimizer_service.dart';
 import '../../l10n/l10n.dart';
 import 'm6_export_dialog.dart';
 
@@ -27,6 +28,7 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
   bool _pdfScaleToFit = true;
   bool _pdfNotesPages = false;
   bool _pdfBookmarks = false;
+  bool _docxIncludeSlideList = true;
   bool _includeHiddenSlides = false;
   bool _allSlides = true;
   final Set<int> _selectedSlideIndices = {};
@@ -139,6 +141,19 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
                   _buildSectionTitle(context, context.l10n.pdfPaperSize),
                   const SizedBox(height: 8),
                   _buildPdfOptions(context),
+                ],
+                if (_format == PresentationExportFormat.docx) ...[
+                  const SizedBox(height: 12),
+                  _buildSectionTitle(context, context.l10n.docxReportOptions),
+                  const SizedBox(height: 8),
+                  CheckboxListTile(
+                    dense: true,
+                    title: Text(context.l10n.docxIncludeSlideList),
+                    value: _docxIncludeSlideList,
+                    onChanged: (v) => setState(
+                        () => _docxIncludeSlideList = v ?? true),
+                    contentPadding: EdgeInsets.zero,
+                  ),
                 ],
                 const SizedBox(height: 8),
 
@@ -388,6 +403,7 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
         pdfScaleToFit: _pdfScaleToFit,
         pdfNotesPages: _pdfNotesPages,
         pdfBookmarks: _pdfBookmarks,
+        docxIncludeSlideList: _docxIncludeSlideList,
         includeHiddenSlides: _includeHiddenSlides,
         // Track 07, P9: deck player strings follow the app locale.
         htmlPlayerLocale:
@@ -399,11 +415,18 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
           '${_format.label} | ${_aspectRatio.label} | ${_quality.label} | ${indices.length} slides';
       final fileName = 'presentation_${DateTime.now().millisecondsSinceEpoch}';
       await presentationState.exportWithOptions(fileName, options);
-
       if (!context.mounted) return;
+      // N2: the worker ships its savings back inside the export reply, so the
+      // numbers must be read AFTER the export completes (shown = this job).
+      final savings = ImageOptimizationStats.displaySummary();
+      final userFacingSummary = savings != null
+          ? '$summary — ${context.l10n.imageSavings(savings, ImageOptimizationStats.displayCount.toString())}'
+          : summary;
+      ImageOptimizationStats.reset();
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(context.l10n.exportSuccessful(summary)),
+          content: Text(context.l10n.exportSuccessful(userFacingSummary)),
           backgroundColor: Colors.green,
         ),
       );

@@ -7,6 +7,7 @@ import 'package:ghita_ppt_converter/providers/presentation_state.dart';
 import 'package:ghita_ppt_converter/providers/shortcuts_provider.dart';
 import 'package:ghita_ppt_converter/providers/theme_provider.dart';
 import 'package:ghita_ppt_converter/providers/locale_provider.dart';
+import 'package:ghita_ppt_converter/services/rust_engine.dart';
 import 'package:ghita_ppt_converter/l10n/app_localizations.dart';
 import 'package:ghita_ppt_converter/screens/home_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -30,6 +31,7 @@ void main() {
           ChangeNotifierProvider(create: (_) => ShortcutsProvider()),
           ChangeNotifierProvider(create: (_) => ThemeProvider()),
           ChangeNotifierProvider(create: (_) => LocaleProvider()),
+          ChangeNotifierProvider(create: (_) => RustEngineService()),
         ],
         child: Consumer<LocaleProvider>(
           builder: (context, localeProvider, _) => MaterialApp(

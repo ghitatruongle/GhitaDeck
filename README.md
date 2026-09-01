@@ -1,10 +1,10 @@
-# Ghita PPT Converter v2.0.1
+# Ghita PPT Converter v2.0.5-demo
 
 Flutter application for creating PowerPoint presentations with HTML support and AI-powered content generation.
 
 ## Version
-- **Current version:** `2.0.1`
-- **Release status:** Beta — stability and hardening
+- **Current version:** `2.0.5-demo+4`
+- **Release status:** Beta — demo (Rust core + DOCX report + image optimizer beta)
 
 ## Features
 
@@ -23,6 +23,7 @@ Write custom HTML for slides — the engine preserves rich content in the output
 - **PPTX** — full OOXML package (theme, notes slides, embedded media)
 - **PDF** — one landscape page per slide, same HTML interpretation as PPTX, with embedded Unicode system font (full Vietnamese support); optional **PDF bookmarks** (outline panel, one entry per slide) and **dedicated speaker-notes pages** interleaved after their slides
 - **HTML** — standalone browser deck with keyboard/touch navigation, progress bar, fullscreen
+- **Word report (.docx)** — v2.0.5-demo: deck → Word report (outline + speaker notes, optional numbered slide index), minimal ECMA-376 package that opens without a repair prompt
 - **Diagram blocks** — themed flowchart/mindmap inserts (Insert ribbon → Diagram) carried across all three export formats
 
 ### 3. **Live Preview & Present Mode**
@@ -162,7 +163,9 @@ Windows Release build:
 ./installer/build_installer.ps1 -Clean
 ```
 
-It produces a per-user x64 installer plus a SHA-256 checksum and release
+It produces an x64 installer (default: Program Files, UAC-elevated; the wizard
+lets you pick any custom directory, or per-user mode on machines without admin
+rights) plus a SHA-256 checksum and release
 metadata JSON in `installer/output/`. Version data is read from `pubspec.yaml`,
 and the manifest records the source revision, dirty-tree state, hashes, and
 Authenticode status. The installer intentionally preserves user projects and

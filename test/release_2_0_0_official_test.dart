@@ -19,7 +19,7 @@ void main() {
       final pubspecFile = File('pubspec.yaml');
       expect(pubspecFile.existsSync(), isTrue);
       final content = pubspecFile.readAsStringSync();
-      expect(content, contains('version: 2.0.1+3'));
+      expect(content, contains('version: 2.0.5-demo+4'));
       expect(content, contains(BuildInfo.coreVersion));
     });
 
@@ -27,8 +27,8 @@ void main() {
       final issFile = File('installer/ghita_ppt_installer.iss');
       expect(issFile.existsSync(), isTrue);
       final content = issFile.readAsStringSync();
-      expect(content, contains('#define MyAppDisplayVersion "2.0.1+3"'));
-      expect(content, contains('#define MyAppVersion "2.0.1.3"'));
+      expect(content, contains('#define MyAppDisplayVersion "2.0.5-demo+4"'));
+      expect(content, contains('#define MyAppVersion "2.0.5.4"'));
     });
 
     test('ProjectBundleService manifest uses app and schema versions',

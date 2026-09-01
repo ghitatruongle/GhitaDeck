@@ -8,6 +8,7 @@ import '../providers/ai_provider_manager.dart';
 import '../providers/presentation_state.dart';
 import '../services/copilot_service.dart';
 import '../services/deck_translation_service.dart';
+import '../utils/snackbar_helper.dart';
 
 class AiChatScreen extends StatefulWidget {
   final AIProviderManager aiProviderManager;
@@ -250,12 +251,9 @@ class _AiChatScreenState extends State<AiChatScreen> {
                                               htmlContent:
                                                   s['htmlContent'] ?? '',
                                             ));
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              SnackBar(
-                                                  content: Text(
-                                                      context.l10n.addedSlideNotice(title))),
-                                            );
+                                            showAppSnackBar(
+                                                context,
+                                                context.l10n.addedSlideNotice(title));
                                           },
                                         );
                                       }),
@@ -280,12 +278,9 @@ class _AiChatScreenState extends State<AiChatScreen> {
                                                     s['htmlContent'] ?? '',
                                               ));
                                             }
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              SnackBar(
-                                                  content: Text(
-                                                      'Added all ${slides.length} slides!')),
-                                            );
+                                            showAppSnackBar(context,
+                                                context.l10n.aiAddedAllSlidesNotice(
+                                                    slides.length));
                                           },
                                         ),
                                     ],
@@ -311,12 +306,8 @@ class _AiChatScreenState extends State<AiChatScreen> {
                                         title: 'AI Generated Slide',
                                         htmlContent: content,
                                       ));
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                            content: Text(
-                                                'Added to presentation slides!')),
-                                      );
+                                      showAppSnackBar(
+                                          context, context.l10n.aiAddedSlidesNotice);
                                     },
                                   ),
                                 ),
@@ -586,8 +577,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
     final slides = state.slides;
     if (slides.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(context.l10n.deckEmpty)));
+        showAppSnackBar(context, context.l10n.deckEmpty);
       }
       return;
     }
@@ -678,9 +668,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
     final slides = state.slides;
     if (slides.isEmpty) return;
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content:
-              Text('Translation uses the AI provider — one prompt per slide.')));
+      showAppSnackBar(context, context.l10n.aiTranslationHintNotice);
     }
     final target = await showDialog<String>(
       context: context,
@@ -715,13 +703,12 @@ class _AiChatScreenState extends State<AiChatScreen> {
           });
         }
         if (mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text('$done/${slides.length} translated…')));
+          showAppSnackBar(context,
+              context.l10n.aiTranslatedNotice(done, slides.length));
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Slide ${i + 1} error: $e')));
+          showAppSnackBar(context, context.l10n.aiSlideErrorNotice(i + 1, '$e'));
           break;
         }
       }
@@ -755,8 +742,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
             i, original.copyWith(htmlContent: entry.value));
       }
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Deck translated.')));
+        showAppSnackBar(context, context.l10n.aiDeckTranslatedNotice);
       }
     }
   }
@@ -945,7 +931,6 @@ class _AiChatScreenState extends State<AiChatScreen> {
   void _showSystemPromptEditor() {
     final manager = widget.aiProviderManager;
     final controller = TextEditingController(text: manager.systemPrompt);
-    final messenger = ScaffoldMessenger.of(context);
 
     showDialog(
       context: context,
@@ -978,9 +963,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                   'Use <h1> for title, <p> for paragraphs, <ul>/<li> for lists. '
                   'No external CSS/JS references.');
               Navigator.pop(context);
-              messenger.showSnackBar(
-                const SnackBar(content: Text('System prompt reset to default!')),
-              );
+              showAppSnackBar(context, context.l10n.aiSystemPromptResetNotice);
             },
             child: const Text('Reset to Default'),
           ),
@@ -988,9 +971,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
             onPressed: () {
               manager.updateSystemPrompt(controller.text.trim());
               Navigator.pop(context);
-              messenger.showSnackBar(
-                const SnackBar(content: Text('System prompt saved!')),
-              );
+              showAppSnackBar(context, context.l10n.aiSystemPromptSavedNotice);
             },
             child: const Text('Save'),
           ),
@@ -1019,7 +1000,6 @@ class _AiChatScreenState extends State<AiChatScreen> {
     final models = List<String>.from(currentProvider.availableModels);
     String selectedModel = currentProvider.selectedModel;
     String newModelInput = '';
-    final messenger = ScaffoldMessenger.of(context);
 
     showDialog(
       context: context,
@@ -1087,11 +1067,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                             color: Theme.of(context).colorScheme.onSurfaceVariant),
                         onDeleted: () {
                           if (models.length <= 1) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text(
-                                      'Provider must have at least 1 model.')),
-                            );
+                            showAppSnackBar(context, context.l10n.aiProviderMinOneModelNotice);
                             return;
                           }
                           setDialogState(() {
@@ -1126,9 +1102,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                         final trimmed = newModelInput.trim();
                         if (trimmed.isEmpty) return;
                         if (models.any((m) => m.toLowerCase() == trimmed.toLowerCase())) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('"$trimmed" already exists.')),
-                          );
+                          showAppSnackBar(context, context.l10n.aiNameExistsNotice(trimmed));
                           return;
                         }
                         setDialogState(() {
@@ -1185,10 +1159,8 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 final maxTokens =
                     int.tryParse(maxTokensController.text.trim()) ?? 4096;
                 if (models.isEmpty) {
-                  messenger.showSnackBar(
-                    const SnackBar(
-                        content: Text('Provider must have at least 1 model.')),
-                  );
+                  showAppSnackBar(
+                      context, context.l10n.aiProviderMinOneModelNotice);
                   return;
                 }
                 if (!models.contains(selectedModel)) {
@@ -1205,9 +1177,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 );
                 manager.updateProvider(updated);
                 Navigator.pop(context);
-                messenger.showSnackBar(
-                  const SnackBar(content: Text('Provider settings saved!')),
-                );
+                showAppSnackBar(context, context.l10n.aiProviderSavedNotice);
               },
               child: const Text('Save Settings'),
             ),

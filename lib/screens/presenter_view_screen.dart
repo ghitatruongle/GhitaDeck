@@ -8,6 +8,7 @@ import '../providers/presentation_state.dart';
 import '../services/present_deck_commands.dart';
 import '../services/present_tools_service.dart';
 import '../services/wifi_broadcaster_service.dart';
+import '../utils/snackbar_helper.dart';
 
 /// Presenter View (Track 35, P3) — one WebView2 running the full deck; JS
 /// commands drive the current slide, the right panel shows the next-slide
@@ -164,17 +165,13 @@ class _PresenterViewScreenState extends State<PresenterViewScreen> {
       _broadcastUrl = url;
     });
     if (url == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.presenterBroadcastFailed)),
-      );
+      showAppSnackBar(context, context.l10n.presenterBroadcastFailed);
       return;
     }
     _syncBroadcast();
     await Clipboard.setData(ClipboardData(text: url));
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.presenterBroadcastCopied)),
-      );
+      showAppSnackBar(context, context.l10n.presenterBroadcastCopied);
     }
   }
 
@@ -183,9 +180,7 @@ class _PresenterViewScreenState extends State<PresenterViewScreen> {
     if (url == null) return;
     await Clipboard.setData(ClipboardData(text: url));
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.presenterBroadcastCopied)),
-      );
+      showAppSnackBar(context, context.l10n.presenterBroadcastCopied);
     }
   }
 

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:image/image.dart' as img;
+import 'image_codec.dart';
 import 'image_optimizer_service.dart';
 
 /// A decoded image ready to be embedded into an export (PPTX/PDF).
@@ -56,9 +56,6 @@ class HtmlImageLoader {
   /// Remote fetch guardrails (Track 03, phase 2).
   static const Duration _remoteTimeout = Duration(seconds: 10);
   static const int _maxRemoteBytes = 10 * 1024 * 1024; // 10 MB
-
-  /// PNG→JPEG conversion threshold: only images at least this wide convert.
-  static const int _jpegThreshold = 512;
 
   static const int _memoryCacheCapacity = 64;
 
@@ -310,6 +307,13 @@ class HtmlImageLoader {
         '\u0000${ImageOptimizerConfig.betaEnabled ? 1 : 0}';
     final cachedResult = _processedCache[optionsKey];
     if (cachedResult != null) return cachedResult;
+    // T07 P5: disk cache for processed images — the same image+options must
+    // not be re-decoded and re-encoded on every export.
+    final onDisk = _readProcessedDisk(optionsKey);
+    if (onDisk != null) {
+      _cacheProcessed(optionsKey, onDisk);
+      return onDisk;
+    }
 
     final raw = _rawFor(trimmed);
     if (raw == null) return null;
@@ -318,8 +322,51 @@ class HtmlImageLoader {
         maxWidth: maxWidth, allowJpeg: allowJpeg, jpegQuality: effectiveQuality);
     if (result != null) {
       _cacheProcessed(optionsKey, result);
+      _writeProcessedDisk(optionsKey, result);
     }
     return result;
+  }
+
+  // ---- Processed-image disk cache (T07 P5) --------------------------------
+
+  static String _processedDiskPath(String optionsKey) =>
+      '${_cacheDir()}\\proc_${_sha256Hex(optionsKey)}';
+
+  static LoadedImage? _readProcessedDisk(String optionsKey) {
+    try {
+      final base = _processedDiskPath(optionsKey);
+      final file = File(base);
+      final meta = File('$base.json');
+      if (!file.existsSync() || !meta.existsSync()) return null;
+      final map = jsonDecode(meta.readAsStringSync()) as Map<String, dynamic>;
+      if (map['opts'] != optionsKey) return null;
+      return LoadedImage(
+        bytes: file.readAsBytesSync(),
+        ext: map['ext'] as String,
+        width: map['width'] as int,
+        height: map['height'] as int,
+      );
+    } catch (_) {
+      return null; // corrupt/stale cache entry — reprocess next time.
+    }
+  }
+
+  static void _writeProcessedDisk(String optionsKey, LoadedImage image) {
+    try {
+      final base = _processedDiskPath(optionsKey);
+      File(base).writeAsBytesSync(image.bytes, flush: true);
+      File('$base.json').writeAsStringSync(
+        jsonEncode({
+          'opts': optionsKey,
+          'ext': image.ext,
+          'width': image.width,
+          'height': image.height,
+        }),
+        flush: true,
+      );
+    } catch (_) {
+      // Best-effort disk cache — never fails an export.
+    }
   }
 
   /// Raw bytes for [src]: caches for remote/data-URI, fresh read for local
@@ -378,200 +425,49 @@ class HtmlImageLoader {
     }
   }
 
-  /// Decode, bake EXIF, downscale, optionally convert PNG→JPEG, re-encode.
+  /// Decode, bake EXIF, downscale, optionally convert PNG→JPEG, re-encode —
+  /// delegated to [ImageCodec] (Rust `ghita_image` when the engine prefers it
+  /// and the DLL is ready in this isolate; the Dart implementation otherwise).
   static LoadedImage? _process(
     _RawImage raw, {
     int? maxWidth,
     bool allowJpeg = false,
     int jpegQuality = 80,
   }) {
-    img.Image decoded;
+    ImageCodecResult processed;
     try {
-      final result = img.decodeImage(raw.bytes);
-      if (result == null) {
-        _warn('image bytes', 'undecodable/dirty image');
-        return null;
-      }
-      decoded = result;
-    } catch (_) {
+      processed = ImageCodec.process(
+        raw.bytes,
+        raw.ext,
+        maxWidth: maxWidth,
+        allowJpeg: allowJpeg,
+        jpegQuality: jpegQuality,
+      );
+    } on FormatException {
       // Some decoders throw on corrupted payloads instead of returning null.
       _warn('image bytes', 'undecodable/dirty image');
       return null;
     }
-    // Phase 6: bake EXIF orientation (phone photos) so the pixels land
-    // rotated. package:image's JPEG decoder already applies EXIF orientation
-    // on decode (verified empirically), and it cannot read PNG eXIf chunks
-    // (parser disabled), so only PNG/GIF inputs need my own read+bake.
-    final orientation = _readExifOrientation(raw.bytes);
-    final needsRotation = raw.ext != 'jpg' && orientation != 1;
-
-    final resized =
-        maxWidth != null && maxWidth > 0 && decoded.width > maxWidth;
-    var out = decoded;
-    var outExt = raw.ext;
-    if (needsRotation) out = _applyExifOrientation(out, orientation);
-    if (resized) {
-      out = img.copyResize(out, width: maxWidth);
-      outExt = 'png';
+    if (processed.bytes.isEmpty) {
+      _warn('image bytes', 'undecodable/dirty image');
+      return null;
     }
-    if (raw.ext == 'gif' && !resized && !needsRotation) {
-      // Keep GIF animation intact (encodeGif would flatten it).
-      return _makeResult(raw.bytes, 'gif', decoded.width, decoded.height);
+    if (ImageOptimizerConfig.betaEnabled &&
+        (processed.ext != raw.ext ||
+            (processed.changed && processed.resized))) {
+      // Same tally rules as before the backend split: PNG→JPEG conversion
+      // always counts; resize re-encodes only count their savings.
+      ImageOptimizationStats.record(raw.bytes.length, processed.bytes.length);
     }
-    if (outExt == 'png' &&
-        allowJpeg &&
-        !out.hasAlpha &&
-        out.width >= _jpegThreshold) {
-      // Phase 5: large opaque PNG → JPEG (alpha images keep PNG).
-      final bytes =
-          Uint8List.fromList(img.encodeJpg(out, quality: jpegQuality));
-      if (ImageOptimizerConfig.betaEnabled) {
-        ImageOptimizationStats.record(raw.bytes.length, bytes.length);
-      }
-      return _makeResult(bytes, 'jpg', out.width, out.height);
-    }
-    if (outExt == 'png') {
-      // Deterministic PNG re-encode (bakes orientation + resize); alpha is
-      // preserved losslessly.
-      final bytes = Uint8List.fromList(img.encodePng(out));
-      if (ImageOptimizerConfig.betaEnabled && resized) {
-        ImageOptimizationStats.record(raw.bytes.length, bytes.length);
-      }
-      return _makeResult(bytes, 'png', out.width, out.height);
-    }
-    if (resized || needsRotation) {
-      // Resized or rotated JPEGs must be re-encoded to land in the pixels.
-      final bytes = Uint8List.fromList(
-          img.encodeJpg(out, quality: jpegQuality.clamp(60, 95)));
-      if (ImageOptimizerConfig.betaEnabled && resized) {
-        ImageOptimizationStats.record(raw.bytes.length, bytes.length);
-      }
-      return _makeResult(bytes, 'jpg', out.width, out.height);
-    }
-    // JPEG passthrough (bytes unchanged).
-    return _makeResult(raw.bytes, 'jpg', decoded.width, decoded.height);
+    return _makeResult(
+      processed.bytes,
+      processed.ext,
+      processed.width,
+      processed.height,
+    );
   }
 
-  // ---- EXIF orientation (read + bake, phase 6) --------------------------
-
-  /// EXIF orientation tag (0x0112) from a JPEG APP1 `Exif\0\0` segment or a
-  /// PNG `eXIf` chunk; 1 (normal) when absent or unreadable.
-  static int _readExifOrientation(Uint8List bytes) {
-    if (bytes.length >= 3 && bytes[0] == 0xFF && bytes[1] == 0xD8) {
-      return _orientationFromJpeg(bytes);
-    }
-    if (bytes.length >= 8 &&
-        bytes[0] == 0x89 &&
-        bytes[1] == 0x50 &&
-        bytes[2] == 0x4E &&
-        bytes[3] == 0x47) {
-      return _orientationFromPng(bytes);
-    }
-    return 1;
-  }
-
-  static int _orientationFromJpeg(Uint8List bytes) {
-    var i = 2;
-    while (i + 4 <= bytes.length) {
-      if (bytes[i] != 0xFF) {
-        i++;
-        continue;
-      }
-      final marker = bytes[i + 1];
-      if (marker == 0xD8 || marker == 0x01 || (marker >= 0xD0 && marker <= 0xD7)) {
-        i += 2; // SOI / TEM / RSTn — no length field
-        continue;
-      }
-      final length = (bytes[i + 2] << 8) | bytes[i + 3];
-      if (length < 2 || i + 2 + length > bytes.length) break;
-      if (marker == 0xE1) {
-        // APP1: check for the Exif header, then parse the embedded TIFF.
-        final segment = bytes.sublist(i + 4, i + 2 + length);
-        if (segment.length >= 6 &&
-            String.fromCharCodes(segment.sublist(0, 6)) == 'Exif\x00\x00') {
-          return _orientationFromTiff(segment.sublist(6));
-        }
-      }
-      i += 2 + length;
-    }
-    return 1;
-  }
-
-  static int _orientationFromPng(Uint8List bytes) {
-    var i = 8;
-    while (i + 12 <= bytes.length) {
-      final length = ByteData.sublistView(bytes).getUint32(i);
-      if (String.fromCharCodes(bytes.sublist(i + 4, i + 8)) == 'eXIf') {
-        if (i + 8 + length > bytes.length) return 1;
-        return _orientationFromTiff(bytes.sublist(i + 8, i + 8 + length));
-      }
-      i += 12 + length;
-    }
-    return 1;
-  }
-
-  /// Minimal TIFF IFD0 reader for the SHORT orientation tag (little or big
-  /// endian), enough for every consumer photo encoder.
-  static int _orientationFromTiff(List<int> data) {
-    if (data.length < 8) return 1;
-    final little = data[0] == 0x49 && data[1] == 0x49;
-    final magic = little
-        ? (data[2] | (data[3] << 8))
-        : ((data[2] << 8) | data[3]);
-    if (magic != 42) return 1;
-    int u16(int off) => little
-        ? (data[off] | (data[off + 1] << 8))
-        : ((data[off] << 8) | data[off + 1]);
-    int u32(int off) => little
-        ? (data[off] |
-            (data[off + 1] << 8) |
-            (data[off + 2] << 16) |
-            (data[off + 3] << 24))
-        : ((data[off] << 24) |
-            (data[off + 1] << 16) |
-            (data[off + 2] << 8) |
-            data[off + 3]);
-    final ifdOffset = u32(4);
-    if (ifdOffset + 2 > data.length) return 1;
-    final count = u16(ifdOffset);
-    for (var e = 0; e < count; e++) {
-      final entry = ifdOffset + 2 + e * 12;
-      if (entry + 12 > data.length) break;
-      if (u16(entry) == 0x0112) {
-        // SHORT values are inlined into the 4-byte value field.
-        return little
-            ? (data[entry + 8] | (data[entry + 9] << 8))
-            : ((data[entry + 8] << 8) | data[entry + 9]);
-      }
-    }
-    return 1;
-  }
-
-  /// Apply the EXIF orientation transform (spec values 2..8) to [image].
-  static img.Image _applyExifOrientation(img.Image image, int orientation) {
-    switch (orientation) {
-      case 2:
-        return img.flip(image, direction: img.FlipDirection.horizontal);
-      case 3:
-        return img.copyRotate(image, angle: 180);
-      case 4:
-        return img.flip(image, direction: img.FlipDirection.vertical);
-      case 5:
-        return img.copyRotate(
-            img.flip(image, direction: img.FlipDirection.horizontal),
-            angle: 90);
-      case 6:
-        return img.copyRotate(image, angle: 90);
-      case 7:
-        return img.copyRotate(
-            img.flip(image, direction: img.FlipDirection.vertical),
-            angle: 90);
-      case 8:
-        return img.copyRotate(image, angle: 270);
-      default:
-        return image;
-    }
-  }
+  // ---- EXIF orientation: now in ImageCodec (shared Rust/Dart pipeline) ----
 
   static LoadedImage _makeResult(
     Uint8List bytes,

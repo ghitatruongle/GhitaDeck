@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../providers/presentation_state.dart';
 import '../../services/reuse_slide_service.dart';
 import '../../services/compare_merge_service.dart';
+import '../../utils/snackbar_helper.dart';
+import '../../l10n/l10n.dart';
 
 /// Reuse & Compare/Merge dialog (Track 51, FEAT 85/86).
 ///
@@ -200,8 +202,7 @@ class _ReuseCompareDialogState extends State<ReuseCompareDialog> {
       ));
       inserted++;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Inserted $inserted slide(s)')));
+    showAppSnackBar(context, context.l10n.reuseInsertedNotice(inserted));
     Navigator.pop(context);
   }
 
@@ -367,10 +368,8 @@ class _ReuseCompareDialogState extends State<ReuseCompareDialog> {
         htmlContent: (slide['htmlContent'] ?? '').toString(),
       ));
     }
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-            'Merged ${result.slides.length} slides (A:${result.fromA} '
-            'B:${result.fromB} both:${result.both})')));
+    showAppSnackBar(context, context.l10n.m9MergedSummaryNotice(
+        result.slides.length, result.fromA, result.fromB, result.both));
     Navigator.pop(context);
   }
 }

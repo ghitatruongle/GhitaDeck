@@ -15,13 +15,13 @@
   "import": "Nhập",
   "undo": "Hoàn Tác",
   "redo": "Làm Lại",
-  "present": "Trình Chiếu",
+  "present": "Trình chiếu",
   "presentFromCurrent": "Từ Slide Hiện Tại",
   "presentation": "Bài Thuyết Trình",
   "slides": "Slides",
   "slideCount": "Slides ({count})",
   "noSlidesYet": "Chưa có slide nào",
-  "clickToAddSlide": "Nhấn + để thêm slide",
+  "clickToAddSlide": "Bấm + để thêm slide mới",
   "title": "Tiêu Đề",
   "content": "Nội Dung",
   "notes": "Ghi Chú",
@@ -47,7 +47,7 @@
   "invalidFile": "Định dạng file không hợp lệ.",
   "fileNotFound": "Không tìm thấy file.",
   "permissionDenied": "Bị từ chối quyền truy cập.",
-  "unknownError": "Đã xảy ra lỗi không xác định.",
+  "unknownError": "Lỗi không xác định",
   "saveSuccess": "Đã lưu thành công",
   "exportSuccess": "Đã xuất thành công",
   "importSuccess": "Đã nhập thành công",
@@ -364,6 +364,7 @@
   },
   "exportCancel": "Hủy xuất",
   "exportCancelDescription": "Dừng quá trình xuất đang chạy và bỏ kết quả của nó.",
+  "exportCancelled": "Đã hủy xuất.",
   "fitContent": "Vừa khít với slide",
   "fitContentDescription": "Thu nhỏ chữ khi tràn để nội dung vừa với slide.",
   "loadingRemoteImages": "Đang tải ảnh từ web…",
@@ -749,10 +750,8 @@
   "textLayout": "Bố Cục Văn Bản",
   "animationPane": "Hoạt Hình",
   "transitions": "Hiệu Ứng Chuyển",
-  "present": "Trình chiếu",
   "presentExit": "Thoát",
   "presentLaunchFailed": "Không thể khởi chạy trình chiếu",
-  "unknownError": "Lỗi không xác định",
   "webviewRuntimeMissing": "Không tìm thấy WebView2 runtime — hãy cài Microsoft Edge WebView2 để trình chiếu mượt",
   "presentHelp": "Phím tắt",
   "presentHelpClose": "Bấm vào bất kỳ đâu để đóng trợ giúp này.",
@@ -797,7 +796,7 @@
   "m6Title": "Milestone 6 — Xuất nâng cao (video / ảnh / in / định dạng / bảo mật)",
   "m6Video": "Video/GIF",
   "m6Images": "Ảnh slide",
-  "m6Print": "In & Outline",
+  "m6Print": "In (Windows)",
   "m6Formats": "Định dạng",
   "m6Protect": "Bảo mật",
   "m6MovieFormat": "Định dạng phim",
@@ -812,7 +811,6 @@
   "m6HandoutsPerPage": "Handouts: số slide mỗi trang",
   "m6PrintNotes": "In ghi chú speaker dưới slide",
   "m6Grayscale": "In đen trắng (grayscale)",
-  "m6Print": "In (Windows)",
   "m6OutlineRtf": "Outline RTF cho Word",
   "m6PrintDone": "Đã gửi tới máy in",
   "m6Inspect": "Quét metadata (Inspector)",
@@ -915,7 +913,6 @@
   "summarySlideAdded": "Đã thêm slide tóm tắt.",
   "askDeckHint": "Ví dụ: Slide nào nói về ngân sách?",
   "slideTitleHint": "Tiêu đề slide...",
-  "clickToAddSlide": "Bấm + để thêm slide mới",
   "slideUpdated": "Đã cập nhật slide!",
   "slideAddedSuccess": "Đã thêm slide thành công!",
   "templateSearchHint": "Tìm kiếm template...",
@@ -934,7 +931,9 @@
   "presenterViewerCount": "{count} người xem",
   "@presenterViewerCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "diagramDialogTitle": "Chèn Sơ đồ",
@@ -983,8 +982,8 @@
   },
   "docxReportOptions": "Tùy chọn báo cáo Word",
   "docxIncludeSlideList": "Kèm danh sách slide ở cuối báo cáo",
-  "imageOptimizerBetaTitle": "Tối ưu ảnh (beta)",
-  "imageOptimizerBetaSubtitle": "Thử nghiệm: chuyển ảnh PNG lớn không trong suốt sang JPEG khi xuất (PNG trong suốt giữ nguyên); hiện thống kê tiết kiệm sau mỗi lần xuất",
+  "imageOptimizerBetaTitle": "Tối ưu ảnh",
+  "imageOptimizerBetaSubtitle": "Chuyển ảnh PNG lớn không trong suốt sang JPEG khi xuất (PNG trong suốt giữ nguyên); hiện thống kê tiết kiệm sau mỗi lần xuất. Chất lượng ăn theo lựa chọn chất lượng xuất (150/300/600)",
   "imageSavings": "Tiết kiệm: {summary} ({count} ảnh)",
   "@imageSavings": {
     "placeholders": {
@@ -992,6 +991,276 @@
         "type": "String"
       },
       "count": {
+        "type": "String"
+      }
+    }
+  },
+  "themeResetNotice": "Đặt lại chủ đề mặc định",
+  "themePresetAppliedNotice": "Đã áp dụng preset {name}",
+  "@themePresetAppliedNotice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "themeCopiedNotice": "Đã sao chép chủ đề!",
+  "themeExportFailedNotice": "Không xuất chủ đề được",
+  "themeImportedNotice": "Đã nhập chủ đề thành công!",
+  "themeImportInvalidNotice": "Nhập chủ đề thất bại. Định dạng không hợp lệ.",
+  "themeClipboardEmptyNotice": "Clipboard đang trống",
+  "aiSystemPromptResetNotice": "Đã đặt lại prompt hệ thống mặc định!",
+  "aiSystemPromptSavedNotice": "Đã lưu prompt hệ thống!",
+  "aiProviderMinOneModelNotice": "Nhà cung cấp phải có ít nhất 1 model.",
+  "aiProviderSavedNotice": "Đã lưu cấu hình nhà cung cấp!",
+  "aiAddedAllSlidesNotice": "Đã thêm {count} slide!",
+  "@aiAddedAllSlidesNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiAddedSlidesNotice": "Đã thêm vào slide trình bày!",
+  "aiTranslatedNotice": "{done}/{total} đã dịch…",
+  "@aiTranslatedNotice": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "aiSlideErrorNotice": "Lỗi slide {index}: {error}",
+  "@aiSlideErrorNotice": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "m9NoMatchesNotice": "Không tìm thấy kết quả phù hợp",
+  "m9FixesAppliedNotice": "Đã áp dụng các sửa đổi.",
+  "wizardProviderConfiguredNotice": "Đã cấu hình nhà cung cấp AI thành công: {name}",
+  "@wizardProviderConfiguredNotice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "wizardFetchingModelsNotice": "Đang lấy danh sách models từ server...",
+  "wizardModelsFoundNotice": "Đã tìm thấy {count} model từ API",
+  "@wizardModelsFoundNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "wizardModelsNotFoundNotice": "Không lấy được models tự động; bạn có thể tự nhập tên model ở trên",
+  "sorterDeletedSlidesNotice": "Đã xóa {count} slide",
+  "@sorterDeletedSlidesNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recentNewProjectNotice": "Đã tạo dự án mới!",
+  "recentUndoAction": "Hoàn tác",
+  "wizardCompleteStepsNotice": "Vui lòng hoàn thành tất cả các bước trước khi tiếp tục.",
+  "wizardProviderFieldsNotice": "Vui lòng nhập tên nhà cung cấp và Base URL",
+  "providerTestingNotice": "Đang kiểm tra kết nối...",
+  "templateAppliedPreviewNotice": "Đã áp dụng template: {name}",
+  "@templateAppliedPreviewNotice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "templateAppliedTemplateNotice": "Đã áp dụng template: {name}",
+  "@templateAppliedTemplateNotice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sorterDuplicatedSlidesNotice": "Đã nhân bản {count} slide",
+  "@sorterDuplicatedSlidesNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recentOpenedProjectNotice": "Đã mở dự án: {name}",
+  "@recentOpenedProjectNotice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "recentGhitaOpenFailedNotice": "Không thể mở file .ghita. File có thể bị lỗi.",
+  "recentProjectSavedNotice": "Đã lưu dự án thành công!",
+  "recentProjectSaveFailedNotice": "Lỗi lưu dự án",
+  "recentFileOpenFailedNotice": "Không thể mở file. File có thể đã bị xoá.",
+  "recentBackupExportedNotice": "Đã xuất backup thành công: {name}",
+  "@recentBackupExportedNotice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "recentSettingsRestoredNotice": "Đã khôi phục cài đặt thành công!",
+  "providerModelsUpdatedNotice": "✓ Đã cập nhật {count} mô hình cho {name}",
+  "@providerModelsUpdatedNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "providerConnectionErrorNotice": "Lỗi kết nối {name}: {error}",
+  "@providerConnectionErrorNotice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "providerModelsFetchFailedNotice": "Không thể lấy danh sách model tự động từ {name}. Bạn có thể nhập model thủ công.",
+  "@providerModelsFetchFailedNotice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "providerLocalScanNotice": "Đang quét các dịch vụ AI Local (Ollama, LM Studio, LocalAI)...",
+  "providerLocalScanEmptyNotice": "Không tìm thấy dịch vụ AI Local nào đang chạy trên máy.",
+  "providerModelSelectedNotice": "Đã chọn model: {model}",
+  "@providerModelSelectedNotice": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "providerMissingFieldsNotice": "Vui lòng điền đủ Tên, Base URL và Model",
+  "providerOnlyOneNotice": "Không thể xóa nhà cung cấp duy nhất còn lại.",
+  "providerDeletedNotice": "Đã xóa {name}",
+  "@providerDeletedNotice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "effectsAppliedNotice": "Đã áp dụng hiệu ứng \"{effect}\"!",
+  "@effectsAppliedNotice": {
+    "placeholders": {
+      "effect": {
+        "type": "String"
+      }
+    }
+  },
+  "aiTranslationHintNotice": "Bản dịch dùng AI provider — mỗi slide một prompt.",
+  "aiDeckTranslatedNotice": "Đã dịch deck.",
+  "aiNameExistsNotice": "\"{name}\" đã tồn tại.",
+  "@aiNameExistsNotice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dictationViMissingNotice": "Không tìm thấy giọng đọc tiếng Việt trên máy này — dùng tiếng Anh.",
+  "homeOffice365StyleNotice": "{name} v{version} — Office 365 Style",
+  "@homeOffice365StyleNotice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "animeSelectShapeNotice": "Chọn một hình trước",
+  "animeNoneNotice": "Hình đã chọn không có animation",
+  "animeCopiedNotice": "Đã sao chép animation vào đích",
+  "m9ReplacedCountNotice": "Đã thay {count} chỗ",
+  "@m9ReplacedCountNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "m9AddinRanNotice": "Đã chạy \"{addin}\": +{added} slide, {updated} thay đổi",
+  "@m9AddinRanNotice": {
+    "placeholders": {
+      "addin": {
+        "type": "String"
+      },
+      "added": {
+        "type": "int"
+      },
+      "updated": {
+        "type": "int"
+      }
+    }
+  },
+  "reuseInsertedNotice": "Đã chèn {count} slide",
+  "@reuseInsertedNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiToolsApiKeyNotice": "Vui lòng cấu hình API Key trong Cài Đặt trước!",
+  "aiToolsScriptCreatedNotice": "Đã tạo thành công Kịch bản Diễn giả!",
+  "aiToolsSlideUpdatedNotice": "Đã cập nhật nội dung Slide!",
+  "fontBothNamesNotice": "Nhập cả hai tên phông",
+  "fontReplacedNotice": "Đã thay phông trên toàn bộ deck",
+  "m9MergedSummaryNotice": "Đã hợp nhất {count} slide (A:{fromA} B:{fromB} cả hai:{both})",
+  "@m9MergedSummaryNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "fromA": {
+        "type": "int"
+      },
+      "fromB": {
+        "type": "int"
+      },
+      "both": {
+        "type": "int"
+      }
+    }
+  },
+  "fontCaseAppliedNotice": "Đã áp dụng: {label}",
+  "@fontCaseAppliedNotice": {
+    "placeholders": {
+      "label": {
         "type": "String"
       }
     }

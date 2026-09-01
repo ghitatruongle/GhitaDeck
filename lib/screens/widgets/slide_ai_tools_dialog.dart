@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../models/slide.dart';
 import '../../providers/ai_provider_manager.dart';
 import '../../utils/error_mapper.dart';
+import '../../utils/snackbar_helper.dart';
+import '../../l10n/l10n.dart';
 
 class SlideAiToolsDialog extends StatefulWidget {
   final Slide slide;
@@ -37,9 +39,7 @@ class _SlideAiToolsDialogState extends State<SlideAiToolsDialog> {
   Future<void> _runAiAction(String promptTask, {bool isNotes = false}) async {
     final provider = widget.aiProviderManager.selectedProvider;
     if (provider == null || provider.apiKey.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng cấu hình API Key trong Cài Đặt trước!')),
-      );
+      showAppSnackBar(context, context.l10n.aiToolsApiKeyNotice);
       return;
     }
 
@@ -65,17 +65,13 @@ $promptTask
         final updated = widget.slide.copyWith(notes: responseText.trim());
         widget.onSlideUpdated(updated);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Đã tạo thành công Kịch bản Diễn giả!')),
-          );
+          showAppSnackBar(context, context.l10n.aiToolsScriptCreatedNotice);
         }
       } else {
         final updated = widget.slide.copyWith(htmlContent: responseText.trim());
         widget.onSlideUpdated(updated);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Đã cập nhật nội dung Slide!')),
-          );
+          showAppSnackBar(context, context.l10n.aiToolsSlideUpdatedNotice);
         }
       }
     } catch (e) {

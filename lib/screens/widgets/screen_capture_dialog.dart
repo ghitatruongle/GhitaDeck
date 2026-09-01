@@ -9,6 +9,7 @@ import '../../l10n/l10n.dart';
 import '../../models/media_item.dart';
 import '../../services/screen_recorder_service.dart';
 import '../../services/video_embed_service.dart';
+import '../../utils/snackbar_helper.dart';
 
 /// "Quay màn hình" dialog (Track 12, P2–P7): pick a capture target (full
 /// screen / window / region), record with a 3s countdown + live timer +
@@ -242,10 +243,7 @@ class _ScreenCaptureDialogState extends State<ScreenCaptureDialog> {
   }
 
   void _toast(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(message),
-      duration: const Duration(seconds: 3),
-    ));
+    showAppSnackBar(context, message, duration: const Duration(seconds: 3));
   }
 
   static String _fmtDuration(int seconds) {

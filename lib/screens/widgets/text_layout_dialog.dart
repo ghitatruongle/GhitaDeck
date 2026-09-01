@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/presentation_state.dart';
 import '../../services/text_layout_service.dart';
+import '../../utils/snackbar_helper.dart';
+import '../../l10n/l10n.dart';
 
 /// Advanced text tools (Track 28): replace font across the whole deck,
 /// change case, character spacing, text direction, autofit, bullets and tab
@@ -53,16 +55,12 @@ class _TextLayoutDialogState extends State<TextLayoutDialog> {
     final from = _fromFontCtrl.text.trim();
     final to = _toFontCtrl.text.trim();
     if (from.isEmpty || to.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter both font names')),
-      );
+      showAppSnackBar(context, context.l10n.fontBothNamesNotice);
       return;
     }
     _applyToAllSlides((html) => TextLayoutService.replaceFont(html, from, to));
     Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Font replaced across the whole deck')),
-    );
+    showAppSnackBar(context, context.l10n.fontReplacedNotice);
   }
 
   @override
@@ -284,9 +282,7 @@ class _TextLayoutDialogState extends State<TextLayoutDialog> {
   Widget _caseBtn(String label, String mode) => OutlinedButton(
         onPressed: () {
           _applyToCurrentSlide((html) => TextLayoutService.changeCase(html, mode));
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Case applied: $label'), duration: const Duration(seconds: 1)),
-          );
+          showAppSnackBar(context, context.l10n.fontCaseAppliedNotice(label), duration: const Duration(seconds: 1));
         },
         child: Text(label),
       );

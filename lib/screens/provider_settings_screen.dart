@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../providers/ai_provider_manager.dart';
 import '../services/api_fallback_cascade_service.dart';
 import '../services/local_ai_detector_service.dart';
+import '../utils/snackbar_helper.dart';
+import '../l10n/l10n.dart';
 
 class ProviderSettingsScreen extends StatefulWidget {
   final AIProviderManager aiProviderManager;
@@ -43,12 +45,7 @@ class _ProviderSettingsScreenState extends State<ProviderSettingsScreen> {
         _loadingPing[config.id] = false;
       });
       if (!res.isSuccess) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Lỗi kết nối ${config.name}: ${res.errorMessage ?? "Không phản hồi"}'),
-            backgroundColor: Colors.red.shade700,
-          ),
-        );
+        showAppSnackBar(context, context.l10n.providerConnectionErrorNotice(config.name, res.errorMessage ?? 'Không phản hồi'));
       }
     }
   }
@@ -59,33 +56,19 @@ class _ProviderSettingsScreenState extends State<ProviderSettingsScreen> {
     if (mounted) {
       setState(() => _loadingFetch[config.id] = false);
       if (models.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✓ Đã cập nhật ${models.length} mô hình cho ${config.name}'),
-            backgroundColor: Colors.green.shade700,
-          ),
-        );
+        showAppSnackBar(context, context.l10n.providerModelsUpdatedNotice(models.length, config.name));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Không thể lấy danh sách model tự động từ ${config.name}. Bạn có thể nhập model thủ công.'),
-            backgroundColor: Colors.orange.shade800,
-          ),
-        );
+        showAppSnackBar(context, context.l10n.providerModelsFetchFailedNotice(config.name));
       }
     }
   }
 
   Future<void> _scanLocalAI() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Đang quét các dịch vụ AI Local (Ollama, LM Studio, LocalAI)...')),
-    );
+    showAppSnackBar(context, context.l10n.providerLocalScanNotice);
     final detected = await _localDetector.scanLocalAIServices();
     if (mounted) {
       if (detected.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Không tìm thấy dịch vụ AI Local nào đang chạy trên máy.')),
-        );
+        showAppSnackBar(context, context.l10n.providerLocalScanEmptyNotice);
       } else {
         var added = 0;
         final knownUrls = widget.aiProviderManager.providers
@@ -108,15 +91,7 @@ class _ProviderSettingsScreenState extends State<ProviderSettingsScreen> {
           ));
           added++;
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(added > 0
-                ? 'Tìm thấy ${detected.length} dịch vụ AI Local, đã thêm $added cấu hình mới.'
-                : 'Các dịch vụ AI Local tìm thấy đã có trong danh sách.'),
-            backgroundColor:
-                added > 0 ? Colors.green.shade700 : Colors.blueGrey.shade700,
-          ),
-        );
+        showAppSnackBar(context, added > 0                ? 'Tìm thấy ${detected.length} dịch vụ AI Local, đã thêm $added cấu hình mới.'                : 'Các dịch vụ AI Local tìm thấy đã có trong danh sách.');
         setState(() {});
       }
     }
@@ -178,9 +153,7 @@ class _ProviderSettingsScreenState extends State<ProviderSettingsScreen> {
                 widget.aiProviderManager.updateProvider(updated);
                 setState(() {});
                 Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Đã chọn model: $newModel')),
-                );
+                showAppSnackBar(context, context.l10n.providerModelSelectedNotice(newModel));
               }
             },
             child: const Text('Áp dụng'),
@@ -427,9 +400,7 @@ class _ProviderSettingsScreenState extends State<ProviderSettingsScreen> {
                 final apiKey = keyCtrl.text.trim();
 
                 if (name.isEmpty || baseUrl.isEmpty || model.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Vui lòng điền đủ Tên, Base URL và Model')),
-                  );
+                  showAppSnackBar(context, context.l10n.providerMissingFieldsNotice);
                   return;
                 }
 
@@ -476,9 +447,7 @@ class _ProviderSettingsScreenState extends State<ProviderSettingsScreen> {
 
   void _confirmDeleteProvider(AIProviderConfig config) {
     if (widget.aiProviderManager.providers.length <= 1) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không thể xóa nhà cung cấp duy nhất còn lại.')),
-      );
+      showAppSnackBar(context, context.l10n.providerOnlyOneNotice);
       return;
     }
 
@@ -498,9 +467,7 @@ class _ProviderSettingsScreenState extends State<ProviderSettingsScreen> {
               widget.aiProviderManager.removeProvider(config.id);
               setState(() {});
               Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Đã xóa ${config.name}')),
-              );
+              showAppSnackBar(context, context.l10n.providerDeletedNotice(config.name));
             },
             child: const Text('Xóa'),
           ),

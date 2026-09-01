@@ -12,6 +12,7 @@ import '../../services/wysiwyg_service.dart';
 import '../editor/editor_state.dart';
 import 'canvas_overlay.dart';
 import '../../l10n/l10n.dart';
+import '../../utils/snackbar_helper.dart';
 
 /// Central editor panel containing the HTML editor, WYSIWYG toolbar,
 /// and live preview — the main content editing area.
@@ -595,24 +596,22 @@ class _HtmlEditorPanelState extends State<HtmlEditorPanel> {
     if (editorState.formatPainterArmed) {
       final pasted = editorState.pasteFormatToSelection();
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(pasted
+        showAppSnackBar(
+  context,
+  pasted
                 ? 'Format pasted'
-                : 'Select some text first, or select a shape to format'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+                : 'Select some text first, or select a shape to format',
+  duration: const Duration(seconds: 2)
+);
       }
     } else {
       editorState.captureFormat();
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Format captured — select the target and paste'),
-            duration: Duration(seconds: 2),
-          ),
-        );
+        showAppSnackBar(
+  context,
+  'Format captured — select the target and paste',
+  duration: const Duration(seconds: 2)
+);
       }
     }
   }
@@ -623,23 +622,21 @@ class _HtmlEditorPanelState extends State<HtmlEditorPanel> {
     final color = EyedropperService.pickAtCursor();
     if (color == null) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not capture the colour (Windows only)'),
-            duration: Duration(seconds: 2),
-          ),
-        );
+        showAppSnackBar(
+  context,
+  'Could not capture the colour (Windows only)',
+  duration: const Duration(seconds: 2)
+);
       }
       return;
     }
     await Clipboard.setData(ClipboardData(text: color));
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Colour $color copied to clipboard'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      showAppSnackBar(
+  context,
+  'Colour $color copied to clipboard',
+  duration: const Duration(seconds: 2)
+);
     }
   }
 

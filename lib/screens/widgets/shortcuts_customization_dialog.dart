@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/shortcuts_provider.dart';
 import '../../utils/keyboard_shortcuts.dart';
+import '../../utils/snackbar_helper.dart';
+import '../../l10n/l10n.dart';
 
 /// Dialog để user customize keyboard shortcuts
 class ShortcutsCustomizationDialog extends StatefulWidget {
@@ -298,20 +300,17 @@ class _ShortcutsCustomizationDialogState
     try {
       final json = provider.exportToJson();
       Clipboard.setData(ClipboardData(text: json));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Shortcuts copied to clipboard!'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      showAppSnackBar(
+  context,
+  'Shortcuts copied to clipboard!',
+  duration: const Duration(seconds: 2)
+);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to export shortcuts'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      showAppSnackBar(
+  context,
+  'Failed to export shortcuts',
+  duration: const Duration(seconds: 2)
+);
     }
   }
 
@@ -322,39 +321,29 @@ class _ShortcutsCustomizationDialogState
       if (data?.text != null) {
         final success = provider.importFromJson(data!.text!);
         if (success && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Shortcuts imported successfully!'),
-              duration: Duration(seconds: 2),
-            ),
-          );
+          showAppSnackBar(
+  context,
+  'Shortcuts imported successfully!',
+  duration: const Duration(seconds: 2)
+);
         } else if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to import shortcuts. Invalid format.'),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 2),
-            ),
-          );
+          showAppSnackBar(
+  context,
+  'Failed to import shortcuts. Invalid format.',
+  duration: const Duration(seconds: 2)
+);
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Clipboard is empty'),
-            duration: Duration(seconds: 2),
-          ),
-        );
+        showAppSnackBar(context, context.l10n.themeClipboardEmptyNotice, duration: const Duration(seconds: 2));
       }
     } catch (e) {
       // importFromJson can throw on malformed JSON — don't crash.
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to import shortcuts. Invalid format.'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      showAppSnackBar(
+  context,
+  'Failed to import shortcuts. Invalid format.',
+  duration: const Duration(seconds: 2)
+);
     }
   }
 }

@@ -57,7 +57,7 @@
   "invalidFile": "Invalid file format.",
   "fileNotFound": "File not found.",
   "permissionDenied": "Permission denied.",
-  "unknownError": "An unknown error occurred.",
+  "unknownError": "Unknown error",
   "saveSuccess": "Saved successfully",
   "exportSuccess": "Exported successfully",
   "importSuccess": "Imported successfully",
@@ -402,6 +402,7 @@
   },
   "exportCancel": "Cancel export",
   "exportCancelDescription": "Stop the running export and discard its output.",
+  "exportCancelled": "Export cancelled.",
   "fitContent": "Fit content on slides",
   "fitContentDescription": "Shrink overflowing text so the whole deck fits its slides.",
   "loadingRemoteImages": "Loading images from the web…",
@@ -787,10 +788,8 @@
   "textLayout": "Text Layout",
   "animationPane": "Animations",
   "transitions": "Transitions",
-  "present": "Present",
   "presentExit": "Exit",
   "presentLaunchFailed": "Could not start the presentation",
-  "unknownError": "Unknown error",
   "webviewRuntimeMissing": "WebView2 runtime not found — install Microsoft Edge WebView2 to present smoothly",
   "presentHelp": "Keyboard shortcuts",
   "presentHelpClose": "Click anywhere to close this help.",
@@ -835,7 +834,7 @@
   "m6Title": "Milestone 6 — Xuất nâng cao (video / ảnh / in / định dạng / bảo mật)",
   "m6Video": "Video/GIF",
   "m6Images": "Ảnh slide",
-  "m6Print": "In & Outline",
+  "m6Print": "In (Windows)",
   "m6Formats": "Định dạng",
   "m6Protect": "Bảo mật",
   "m6MovieFormat": "Định dạng phim",
@@ -850,7 +849,6 @@
   "m6HandoutsPerPage": "Handouts: số slide mỗi trang",
   "m6PrintNotes": "In ghi chú speaker dưới slide",
   "m6Grayscale": "In đen trắng (grayscale)",
-  "m6Print": "In (Windows)",
   "m6OutlineRtf": "Outline RTF cho Word",
   "m6PrintDone": "Đã gửi tới máy in",
   "m6Inspect": "Quét metadata (Inspector)",
@@ -953,7 +951,6 @@
   "summarySlideAdded": "Summary slide added.",
   "askDeckHint": "e.g. Which slide talks about budgets?",
   "slideTitleHint": "Slide title...",
-  "clickToAddSlide": "Click + to add a slide",
   "slideUpdated": "Slide updated!",
   "slideAddedSuccess": "Slide added successfully!",
   "templateSearchHint": "Search templates...",
@@ -972,7 +969,9 @@
   "presenterViewerCount": "{count} viewers",
   "@presenterViewerCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "diagramDialogTitle": "Insert Diagram",
@@ -1021,8 +1020,8 @@
   },
   "docxReportOptions": "Word report options",
   "docxIncludeSlideList": "Include an index of all slides at the end",
-  "imageOptimizerBetaTitle": "Image optimizer (beta)",
-  "imageOptimizerBetaSubtitle": "Experimental: convert large opaque PNGs to JPEG on export (transparent PNGs stay PNG); shows savings in the export summary",
+  "imageOptimizerBetaTitle": "Image optimizer",
+  "imageOptimizerBetaSubtitle": "Convert large opaque PNGs to JPEG on export (transparent PNGs stay PNG); shows the savings after each export. Quality follows the export quality setting (150/300/600).",
   "imageSavings": "Saved: {summary} ({count} images)",
   "@imageSavings": {
     "placeholders": {
@@ -1030,6 +1029,276 @@
         "type": "String"
       },
       "count": {
+        "type": "String"
+      }
+    }
+  },
+  "themeResetNotice": "Theme reset to default",
+  "themePresetAppliedNotice": "Applied {name} preset",
+  "@themePresetAppliedNotice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "themeCopiedNotice": "Theme copied to clipboard!",
+  "themeExportFailedNotice": "Failed to export theme",
+  "themeImportedNotice": "Theme imported successfully!",
+  "themeImportInvalidNotice": "Failed to import theme. Invalid format.",
+  "themeClipboardEmptyNotice": "Clipboard is empty",
+  "aiSystemPromptResetNotice": "System prompt reset to default!",
+  "aiSystemPromptSavedNotice": "System prompt saved!",
+  "aiProviderMinOneModelNotice": "Provider must have at least 1 model.",
+  "aiProviderSavedNotice": "Provider settings saved!",
+  "aiAddedAllSlidesNotice": "Added all {count} slides!",
+  "@aiAddedAllSlidesNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiAddedSlidesNotice": "Added to presentation slides!",
+  "aiTranslatedNotice": "{done}/{total} translated…",
+  "@aiTranslatedNotice": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "aiSlideErrorNotice": "Slide {index} error: {error}",
+  "@aiSlideErrorNotice": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "m9NoMatchesNotice": "No matches found",
+  "m9FixesAppliedNotice": "Applied fixes.",
+  "wizardProviderConfiguredNotice": "AI provider configured successfully: {name}",
+  "@wizardProviderConfiguredNotice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "wizardFetchingModelsNotice": "Fetching models from server...",
+  "wizardModelsFoundNotice": "Found {count} models from the API",
+  "@wizardModelsFoundNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "wizardModelsNotFoundNotice": "Could not fetch models automatically; you can type the model name above",
+  "sorterDeletedSlidesNotice": "Deleted {count} slides",
+  "@sorterDeletedSlidesNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recentNewProjectNotice": "New project created!",
+  "recentUndoAction": "Undo",
+  "wizardCompleteStepsNotice": "Please complete all steps before continuing.",
+  "wizardProviderFieldsNotice": "Please enter the provider name and Base URL",
+  "providerTestingNotice": "Testing connection…",
+  "templateAppliedPreviewNotice": "Applied template: {name}",
+  "@templateAppliedPreviewNotice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "templateAppliedTemplateNotice": "Applied template: {name}",
+  "@templateAppliedTemplateNotice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sorterDuplicatedSlidesNotice": "Duplicated {count} slides",
+  "@sorterDuplicatedSlidesNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "recentOpenedProjectNotice": "Opened project: {name}",
+  "@recentOpenedProjectNotice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "recentGhitaOpenFailedNotice": "Cannot open the .ghita file. The file may be broken.",
+  "recentProjectSavedNotice": "Project saved successfully!",
+  "recentProjectSaveFailedNotice": "Failed to save the project",
+  "recentFileOpenFailedNotice": "Cannot open the file. It may have been moved or deleted.",
+  "recentBackupExportedNotice": "Backup exported successfully: {name}",
+  "@recentBackupExportedNotice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "recentSettingsRestoredNotice": "Settings restored successfully!",
+  "providerModelsUpdatedNotice": "✓ Updated {count} models for {name}",
+  "@providerModelsUpdatedNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "providerConnectionErrorNotice": "Connection error for {name}: {error}",
+  "@providerConnectionErrorNotice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "providerModelsFetchFailedNotice": "Could not fetch models automatically from {name}. You can type the model manually.",
+  "@providerModelsFetchFailedNotice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "providerLocalScanNotice": "Scanning local AI services (Ollama, LM Studio, LocalAI)…",
+  "providerLocalScanEmptyNotice": "No local AI service found on this machine.",
+  "providerModelSelectedNotice": "Model selected: {model}",
+  "@providerModelSelectedNotice": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "providerMissingFieldsNotice": "Please fill in Name, Base URL and Model",
+  "providerOnlyOneNotice": "Cannot delete the last remaining provider.",
+  "providerDeletedNotice": "Deleted {name}",
+  "@providerDeletedNotice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "effectsAppliedNotice": "Applied \"{effect}\" effect!",
+  "@effectsAppliedNotice": {
+    "placeholders": {
+      "effect": {
+        "type": "String"
+      }
+    }
+  },
+  "aiTranslationHintNotice": "Translation uses the AI provider — one prompt per slide.",
+  "aiDeckTranslatedNotice": "Deck translated.",
+  "aiNameExistsNotice": "\"{name}\" already exists.",
+  "@aiNameExistsNotice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dictationViMissingNotice": "Vietnamese speech not found on this machine — using English.",
+  "homeOffice365StyleNotice": "{name} v{version} — Office 365 Style",
+  "@homeOffice365StyleNotice": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "animeSelectShapeNotice": "Select a shape first",
+  "animeNoneNotice": "Selected shape has no animation",
+  "animeCopiedNotice": "Animation copied to target",
+  "m9ReplacedCountNotice": "Replaced {count} occurrence(s)",
+  "@m9ReplacedCountNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "m9AddinRanNotice": "Ran \"{addin}\": +{added} slide(s), {updated} update(s)",
+  "@m9AddinRanNotice": {
+    "placeholders": {
+      "addin": {
+        "type": "String"
+      },
+      "added": {
+        "type": "int"
+      },
+      "updated": {
+        "type": "int"
+      }
+    }
+  },
+  "reuseInsertedNotice": "Inserted {count} slide(s)",
+  "@reuseInsertedNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiToolsApiKeyNotice": "Please configure an API Key in Settings first!",
+  "aiToolsScriptCreatedNotice": "Speaker script created successfully!",
+  "aiToolsSlideUpdatedNotice": "Slide content updated!",
+  "fontBothNamesNotice": "Enter both font names",
+  "fontReplacedNotice": "Font replaced across the whole deck",
+  "m9MergedSummaryNotice": "Merged {count} slides (A:{fromA} B:{fromB} both:{both})",
+  "@m9MergedSummaryNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "fromA": {
+        "type": "int"
+      },
+      "fromB": {
+        "type": "int"
+      },
+      "both": {
+        "type": "int"
+      }
+    }
+  },
+  "fontCaseAppliedNotice": "Case applied: {label}",
+  "@fontCaseAppliedNotice": {
+    "placeholders": {
+      "label": {
         "type": "String"
       }
     }

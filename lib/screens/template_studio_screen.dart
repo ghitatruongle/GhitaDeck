@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/template_service.dart';
 import '../../models/slide_template.dart';
 import '../l10n/l10n.dart';
+import '../utils/snackbar_helper.dart';
 
 /// Template Studio — v1.2.0: Dynamic grid from TemplateService (20 templates, 6 categories)
 class TemplateStudioScreen extends StatefulWidget {
@@ -251,9 +252,7 @@ class _TemplateStudioScreenState extends State<TemplateStudioScreen> {
                       label: const Text('Sử dụng', style: TextStyle(fontSize: 12)),
                       onPressed: () {
                         widget.onApplyTemplate?.call(template);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Đã áp dụng template: ${template.name}')),
-                        );
+                        showAppSnackBar(context, context.l10n.templateAppliedTemplateNotice(template.name));
                       },
                     ),
                   ),
@@ -362,9 +361,7 @@ class _TemplateStudioScreenState extends State<TemplateStudioScreen> {
                       onPressed: () {
                         Navigator.pop(ctx);
                         widget.onApplyTemplate?.call(template);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Đã áp dụng template: ${template.name}')),
-                        );
+                        showAppSnackBar(context, context.l10n.templateAppliedTemplateNotice(template.name));
                       },
                     ),
                   ],

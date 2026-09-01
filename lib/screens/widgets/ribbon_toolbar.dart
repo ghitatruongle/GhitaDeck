@@ -7,6 +7,7 @@ import '../../providers/presentation_state.dart';
 import '../../utils/effect_helpers.dart';
 import 'diagram_dialog.dart';
 import '../../utils/error_mapper.dart';
+import '../../utils/snackbar_helper.dart';
 
 /// PowerPoint-style Ribbon toolbar with tabbed interface.
 /// v1.2.0: All buttons fully wired — no stubs.
@@ -208,12 +209,11 @@ class _RibbonToolbarState extends State<RibbonToolbar>
                         // with an empty string (previous bug did exactly that)
                         // — the system Ctrl+X inside the editor is the
                         // reliable path.
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Chọn text trong editor rồi Ctrl+X'),
-                            duration: Duration(seconds: 1),
-                          ),
-                        );
+                        showAppSnackBar(
+  context,
+  'Chọn text trong editor rồi Ctrl+X',
+  duration: const Duration(seconds: 1)
+);
                       },
                     ),
                     _RibbonButton(
@@ -223,12 +223,11 @@ class _RibbonToolbarState extends State<RibbonToolbar>
                       tooltip: 'Copy (Ctrl+C)',
                       onPressed: () {
                         // Copy handled by system shortcut; this is a visual trigger
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Chọn text trong editor rồi Ctrl+C'),
-                            duration: Duration(seconds: 1),
-                          ),
-                        );
+                        showAppSnackBar(
+  context,
+  'Chọn text trong editor rồi Ctrl+C',
+  duration: const Duration(seconds: 1)
+);
                       },
                     ),
                   ],

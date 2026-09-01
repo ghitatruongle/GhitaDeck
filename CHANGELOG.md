@@ -1,5 +1,48 @@
 # Changelog
 
+## [2.0.5-beta.1] - 2026-09-01 — T11: Sweep thông báo toàn app (F1 đóng 100%)
+
+- **Toàn bộ ~111 chỗ `showSnackBar` thô → `showAppSnackBar`** (mọi màn: AI Chat, Home, Settings, Theme, Provider, Shortcuts, Export dialogs (advanced/m6/m9), Animation pane, Sorter, Wizard, Collaboration, Presenter, Ribbon, Text layout…). Hiệu ứng: replace thật (`clearSnackBars`) + `persist:false` (tự tắt đúng duration) + không xếp hàng toàn app.
+- **Không còn chuỗi thông báo hardcode** — ~60 chuỗi EN/VI mới bổ sung vào `.arb` (key `*Notice`, gen-l10n, l10n audit CLEAN; placeholder String/int đúng type).
+- **Grep gate (T11.7):** `0 showSnackBar` thô trong `lib/` (chỉ còn helper) · `0 literal chuỗi thông báo` trong call helper (trừ biến động/exception text) · `flutter analyze` 0.
+- Chuyên biến thể: `messenger.*` capture trước pop → helper; chuỗi nối 2 phần + `??` biểu thức; theme `_showSnackBar` wrapper chuyển qua helper; async-gap guarded (ignore có lý do ở 1 chỗ wizard).
+- CHANGELOG T11 + đánh dấu F1 "đủ 100% toàn app" trong RELEASE_PLAN.
+
+## [2.0.5-beta.1] - 2026-09-01 — T09: Tối ưu thuật toán & tăng tốc (đo trước/sau)
+## [2.0.5-beta.1] - 2026-09-01 — T09: Tối ưu thuật toán & tăng tốc (đo trước/sau)
+
+- **Re-run toàn bộ benchmark** (t01/t02/t07/media) kèm nhãn beta1; tóm tắt + bảng hotspot mới: `tool/benchmark_results_beta1.md`.
+- **Hotspot bằng số (deck 20 slide):** parse 3,0→**0,0 ms** khi cache ấm · build XML 23,3→8,1 ms · ZIP 29,3→19,4 ms · tổng PPTX **58,3→30,9 ms** · PDF 422 ms · HTML 114 ms.
+- **Chi phí lớn nhất mốc = xử lý ảnh** (8,47 s/72 MB Dart) → **Rust batch/rayon 8,51×** (đã chốt default Rust cho ảnh, T06/T07) — được hưởng lợi bởi cache đĩa processed (T07.5).
+- **Loại bỏ tối ưu không chứng minh được:** không refactor build XML/player trong mốc (số đo không ủng hộ); streaming zip API hoãn (media deck Rust kém do FRB copy — T02). Ghi lý do có số trong bảng quyết định.
+
+## [2.0.5-beta.1] - 2026-09-01 — T08: N3 Instant Export (progress + cancel hoàn chỉnh)
+## [2.0.5-beta.1] - 2026-09-01 — T08: N3 Instant Export (progress + cancel hoàn chỉnh)
+
+- **Progress đầy đủ 3 định dạng**: PPTX/PDF/HTML báo "Đang xuất… x/y" + bar tiến độ ngay trong Advanced Export dialog (onProgress xuyên `run*ExportInIsolate` → `exportWithOptions` → dialog); HTML service giờ báo progress theo slide (đã thiếu trước đó) + `finalizing`; DOCX báo preparing/finalizing/done (single-shot).
+- **Nút "Hủy xuất"** trong khi xuất: `ExportCancelToken` chung 3 định dạng, hủy → worker dừng giữa chừng, host xóa file bán phần (không có file trước đó), snackbar "Đã hủy xuất." (key `exportCancelled` mới EN/VI).
+- **Kiểm chứng** (`test/export_progress_cancel_test.dart` 3 test): progress đầu tiên đến **<100 ms** khi xuất deck 100 slide (gate T08.7); cancel giữa chừng deck 200 slide → `ExportCancelledException`, **không file partial, thư mục sạch** (T08.8); HTML per-slide → finalizing (T08.5). `flutter analyze` 0.
+
+## [2.0.5-beta.1] - 2026-09-01 — T07: N2 Image Optimizer hoàn chỉnh
+## [2.0.5-beta.1] - 2026-09-01 — T07: N2 Image Optimizer hoàn chỉnh
+
+- **Gỡ nhãn beta** — Settings → Engine: "Tối ưu ảnh" thành tùy chọn thường (key prefs cũ `app_image_optimizer_beta` giữ nguyên để prefs cũ carry over); mô tả cập nhật.
+- **Chất lượng theo ExportQuality (150/300/600)** — `ImageOptimizerConfig.qualityForExport`: low→60, medium→80, high→95 (JPEG re-encode); chip chất lượng trong Advanced Export giờ điều khiển cả độ nét và dung lượng ảnh tối ưu; worker isolate nhận `imageJpegQuality` qua job message (host cũng set trước khi xuất).
+- **UI thống kê trước/sau** — thông báo sau xuất đổi sang dạng `"4.462 KB → 2.053 KB (54%) (N ảnh)"`; thống kê worker vẫn ưu tiên.
+- **Cache đĩa ảnh đã xử lý** — `HtmlImageLoader` cache processed bytes theo hash(src+opts) xuống `%LOCALAPPDATA%\GhitaPPT\image_cache\proc_*` (sidecar json); cùng ảnh + cùng tùy chọn không decode/lập encode lại mỗi lần xuất; cache hỏng → xử lý lại.
+- **Backend ghita_image** cho đường N2 (T06): batch/rayon nơi tối ưu hàng loạt; sequential per-embed; → `tool/benchmark_results_image.md`.
+- **Đối chiếu Rust vs Dart (T07 P6, gate đã duyệt pixel-diff/PSNR):** byte lệch 3,6 MB · PSNR trung bình 27,9 dB · tệ nhất 16,3 dB (ảnh nhiễu tổng hợp là worst case; ảnh thật PSNR cao hơn). Không ép bit-perfect giữa 2 encoder; đường Dart OFF vẫn bit-perfect như demo.
+- **Giữ mốc ≥40%** — test deck 10 ảnh vẫn **54,0%** (4462 KB → 2053 KB); alpha/small giữ PNG; EXIF bake; ảnh hỏng không crash.
+- Test: `test/image_optimizer_optimization_test.dart` +2 (quality mapping, disk cache) + format stats mới; `flutter analyze` 0; l10n audit CLEAN (4 key cập nhật EN=VI, gen-l10n).
+
+## [2.0.5-beta.1] - 2026-09-01 — T06: ghita_image (Rust image module)
+
+- **Module `ghita_image`** (crate `image` 0.25 + `rayon` + `sha2`): pipeline xử lý ảnh deterministic — decode (PNG/JPEG/GIF), bake EXIF (orientation 2–8 qua parser TIFF riêng, cả JPEG APP1 + PNG eXIf), resize khi quá rộng, PNG lớn opaque ≥512px → JPEG khi được phép, passthrough GIF/JPEG giữ nguyên byte. Tương đương hành vi đường Dart cũ; `#[frb(sync)]` để gọi từ đường sinh export đồng bộ; batch API `img_process_batch` chạy song song (rayon).
+- **Facade `ImageCodec`** fallback tự động: Rust khi engine chọn Rust + DLL sẵn sàng trong isolate; lỗi bất kỳ → rơi về Dart. `HtmlImageLoader._process` chuyển toàn bộ pipeline cho `ImageCodec`; thống kê tiết kiệm giữ nguyên quy tắc. Engine một switch Settings → zip + image; worker isolate khởi động Rust cho ảnh ngay khi nhận job.
+- **Kết quả đo (tool/benchmark_results_image.md, 20 ảnh 72,1 MB):** Dart 9,99 s · Rust tuần tự 5,06 s (1,97×) · **Rust batch/rayon 1,14 s (8,74×)**. Gate ≥3× **đạt ở đường batch** (chính là đường N2 optimizer dùng); tuần tự 1,97× vẫn nhanh hơn. **Default engine ảnh = Rust** (đo được), zip giữ Dart-default (đo T02); switch Settings ghi đè cả hai khi người dùng chọn.
+- **Dedupe PPTX**: đã có từ Track 03 P4 (mediaByContentKey + SHA-256) — kiểm chứng tiếp bởi probe round-trip qua DLL thật.
+- Test: crate Rust **8/8**; `test/image_codec_test.dart` **10/10**; benchmark tool chạy mỗi suite (khóa sàn).
+
 ## [2.0.5-demo] - đang phát triển — T04: N2 Image Optimizer v2 (beta flag)
 
 - **Tối ưu ảnh (beta)** trong Settings → Engine: bật "Image optimizer (beta)" để điều khiển chất lượng tối ưu ảnh khi xuất (PNG lớn không trong suốt ≥512px → JPEG; PNG trong suốt giữ nguyên; EXIF luôn được xoay đúng). Tắt = hành vi cũ **bit-perfect** (đã test: hai lần xuất cùng byte). Trạng thái bật/tắt persist qua SharedPreferences, truyền qua worker isolate trong job message.

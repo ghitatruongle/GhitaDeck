@@ -5,8 +5,10 @@ import '../../models/ppt_theme_setting.dart';
 import '../../providers/presentation_state.dart';
 import '../../providers/theme_provider.dart';
 import '../../services/image_optimizer_service.dart';
+import '../../services/export_primitives.dart';
 import '../../l10n/l10n.dart';
 import 'm6_export_dialog.dart';
+import '../../utils/snackbar_helper.dart';
 
 /// Advanced export dialog with options for selected slides, aspect ratio, quality
 class AdvancedExportDialog extends StatefulWidget {
@@ -33,6 +35,10 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
   bool _allSlides = true;
   final Set<int> _selectedSlideIndices = {};
   bool _isExporting = false;
+  ExportCancelToken? _cancelToken;
+  double _progress = 0;
+  int _progressDone = 0;
+  int _progressTotal = 0;
 
   @override
   void initState() {
@@ -228,6 +234,37 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
           ),
         ),
         actions: [
+          if (_isExporting)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 260),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    LinearProgressIndicator(value: _progress),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            context.l10n.exportProgress(
+                                _progressDone, _progressTotal),
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                        TextButton.icon(
+                          icon: const Icon(Icons.stop, size: 16),
+                          label: Text(context.l10n.exportCancel),
+                          onPressed: () => _cancelToken?.cancel(),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
           TextButton(
             onPressed: _isExporting ? null : () => Navigator.pop(context),
             child: Text(context.l10n.cancel),
@@ -373,13 +410,16 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
   Future<void> _performExport(
       BuildContext context, PresentationState presentationState) async {
     if (!_allSlides && _selectedSlideIndices.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.chooseAtLeastOneSlide)),
-      );
+      showAppSnackBar(context, context.l10n.chooseAtLeastOneSlide);
       return;
     }
 
     setState(() => _isExporting = true);
+    _progress = 0;
+    _progressDone = 0;
+    _progressTotal = 0;
+    final cancelToken = ExportCancelToken();
+    _cancelToken = cancelToken;
 
     try {
       final indices = _allSlides
@@ -414,7 +454,23 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
       final summary =
           '${_format.label} | ${_aspectRatio.label} | ${_quality.label} | ${indices.length} slides';
       final fileName = 'presentation_${DateTime.now().millisecondsSinceEpoch}';
-      await presentationState.exportWithOptions(fileName, options);
+      // T07 P2: the selected export quality (150/300/600 px ceiling) drives
+      // the optimizer's JPEG re-encode quality on the worker isolate too.
+      ImageOptimizerConfig.quality =
+          ImageOptimizerConfig.qualityForExport(_quality);
+      await presentationState.exportWithOptions(
+        fileName,
+        options,
+        onProgress: (p) {
+          if (!mounted) return;
+          setState(() {
+            _progress = p.fraction;
+            _progressDone = p.slideIndex + 1;
+            _progressTotal = p.slideCount;
+          });
+        },
+        cancelToken: cancelToken,
+      );
       if (!context.mounted) return;
       // N2: the worker ships its savings back inside the export reply, so the
       // numbers must be read AFTER the export completes (shown = this job).
@@ -424,22 +480,18 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
           : summary;
       ImageOptimizationStats.reset();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.exportSuccessful(userFacingSummary)),
-          backgroundColor: Colors.green,
-        ),
-      );
+      showAppSnackBar(context, context.l10n.exportSuccessful(userFacingSummary));
       Navigator.pop(context);
+    } on ExportCancelledException {
+      if (mounted) {
+        _cancelToken = null;
+        setState(() => _isExporting = false);
+        showAppSnackBar(context, context.l10n.exportCancelled);
+      }
     } catch (e) {
       if (!context.mounted) return;
       setState(() => _isExporting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.exportFailed(e.toString())),
-          backgroundColor: Colors.red,
-        ),
-      );
+      showAppSnackBar(context, context.l10n.exportFailed(e.toString()));
     }
   }
 }

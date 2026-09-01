@@ -1,24 +1,40 @@
-/// N2 — Image Optimizer v2 (beta flag, T04).
+/// N2 — Image Optimizer v2 (T04 beta flag → T07 regular option).
 ///
-/// The loader already performs EXIF baking / downscale / PNG→JPEG conversion
-/// (Track 03). This module adds the demo-beta controls on top:
-///  * [ImageOptimizerConfig.betaEnabled] — the Settings toggle. When off the
+/// The loader already performs EXIF baking / downscale / PNG→JPEG conversion.
+/// This module adds the optimizer controls on top:
+///  * [ImageOptimizerConfig.enabled] — the Settings toggle. When off the
 ///    pipeline runs exactly as before (bit-perfect, no stats bookkeeping);
-///  * [ImageOptimizerConfig.quality] — JPEG quality used by the conversion
-///    (mapped from ExportQuality once wired); the default stays 80, matching
-///    the legacy pipeline;
+///  * [ImageOptimizerConfig.quality] — JPEG quality used by the conversion,
+///    mapped from the export's [ExportQuality] choice (150/300/600 px);
 ///  * [ImageOptimizationStats] — per-export savings bookkeeping shown in the
-///    export success message ("Tiết kiệm X KB (Y%)") and covered by tests.
+///    export success message ("4.462 KB → 2.053 KB (54%)") and covered by
+///    tests.
 library;
+
+import '../models/export_options.dart';
 
 class ImageOptimizerConfig {
   ImageOptimizerConfig._();
 
-  /// Settings toggle (SharedPreferences `app_image_optimizer_beta`).
+  /// Settings toggle (SharedPreferences `app_image_optimizer_beta` — legacy
+  /// key kept so existing prefs carry over; T07 removed the "beta" framing).
   static bool betaEnabled = false;
 
-  /// JPEG quality for the PNG→JPEG re-encode while beta is on.
+  /// JPEG quality for the PNG→JPEG re-encode while the optimizer is on.
   static int quality = 80;
+
+  /// T07 P2: map the export quality (bitmap ceiling 150/300/600 px) to the
+  /// JPEG re-encode quality — lower ceiling → smaller, lower-fidelity output.
+  static int qualityForExport(ExportQuality exportQuality) {
+    switch (exportQuality) {
+      case ExportQuality.low:
+        return 60;
+      case ExportQuality.medium:
+        return 80;
+      case ExportQuality.high:
+        return 95;
+    }
+  }
 }
 
 /// Per-export savings bookkeeping. Reset on every export job (same hook that
@@ -71,11 +87,13 @@ class ImageOptimizationStats {
 
   static int get displayCount => _workerCount > 0 ? _workerCount : processedCount;
 
-  /// "1.234 KB (45%)" style summary, or null when nothing was saved.
+  /// "4.462 KB → 2.053 KB (54%)" style summary, or null when nothing saved.
   static String? summary() {
     if (processedCount == 0 || savedBytes <= 0) return null;
     final percent = (savedBytes * 100) / originalBytes;
-    return '${_fmtBytes(savedBytes)} (${percent.toStringAsFixed(0)}%)';
+    final after = originalBytes - savedBytes;
+    return '${_fmtBytes(originalBytes)} → ${_fmtBytes(after)} '
+        '(${percent.toStringAsFixed(0)}%)';
   }
 
   static String _fmtBytes(int bytes) =>

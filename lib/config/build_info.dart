@@ -6,11 +6,11 @@ class BuildInfo {
   BuildInfo._();
 
   static const String productName = 'GhitaPPT Converter';
-  static const String appVersion = '2.0.5-demo';
-  static const String coreVersion = '2.0.5-demo';
+  static const String appVersion = '2.0.5-beta.1';
+  static const String coreVersion = '2.0.5-beta.1';
   static const String channel = 'stable';
-  static const int buildNumber = 4;
-  static const String numericVersion = '2.0.5.4';
+  static const int buildNumber = 5;
+  static const String numericVersion = '2.0.5.5';
 
   /// Version of the LAN collaboration wire protocol.
   static const int collaborationProtocolVersion = 2;

@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../models/object_animation.dart';
 import '../../providers/presentation_state.dart';
 import '../../services/animation_engine.dart';
+import '../../utils/snackbar_helper.dart';
+import '../../l10n/l10n.dart';
 
 /// Animation Pane (Track 30, FEAT 44/50) — dock panel listing every
 /// animation of the current slide in timeline order with add/remove,
@@ -140,18 +142,14 @@ class _AnimationPaneState extends State<AnimationPane> {
     final selected = widget.selectedShapeIds;
     final anims = _animations;
     if (selected.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Select a shape first')),
-      );
+      showAppSnackBar(context, context.l10n.animeSelectShapeNotice);
       return;
     }
     final source = anims
         .where((a) => selected.contains(a.shapeId))
         .toList();
     if (source.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selected shape has no animation')),
-      );
+      showAppSnackBar(context, context.l10n.animeNoneNotice);
       return;
     }
     final copied = source.first;
@@ -175,9 +173,7 @@ class _AnimationPaneState extends State<AnimationPane> {
     );
     if (targetId != null && targetId.isNotEmpty && mounted) {
       state.upsertAnimation(copied.copyWith(shapeId: targetId));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Animation copied to target')),
-      );
+      showAppSnackBar(context, context.l10n.animeCopiedNotice);
     }
   }
 

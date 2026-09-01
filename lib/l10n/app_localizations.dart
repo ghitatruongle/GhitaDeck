@@ -1658,6 +1658,12 @@ abstract class AppLocalizations {
   /// **'Stop the running export and discard its output.'**
   String get exportCancelDescription;
 
+  /// No description provided for @exportCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Export cancelled.'**
+  String get exportCancelled;
+
   /// No description provided for @fitContent.
   ///
   /// In en, this message translates to:
@@ -5099,13 +5105,13 @@ abstract class AppLocalizations {
   /// No description provided for @imageOptimizerBetaTitle.
   ///
   /// In en, this message translates to:
-  /// **'Image optimizer (beta)'**
+  /// **'Image optimizer'**
   String get imageOptimizerBetaTitle;
 
   /// No description provided for @imageOptimizerBetaSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Experimental: convert large opaque PNGs to JPEG on export (transparent PNGs stay PNG); shows savings in the export summary'**
+  /// **'Convert large opaque PNGs to JPEG on export (transparent PNGs stay PNG); shows the savings after each export. Quality follows the export quality setting (150/300/600).'**
   String get imageOptimizerBetaSubtitle;
 
   /// No description provided for @imageSavings.
@@ -5113,6 +5119,396 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Saved: {summary} ({count} images)'**
   String imageSavings(String summary, String count);
+
+  /// No description provided for @themeResetNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme reset to default'**
+  String get themeResetNotice;
+
+  /// No description provided for @themePresetAppliedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied {name} preset'**
+  String themePresetAppliedNotice(String name);
+
+  /// No description provided for @themeCopiedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme copied to clipboard!'**
+  String get themeCopiedNotice;
+
+  /// No description provided for @themeExportFailedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to export theme'**
+  String get themeExportFailedNotice;
+
+  /// No description provided for @themeImportedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme imported successfully!'**
+  String get themeImportedNotice;
+
+  /// No description provided for @themeImportInvalidNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to import theme. Invalid format.'**
+  String get themeImportInvalidNotice;
+
+  /// No description provided for @themeClipboardEmptyNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Clipboard is empty'**
+  String get themeClipboardEmptyNotice;
+
+  /// No description provided for @aiSystemPromptResetNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'System prompt reset to default!'**
+  String get aiSystemPromptResetNotice;
+
+  /// No description provided for @aiSystemPromptSavedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'System prompt saved!'**
+  String get aiSystemPromptSavedNotice;
+
+  /// No description provided for @aiProviderMinOneModelNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider must have at least 1 model.'**
+  String get aiProviderMinOneModelNotice;
+
+  /// No description provided for @aiProviderSavedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider settings saved!'**
+  String get aiProviderSavedNotice;
+
+  /// No description provided for @aiAddedAllSlidesNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Added all {count} slides!'**
+  String aiAddedAllSlidesNotice(int count);
+
+  /// No description provided for @aiAddedSlidesNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to presentation slides!'**
+  String get aiAddedSlidesNotice;
+
+  /// No description provided for @aiTranslatedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'{done}/{total} translated…'**
+  String aiTranslatedNotice(int done, int total);
+
+  /// No description provided for @aiSlideErrorNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Slide {index} error: {error}'**
+  String aiSlideErrorNotice(int index, String error);
+
+  /// No description provided for @m9NoMatchesNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches found'**
+  String get m9NoMatchesNotice;
+
+  /// No description provided for @m9FixesAppliedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied fixes.'**
+  String get m9FixesAppliedNotice;
+
+  /// No description provided for @wizardProviderConfiguredNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'AI provider configured successfully: {name}'**
+  String wizardProviderConfiguredNotice(String name);
+
+  /// No description provided for @wizardFetchingModelsNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching models from server...'**
+  String get wizardFetchingModelsNotice;
+
+  /// No description provided for @wizardModelsFoundNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Found {count} models from the API'**
+  String wizardModelsFoundNotice(int count);
+
+  /// No description provided for @wizardModelsNotFoundNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not fetch models automatically; you can type the model name above'**
+  String get wizardModelsNotFoundNotice;
+
+  /// No description provided for @sorterDeletedSlidesNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted {count} slides'**
+  String sorterDeletedSlidesNotice(int count);
+
+  /// No description provided for @recentNewProjectNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'New project created!'**
+  String get recentNewProjectNotice;
+
+  /// No description provided for @recentUndoAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get recentUndoAction;
+
+  /// No description provided for @wizardCompleteStepsNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Please complete all steps before continuing.'**
+  String get wizardCompleteStepsNotice;
+
+  /// No description provided for @wizardProviderFieldsNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the provider name and Base URL'**
+  String get wizardProviderFieldsNotice;
+
+  /// No description provided for @providerTestingNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Testing connection…'**
+  String get providerTestingNotice;
+
+  /// No description provided for @templateAppliedPreviewNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied template: {name}'**
+  String templateAppliedPreviewNotice(String name);
+
+  /// No description provided for @templateAppliedTemplateNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied template: {name}'**
+  String templateAppliedTemplateNotice(String name);
+
+  /// No description provided for @sorterDuplicatedSlidesNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicated {count} slides'**
+  String sorterDuplicatedSlidesNotice(int count);
+
+  /// No description provided for @recentOpenedProjectNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Opened project: {name}'**
+  String recentOpenedProjectNotice(String name);
+
+  /// No description provided for @recentGhitaOpenFailedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot open the .ghita file. The file may be broken.'**
+  String get recentGhitaOpenFailedNotice;
+
+  /// No description provided for @recentProjectSavedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Project saved successfully!'**
+  String get recentProjectSavedNotice;
+
+  /// No description provided for @recentProjectSaveFailedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save the project'**
+  String get recentProjectSaveFailedNotice;
+
+  /// No description provided for @recentFileOpenFailedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot open the file. It may have been moved or deleted.'**
+  String get recentFileOpenFailedNotice;
+
+  /// No description provided for @recentBackupExportedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup exported successfully: {name}'**
+  String recentBackupExportedNotice(String name);
+
+  /// No description provided for @recentSettingsRestoredNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings restored successfully!'**
+  String get recentSettingsRestoredNotice;
+
+  /// No description provided for @providerModelsUpdatedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'✓ Updated {count} models for {name}'**
+  String providerModelsUpdatedNotice(int count, String name);
+
+  /// No description provided for @providerConnectionErrorNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection error for {name}: {error}'**
+  String providerConnectionErrorNotice(String name, String error);
+
+  /// No description provided for @providerModelsFetchFailedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not fetch models automatically from {name}. You can type the model manually.'**
+  String providerModelsFetchFailedNotice(String name);
+
+  /// No description provided for @providerLocalScanNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Scanning local AI services (Ollama, LM Studio, LocalAI)…'**
+  String get providerLocalScanNotice;
+
+  /// No description provided for @providerLocalScanEmptyNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'No local AI service found on this machine.'**
+  String get providerLocalScanEmptyNotice;
+
+  /// No description provided for @providerModelSelectedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Model selected: {model}'**
+  String providerModelSelectedNotice(String model);
+
+  /// No description provided for @providerMissingFieldsNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Please fill in Name, Base URL and Model'**
+  String get providerMissingFieldsNotice;
+
+  /// No description provided for @providerOnlyOneNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot delete the last remaining provider.'**
+  String get providerOnlyOneNotice;
+
+  /// No description provided for @providerDeletedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted {name}'**
+  String providerDeletedNotice(String name);
+
+  /// No description provided for @effectsAppliedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied \"{effect}\" effect!'**
+  String effectsAppliedNotice(String effect);
+
+  /// No description provided for @aiTranslationHintNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Translation uses the AI provider — one prompt per slide.'**
+  String get aiTranslationHintNotice;
+
+  /// No description provided for @aiDeckTranslatedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Deck translated.'**
+  String get aiDeckTranslatedNotice;
+
+  /// No description provided for @aiNameExistsNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" already exists.'**
+  String aiNameExistsNotice(String name);
+
+  /// No description provided for @dictationViMissingNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Vietnamese speech not found on this machine — using English.'**
+  String get dictationViMissingNotice;
+
+  /// No description provided for @homeOffice365StyleNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} v{version} — Office 365 Style'**
+  String homeOffice365StyleNotice(String name, String version);
+
+  /// No description provided for @animeSelectShapeNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a shape first'**
+  String get animeSelectShapeNotice;
+
+  /// No description provided for @animeNoneNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected shape has no animation'**
+  String get animeNoneNotice;
+
+  /// No description provided for @animeCopiedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Animation copied to target'**
+  String get animeCopiedNotice;
+
+  /// No description provided for @m9ReplacedCountNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Replaced {count} occurrence(s)'**
+  String m9ReplacedCountNotice(int count);
+
+  /// No description provided for @m9AddinRanNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Ran \"{addin}\": +{added} slide(s), {updated} update(s)'**
+  String m9AddinRanNotice(String addin, int added, int updated);
+
+  /// No description provided for @reuseInsertedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Inserted {count} slide(s)'**
+  String reuseInsertedNotice(int count);
+
+  /// No description provided for @aiToolsApiKeyNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Please configure an API Key in Settings first!'**
+  String get aiToolsApiKeyNotice;
+
+  /// No description provided for @aiToolsScriptCreatedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Speaker script created successfully!'**
+  String get aiToolsScriptCreatedNotice;
+
+  /// No description provided for @aiToolsSlideUpdatedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Slide content updated!'**
+  String get aiToolsSlideUpdatedNotice;
+
+  /// No description provided for @fontBothNamesNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter both font names'**
+  String get fontBothNamesNotice;
+
+  /// No description provided for @fontReplacedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Font replaced across the whole deck'**
+  String get fontReplacedNotice;
+
+  /// No description provided for @m9MergedSummaryNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Merged {count} slides (A:{fromA} B:{fromB} both:{both})'**
+  String m9MergedSummaryNotice(int count, int fromA, int fromB, int both);
+
+  /// No description provided for @fontCaseAppliedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Case applied: {label}'**
+  String fontCaseAppliedNotice(String label);
 }
 
 class _AppLocalizationsDelegate

@@ -8,6 +8,7 @@ import '../../services/addin_service.dart';
 import '../../services/read_aloud_service.dart';
 import '../../services/search_service.dart';
 import '../../services/spellcheck_service.dart';
+import '../../utils/snackbar_helper.dart';
 
 /// Find & Replace dialog (Track 57, FEAT 94) — Ctrl+F.
 class FindReplaceDialog extends StatefulWidget {
@@ -59,8 +60,7 @@ class _FindReplaceDialogState extends State<FindReplaceDialog> {
         caseSensitive: _caseSensitive, wholeWord: _wholeWord);
     if (result.count == 0) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('No matches found')));
+        showAppSnackBar(context, context.l10n.m9NoMatchesNotice);
       }
       return;
     }
@@ -70,8 +70,7 @@ class _FindReplaceDialogState extends State<FindReplaceDialog> {
     }
     setState(() => _matches = const []);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Replaced ${result.count} occurrence(s)')));
+      showAppSnackBar(context, context.l10n.m9ReplacedCountNotice(result.count));
     }
   }
 
@@ -323,8 +322,7 @@ class _SpellcheckDialogState extends State<SpellcheckDialog> {
         widget.state.currentSlideIndex, slide.copyWith(htmlContent: html));
     _scan();
     if (mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Applied fixes.')));
+      showAppSnackBar(context, context.l10n.m9FixesAppliedNotice);
     }
   }
 
@@ -573,9 +571,7 @@ class _AddinManagerDialogState extends State<AddinManagerDialog> {
       }
     }
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-              'Ran "${addin.name}": +$added slide(s), ${result.update.length} update(s)')));
+      showAppSnackBar(context, context.l10n.m9AddinRanNotice(addin.name, result.update.length, added));
     }
   }
 

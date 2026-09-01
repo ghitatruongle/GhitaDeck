@@ -7,6 +7,7 @@ import '../models/slide.dart';
 import 'export_primitives.dart';
 import 'html_export_service.dart';
 import 'html_image_loader.dart';
+import 'image_codec.dart';
 import 'image_optimizer_service.dart';
 import 'pdf_export_service.dart';
 import 'ppt_generator.dart';
@@ -68,8 +69,9 @@ Future<String> runPptExportInIsolate(
     // T02: engine preference snapshot — providers/prefs don't cross isolates,
     // this bool does; the worker feeds it back into ZipEngineConfig.
     'engineRustPreferred': ZipEngineConfig.preferredRust,
-    // T04: N2 image optimizer beta flag snapshot.
+    // T04: N2 image optimizer snapshot (flag + quality from host).
     'optimizeImages': ImageOptimizerConfig.betaEnabled,
+    'imageJpegQuality': ImageOptimizerConfig.quality,
   }, onProgress: onProgress, cancelToken: cancelToken);
   if (result['ok'] == true) {
     ImageOptimizationStats.importWorkerSummary(
@@ -116,6 +118,7 @@ Future<String> runPdfExportInIsolate(
     'scaleToFit': scaleToFit,
     'includeHiddenSlides': includeHiddenSlides,
     'optimizeImages': ImageOptimizerConfig.betaEnabled,
+    'imageJpegQuality': ImageOptimizerConfig.quality,
   }, onProgress: onProgress, cancelToken: cancelToken);
   if (result['ok'] == true) {
     ImageOptimizationStats.importWorkerSummary(
@@ -151,6 +154,7 @@ Future<String> runHtmlExportInIsolate(
     'autoAdvanceMs': 0,
     'playerLocale': playerLocale,
     'optimizeImages': ImageOptimizerConfig.betaEnabled,
+    'imageJpegQuality': ImageOptimizerConfig.quality,
   }, onProgress: onProgress, cancelToken: cancelToken);
   if (result['ok'] == true) {
     ImageOptimizationStats.importWorkerSummary(
@@ -443,8 +447,17 @@ Future<String> _doExport(
     // T02: engine preference comes from the host isolate via the job message.
     ZipEngineConfig.setPreferredRust(
         job['engineRustPreferred'] as bool? ?? true);
+    // T06: images run on the same engine choice. The sync loader path needs
+    // a ready DLL, so kick the async init now (prefetch + generation give it
+    // time); until it lands the Dart implementation is used — fallback-first.
+    ImageEngineConfig.setPreferredRust(
+        job['engineRustPreferred'] as bool? ?? true);
+    unawaited(ImageEngineConfig.ensureRustReadyOnce());
     // T04: N2 beta flag (image optimizer) — same cross-isolate snapshot.
     ImageOptimizerConfig.betaEnabled = job['optimizeImages'] as bool? ?? false;
+    // T07 P2: JPEG re-encode quality mapped from the host's ExportQuality.
+    ImageOptimizerConfig.quality =
+        job['imageJpegQuality'] as int? ?? ImageOptimizerConfig.quality;
 
   // Track 03: prefetch remote images into the session caches before the sync
   // generators run; failed fetches become warnings, never exceptions.
@@ -504,6 +517,7 @@ Future<String> _doExport(
             imageMaxWidth: imageMaxWidth,
             playerLocale: job['playerLocale'] as String? ?? 'en',
             cancelToken: cancelToken,
+            onProgress: onProgress,
           ),
       _ => throw Exception('Unknown export type: $type'),
     };

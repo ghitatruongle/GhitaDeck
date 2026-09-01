@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/l10n.dart';
 import '../../models/model3d_item.dart';
 import '../../services/model3d_service.dart';
+import '../../utils/snackbar_helper.dart';
 
 /// "Chèn 3D Model" dialog (Track 14, P2/P6): pick a GLB (poster preview +
 /// "3D" badge — no 3D renderer needed), toggle auto-rotate, then insert or
@@ -61,10 +62,11 @@ class _Model3dDialogState extends State<Model3dDialog> {
         bytes[2] != 0x54 ||
         bytes[3] != 0x46) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.l10n.model3dInvalidFile),
-          duration: const Duration(seconds: 3),
-        ));
+        showAppSnackBar(
+  context,
+  context.l10n.model3dInvalidFile,
+  duration: const Duration(seconds: 3)
+);
       }
       return;
     }

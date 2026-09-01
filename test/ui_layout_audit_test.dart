@@ -162,9 +162,9 @@ void main() {
     });
 
     test('build info reports the stable release identity', () {
-      expect(BuildInfo.appVersion, '2.0.5-demo');
+      expect(BuildInfo.appVersion, '2.0.5-beta.1');
       expect(BuildInfo.channel, 'stable');
-      expect(BuildInfo.numericVersion, '2.0.5.4');
+      expect(BuildInfo.numericVersion, '2.0.5.5');
     });
   });
 }

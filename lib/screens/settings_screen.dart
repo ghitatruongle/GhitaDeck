@@ -17,6 +17,7 @@ import '../services/rust_engine.dart';
 import '../services/image_optimizer_service.dart';
 import '../l10n/l10n.dart';
 import '../l10n/app_localizations.dart';
+import '../utils/snackbar_helper.dart';
 
 /// Settings Screen — v1.2.0: Real Backup/Restore, Configuration Wizard, Local AI scan
 class SettingsScreen extends StatefulWidget {
@@ -461,11 +462,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     final updated = p.copyWith(
                                         apiKey: controller.text.trim());
                                     aiManager.updateProvider(updated);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                          content:
-                                              Text(l10n.apiKeySaved(p.name))),
-                                    );
+                                    showAppSnackBar(context, l10n.apiKeySaved(p.name));
                                   },
                                 ),
                               ),
@@ -590,12 +587,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final file = File(path);
         await file.writeAsString(jsonStr, flush: true);
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(
-                  'Đã xuất backup thành công: ${path.split(RegExp(r'[/\\]')).last}'),
-              backgroundColor: Colors.green),
-        );
+        showAppSnackBar(
+            context,
+            context.l10n.recentBackupExportedNotice(
+                path.split(RegExp(r'[\\/]')).last));
       }
     } catch (e) {
       if (!context.mounted) return;
@@ -673,11 +668,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
 
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Đã khôi phục cài đặt thành công!'),
-              backgroundColor: Colors.green),
-        );
+        showAppSnackBar(context, context.l10n.recentSettingsRestoredNotice);
       }
     } catch (e) {
       if (!context.mounted) return;

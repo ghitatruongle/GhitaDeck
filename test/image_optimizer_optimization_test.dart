@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ghita_ppt_converter/models/export_options.dart';
 import 'package:ghita_ppt_converter/services/html_image_loader.dart';
 import 'package:ghita_ppt_converter/services/image_optimizer_service.dart';
 import 'package:ghita_ppt_converter/services/ppt_generator.dart';
@@ -130,8 +131,8 @@ void main() {
     ImageOptimizationStats.record(1000, 400);
     ImageOptimizationStats.record(2000, 1200);
     expect(ImageOptimizationStats.hasData, isTrue);
-    // 1400 B saved of 3000 B = 46.7% → displayed "1 KB (47%)".
-    expect(ImageOptimizationStats.summary(), '1 KB (47%)');
+    // 3000 B → 1600 B, saved 46.7% → "3 KB → 2 KB (47%)" (T07 P3 format).
+    expect(ImageOptimizationStats.summary(), '3 KB → 2 KB (47%)');
     expect(ImageOptimizationStats.displayCount, 2);
 
     // Worker reply takes precedence over the local tally.
@@ -142,6 +143,33 @@ void main() {
     ImageOptimizationStats.reset();
     expect(ImageOptimizationStats.hasData, isFalse);
     expect(ImageOptimizationStats.displaySummary(), isNull);
+  });
+
+  test('T07 P2: export quality maps to jpeg re-encode quality', () {
+    expect(ImageOptimizerConfig.qualityForExport(ExportQuality.low), 60);
+    expect(ImageOptimizerConfig.qualityForExport(ExportQuality.medium), 80);
+    expect(ImageOptimizerConfig.qualityForExport(ExportQuality.high), 95);
+  });
+
+  test('T07 P5: processed images are served from the disk cache', () {
+    final tempDir =
+        Directory.systemTemp.createTempSync('ghita_img_cache_test');
+    addTearDown(() => tempDir.deleteSync(recursive: true));
+    HtmlImageLoader.debugCacheDir = tempDir.path;
+
+    final src = dataUri(noisyPng(600, 400, 9));
+    ImageOptimizerConfig.betaEnabled = true;
+    final first = HtmlImageLoader.load(src, allowJpeg: true, jpegQuality: 80);
+    expect(first, isNotNull);
+    // Drop the in-memory cache; the disk entry must serve identical bytes.
+    HtmlImageLoader.clearCaches();
+    final second = HtmlImageLoader.load(src, allowJpeg: true, jpegQuality: 80);
+    expect(second, isNotNull);
+    expect(second!.bytes, first!.bytes);
+    expect(second.ext, first.ext);
+
+    HtmlImageLoader.debugCacheDir = null;
+    ImageOptimizerConfig.betaEnabled = false;
   });
 
   test('boundaries: alpha and small PNGs stay PNG', () {

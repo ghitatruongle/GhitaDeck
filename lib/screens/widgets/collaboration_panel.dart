@@ -7,6 +7,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../l10n/l10n.dart';
 import '../../services/collaboration_service.dart';
+import '../../utils/snackbar_helper.dart';
 
 /// Host/join panel for authenticated, revisioned local collaboration.
 class CollaborationPanel extends StatefulWidget {
@@ -47,25 +48,15 @@ class _CollaborationPanelState extends State<CollaborationPanel> {
       final message = owner != null && owner.isNotEmpty
           ? l.collabLockedBy(owner)
           : l.collaborationConflict;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      showAppSnackBar(context, message);
     } else if (event.type == CollaborationEventType.authenticationFailed) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l.collaborationAuthFailed)),
-      );
+      showAppSnackBar(context, l.collaborationAuthFailed);
     } else if (event.type == CollaborationEventType.readOnlyRejected) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l.collabViewModeNotice)),
-      );
+      showAppSnackBar(context, l.collabViewModeNotice);
     } else if (event.type == CollaborationEventType.connectionLost) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l.collabConnectionLost)),
-      );
+      showAppSnackBar(context, l.collabConnectionLost);
     } else if (event.type == CollaborationEventType.reconnected) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l.collabReconnected)),
-      );
+      showAppSnackBar(context, l.collabReconnected);
     }
   }
 
@@ -140,12 +131,7 @@ class _CollaborationPanelState extends State<CollaborationPanel> {
       if (!success) _errorMessage = context.l10n.collaborationJoinFailed;
     });
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.collaborationJoined),
-          backgroundColor: Colors.green,
-        ),
-      );
+      showAppSnackBar(context, context.l10n.collaborationJoined);
     }
   }
 
@@ -407,9 +393,7 @@ class _CollaborationPanelState extends State<CollaborationPanel> {
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: value));
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(context.l10n.collaborationLinkCopied)),
-                );
+                showAppSnackBar(context, context.l10n.collaborationLinkCopied);
               }
             },
           ),

@@ -10,6 +10,7 @@ import '../../services/html_sanitizer_service.dart';
 import '../../utils/effect_helpers.dart';
 import '../../utils/error_mapper.dart';
 import '../../l10n/l10n.dart';
+import '../../utils/snackbar_helper.dart';
 
 /// Centralized editor state for the PowerPoint-style editor.
 ///
@@ -314,9 +315,7 @@ class EditorState with ChangeNotifier {
     final error = validateAndSanitizeHtml(rawHtml);
     if (error != null) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error)),
-        );
+        showAppSnackBar(context, error);
       }
       return;
     }
@@ -348,16 +347,12 @@ class EditorState with ChangeNotifier {
       if (_editingIndex != null) {
         state.updateSlide(_editingIndex!, slide);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(context.l10n.slideUpdated)),
-          );
+          showAppSnackBar(context, context.l10n.slideUpdated);
         }
       } else {
         state.addSlide(slide);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(context.l10n.slideAddedSuccess)),
-          );
+          showAppSnackBar(context, context.l10n.slideAddedSuccess);
         }
       }
 
@@ -413,12 +408,11 @@ class EditorState with ChangeNotifier {
     state.setEffect(template.recommendedEffect);
 
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Applied "${template.name}" template!'),
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      showAppSnackBar(
+  context,
+  'Applied "${template.name}" template!',
+  duration: const Duration(seconds: 3)
+);
     }
     notifyListeners();
   }

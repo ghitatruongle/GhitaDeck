@@ -3,13 +3,13 @@
 
 #define MyAppName "GhitaPPT Converter"
 #ifndef MyAppVersion
-  #define MyAppVersion "2.0.5.4"
+  #define MyAppVersion "2.0.5.5"
 #endif
 #ifndef MyAppBuild
   #define MyAppBuild "2"
 #endif
 #ifndef MyAppDisplayVersion
-  #define MyAppDisplayVersion "2.0.5-demo+4"
+  #define MyAppDisplayVersion "2.0.5-beta.1+5"
 #endif
 #define MyAppPublisher "Ghita"
 #define MyAppURL "https://github.com/ghitatruongle/GhitaPowerPointConverter"

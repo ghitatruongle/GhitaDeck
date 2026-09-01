@@ -94,19 +94,9 @@ class _RecentProjectsScreenState extends State<RecentProjectsScreen> {
         if (success) {
           // Add to recent projects
           _addToRecent(filePath, result.files.single.name);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Đã mở dự án: ${result.files.single.name}'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          showAppSnackBar(context, context.l10n.recentOpenedProjectNotice(result.files.single.name));
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Không thể mở file .ghita. File có thể bị lỗi.'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          showAppSnackBar(context, context.l10n.recentGhitaOpenFailedNotice);
         }
       }
     } catch (e) {
@@ -237,13 +227,9 @@ class _RecentProjectsScreenState extends State<RecentProjectsScreen> {
                             if (!context.mounted) return;
                             if (success) {
                               _addToRecent(path, path.split(RegExp(r'[/\\]')).last);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Đã lưu dự án thành công!'), backgroundColor: Colors.green),
-                              );
+                              showAppSnackBar(context, context.l10n.recentProjectSavedNotice);
                             } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Lỗi lưu dự án'), backgroundColor: Colors.red),
-                              );
+                              showAppSnackBar(context, context.l10n.recentProjectSaveFailedNotice);
                             }
                           }
                         },
@@ -309,16 +295,9 @@ class _RecentProjectsScreenState extends State<RecentProjectsScreen> {
                                       if (!context.mounted) return;
                                       if (success) {
                                         _addToRecent(path, project['name'] as String);
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text(context.l10n.openedProject(project['name'] ?? ''))),
-                                        );
+                                        showAppSnackBar(context, context.l10n.openedProject(project['name'] ?? ''));
                                       } else {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Không thể mở file. File có thể đã bị xoá.'),
-                                            backgroundColor: Colors.red,
-                                          ),
-                                        );
+                                        showAppSnackBar(context, context.l10n.recentFileOpenFailedNotice);
                                       }
                                     }
                                   },

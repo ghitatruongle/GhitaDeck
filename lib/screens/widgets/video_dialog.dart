@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/l10n.dart';
 import '../../models/media_item.dart';
 import '../../services/video_embed_service.dart';
+import '../../utils/snackbar_helper.dart';
 
 /// "Chèn video" dialog (Track 11, P4–P7): pick a local mp4 (with optional
 /// FFmpeg trim + first-frame poster) or paste a YouTube link (thumbnail
@@ -205,9 +206,7 @@ class _VideoDialogState extends State<VideoDialog> {
         if (id == null) {
           if (mounted) {
             setState(() => _busy = false);
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text(context.l10n.videoInvalidUrl),
-            ));
+            showAppSnackBar(context, context.l10n.videoInvalidUrl);
           }
           return;
         }

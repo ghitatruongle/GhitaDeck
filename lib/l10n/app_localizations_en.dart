@@ -836,6 +836,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Stop the running export and discard its output.';
 
   @override
+  String get exportCancelled => 'Export cancelled.';
+
+  @override
   String get fitContent => 'Fit content on slides';
 
   @override
@@ -2618,14 +2621,274 @@ class AppLocalizationsEn extends AppLocalizations {
       'Include an index of all slides at the end';
 
   @override
-  String get imageOptimizerBetaTitle => 'Image optimizer (beta)';
+  String get imageOptimizerBetaTitle => 'Image optimizer';
 
   @override
   String get imageOptimizerBetaSubtitle =>
-      'Experimental: convert large opaque PNGs to JPEG on export (transparent PNGs stay PNG); shows savings in the export summary';
+      'Convert large opaque PNGs to JPEG on export (transparent PNGs stay PNG); shows the savings after each export. Quality follows the export quality setting (150/300/600).';
 
   @override
   String imageSavings(String summary, String count) {
     return 'Saved: $summary ($count images)';
+  }
+
+  @override
+  String get themeResetNotice => 'Theme reset to default';
+
+  @override
+  String themePresetAppliedNotice(String name) {
+    return 'Applied $name preset';
+  }
+
+  @override
+  String get themeCopiedNotice => 'Theme copied to clipboard!';
+
+  @override
+  String get themeExportFailedNotice => 'Failed to export theme';
+
+  @override
+  String get themeImportedNotice => 'Theme imported successfully!';
+
+  @override
+  String get themeImportInvalidNotice =>
+      'Failed to import theme. Invalid format.';
+
+  @override
+  String get themeClipboardEmptyNotice => 'Clipboard is empty';
+
+  @override
+  String get aiSystemPromptResetNotice => 'System prompt reset to default!';
+
+  @override
+  String get aiSystemPromptSavedNotice => 'System prompt saved!';
+
+  @override
+  String get aiProviderMinOneModelNotice =>
+      'Provider must have at least 1 model.';
+
+  @override
+  String get aiProviderSavedNotice => 'Provider settings saved!';
+
+  @override
+  String aiAddedAllSlidesNotice(int count) {
+    return 'Added all $count slides!';
+  }
+
+  @override
+  String get aiAddedSlidesNotice => 'Added to presentation slides!';
+
+  @override
+  String aiTranslatedNotice(int done, int total) {
+    return '$done/$total translated…';
+  }
+
+  @override
+  String aiSlideErrorNotice(int index, String error) {
+    return 'Slide $index error: $error';
+  }
+
+  @override
+  String get m9NoMatchesNotice => 'No matches found';
+
+  @override
+  String get m9FixesAppliedNotice => 'Applied fixes.';
+
+  @override
+  String wizardProviderConfiguredNotice(String name) {
+    return 'AI provider configured successfully: $name';
+  }
+
+  @override
+  String get wizardFetchingModelsNotice => 'Fetching models from server...';
+
+  @override
+  String wizardModelsFoundNotice(int count) {
+    return 'Found $count models from the API';
+  }
+
+  @override
+  String get wizardModelsNotFoundNotice =>
+      'Could not fetch models automatically; you can type the model name above';
+
+  @override
+  String sorterDeletedSlidesNotice(int count) {
+    return 'Deleted $count slides';
+  }
+
+  @override
+  String get recentNewProjectNotice => 'New project created!';
+
+  @override
+  String get recentUndoAction => 'Undo';
+
+  @override
+  String get wizardCompleteStepsNotice =>
+      'Please complete all steps before continuing.';
+
+  @override
+  String get wizardProviderFieldsNotice =>
+      'Please enter the provider name and Base URL';
+
+  @override
+  String get providerTestingNotice => 'Testing connection…';
+
+  @override
+  String templateAppliedPreviewNotice(String name) {
+    return 'Applied template: $name';
+  }
+
+  @override
+  String templateAppliedTemplateNotice(String name) {
+    return 'Applied template: $name';
+  }
+
+  @override
+  String sorterDuplicatedSlidesNotice(int count) {
+    return 'Duplicated $count slides';
+  }
+
+  @override
+  String recentOpenedProjectNotice(String name) {
+    return 'Opened project: $name';
+  }
+
+  @override
+  String get recentGhitaOpenFailedNotice =>
+      'Cannot open the .ghita file. The file may be broken.';
+
+  @override
+  String get recentProjectSavedNotice => 'Project saved successfully!';
+
+  @override
+  String get recentProjectSaveFailedNotice => 'Failed to save the project';
+
+  @override
+  String get recentFileOpenFailedNotice =>
+      'Cannot open the file. It may have been moved or deleted.';
+
+  @override
+  String recentBackupExportedNotice(String name) {
+    return 'Backup exported successfully: $name';
+  }
+
+  @override
+  String get recentSettingsRestoredNotice => 'Settings restored successfully!';
+
+  @override
+  String providerModelsUpdatedNotice(int count, String name) {
+    return '✓ Updated $count models for $name';
+  }
+
+  @override
+  String providerConnectionErrorNotice(String name, String error) {
+    return 'Connection error for $name: $error';
+  }
+
+  @override
+  String providerModelsFetchFailedNotice(String name) {
+    return 'Could not fetch models automatically from $name. You can type the model manually.';
+  }
+
+  @override
+  String get providerLocalScanNotice =>
+      'Scanning local AI services (Ollama, LM Studio, LocalAI)…';
+
+  @override
+  String get providerLocalScanEmptyNotice =>
+      'No local AI service found on this machine.';
+
+  @override
+  String providerModelSelectedNotice(String model) {
+    return 'Model selected: $model';
+  }
+
+  @override
+  String get providerMissingFieldsNotice =>
+      'Please fill in Name, Base URL and Model';
+
+  @override
+  String get providerOnlyOneNotice =>
+      'Cannot delete the last remaining provider.';
+
+  @override
+  String providerDeletedNotice(String name) {
+    return 'Deleted $name';
+  }
+
+  @override
+  String effectsAppliedNotice(String effect) {
+    return 'Applied \"$effect\" effect!';
+  }
+
+  @override
+  String get aiTranslationHintNotice =>
+      'Translation uses the AI provider — one prompt per slide.';
+
+  @override
+  String get aiDeckTranslatedNotice => 'Deck translated.';
+
+  @override
+  String aiNameExistsNotice(String name) {
+    return '\"$name\" already exists.';
+  }
+
+  @override
+  String get dictationViMissingNotice =>
+      'Vietnamese speech not found on this machine — using English.';
+
+  @override
+  String homeOffice365StyleNotice(String name, String version) {
+    return '$name v$version — Office 365 Style';
+  }
+
+  @override
+  String get animeSelectShapeNotice => 'Select a shape first';
+
+  @override
+  String get animeNoneNotice => 'Selected shape has no animation';
+
+  @override
+  String get animeCopiedNotice => 'Animation copied to target';
+
+  @override
+  String m9ReplacedCountNotice(int count) {
+    return 'Replaced $count occurrence(s)';
+  }
+
+  @override
+  String m9AddinRanNotice(String addin, int added, int updated) {
+    return 'Ran \"$addin\": +$added slide(s), $updated update(s)';
+  }
+
+  @override
+  String reuseInsertedNotice(int count) {
+    return 'Inserted $count slide(s)';
+  }
+
+  @override
+  String get aiToolsApiKeyNotice =>
+      'Please configure an API Key in Settings first!';
+
+  @override
+  String get aiToolsScriptCreatedNotice =>
+      'Speaker script created successfully!';
+
+  @override
+  String get aiToolsSlideUpdatedNotice => 'Slide content updated!';
+
+  @override
+  String get fontBothNamesNotice => 'Enter both font names';
+
+  @override
+  String get fontReplacedNotice => 'Font replaced across the whole deck';
+
+  @override
+  String m9MergedSummaryNotice(int count, int fromA, int fromB, int both) {
+    return 'Merged $count slides (A:$fromA B:$fromB both:$both)';
+  }
+
+  @override
+  String fontCaseAppliedNotice(String label) {
+    return 'Case applied: $label';
   }
 }

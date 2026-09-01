@@ -15,6 +15,7 @@ import '../../services/ppt_generator.dart';
 import '../../services/print_service.dart';
 import '../../services/slide_image_export_service.dart';
 import '../../services/video_export_service.dart';
+import '../../utils/snackbar_helper.dart';
 
 /// Milestone 6 tools (T41–T45): video/GIF export, batch slide images,
 /// print & handouts & outline RTF, extended save formats (.potx/.ppsx/
@@ -623,16 +624,10 @@ class _M6ExportDialogState extends State<M6ExportDialog> {
   }
 
   void _done(dynamic l, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(message),
-      backgroundColor: Colors.green,
-    ));
+    showAppSnackBar(context, message);
   }
 
   void _fail(dynamic l, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(message),
-      backgroundColor: Theme.of(context).colorScheme.error,
-    ));
+    showAppSnackBar(context, message);
   }
 }

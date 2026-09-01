@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/ai_provider_manager.dart';
+import '../utils/snackbar_helper.dart';
+import '../l10n/l10n.dart';
 
 // =============================================================================
 // Configuration Wizard — 4-step AI provider setup
@@ -188,12 +190,7 @@ class _ConfigurationWizardState extends State<ConfigurationWizard> {
 
   Future<void> _completeConfiguration() async {
     if (_currentProvider == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng hoàn thành tất cả các bước trước khi tiếp tục.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      showAppSnackBar(context, context.l10n.wizardCompleteStepsNotice);
       return;
     }
 
@@ -212,13 +209,9 @@ class _ConfigurationWizardState extends State<ConfigurationWizard> {
     }
 
     if (!mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text('Đã cấu hình nhà cung cấp AI thành công: ${_currentProvider!.name}'),
-        backgroundColor: Colors.green,
-      ),
-    );
+    showAppSnackBar(
+      context,
+      context.l10n.wizardProviderConfiguredNotice(_currentProvider!.name));
 
     if (mounted) Navigator.pop(context);
   }
@@ -440,11 +433,7 @@ class _ProviderTypeStepState extends State<_ProviderTypeStep> {
                   );
                   widget.onProviderCreated(provider);
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Vui lòng nhập tên nhà cung cấp và Base URL'),
-                    ),
-                  );
+                  showAppSnackBar(context, context.l10n.wizardProviderFieldsNotice);
                 }
               },
               icon: const Icon(Icons.arrow_forward),
@@ -613,22 +602,13 @@ class _APIKeyStepState extends State<_APIKeyStep> {
                           apiKey: _keyController.text,
                         );
 
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Đang kiểm tra kết nối...')),
-                        );
+                        showAppSnackBar(context, context.l10n.providerTestingNotice);
 
                         final result = await manager.testProviderPing(testConfig);
 
                         if (!context.mounted) return;
 
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(result.isSuccess
-                                ? '✓ Kết nối thành công (${result.latencyMs}ms)'
-                                : '✗ Không thể kết nối: ${result.errorMessage ?? "Lỗi không xác định"}'),
-                            backgroundColor: result.isSuccess ? Colors.green : Colors.red,
-                          ),
-                        );
+                        showAppSnackBar(context, result.isSuccess                                ? '✓ Kết nối thành công (${result.latencyMs}ms)'                                : '✗ Không thể kết nối: ${result.errorMessage ?? "Lỗi không xác định"}');
                       },
                       icon: const Icon(Icons.wifi_find),
                       label: const Text('Kiểm tra kết nối'),
@@ -791,14 +771,12 @@ class _ModelSelectionStepState extends State<_ModelSelectionStep> {
                       ? null
                       : () async {
                           setState(() => _isFetching = true);
-                          final messenger = ScaffoldMessenger.of(context);
                           final manager = Provider.of<AIProviderManager>(context, listen: false);
                           final config = widget.providerConfig.copyWith(
                             selectedModel: _modelController.text.trim(),
                           );
-                          messenger.showSnackBar(
-                            const SnackBar(content: Text('Đang lấy danh sách models từ server...')),
-                          );
+                          final l10n = context.l10n;
+                          showAppSnackBar(context, l10n.wizardFetchingModelsNotice);
                           final fetched = await manager.fetchAvailableModels(config);
                           if (!mounted) return;
                           setState(() => _isFetching = false);
@@ -811,13 +789,13 @@ class _ModelSelectionStepState extends State<_ModelSelectionStep> {
                             );
                             setState(() => _modelController.text = fetched.first);
                           }
-                          messenger.showSnackBar(
-                            SnackBar(
-                              content: Text(fetched.isNotEmpty
-                                  ? '✓ Tìm thấy ${fetched.length} models từ API'
-                                  : 'Không lấy được models tự động, bạn có thể tự gõ tên model ở trên'),
-                            ),
-                          );
+                          if (!mounted) return;
+                          final modelMsg = fetched.isNotEmpty
+                              ? l10n.wizardModelsFoundNotice(fetched.length)
+                              : l10n.wizardModelsNotFoundNotice;
+                          // Directly preceded by the State.mounted guard.
+                          // ignore: use_build_context_synchronously
+                          showAppSnackBar(context, modelMsg);
                         },
                   icon: _isFetching
                       ? const SizedBox(

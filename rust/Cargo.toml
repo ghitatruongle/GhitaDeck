@@ -9,6 +9,14 @@ crate-type = ["cdylib", "staticlib"]
 [dependencies]
 flutter_rust_bridge = "=2.13.0"
 zip = { version = "8.6.0", default-features = false, features = ["deflate", "time"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif"] }
+rayon = "1.10"
+sha2 = "0.10"
 
 [profile.release]
 lto = true
+
+# `#[frb(sync)]` expands to cfg(frb_expand) — declare it so `unexpected_cfgs`
+# does not warn on rustc 1.9x (check-cfg).
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(frb_expand)"] }

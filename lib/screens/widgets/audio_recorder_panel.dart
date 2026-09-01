@@ -6,6 +6,7 @@ import '../../l10n/l10n.dart';
 import '../../providers/presentation_state.dart';
 import '../../services/audio_recording_service.dart';
 import '../../services/video_embed_service.dart';
+import '../../utils/snackbar_helper.dart';
 
 /// Per-slide narration recorder (Track 13, P1/P3/P6/P7): record mic audio
 /// (WAV → FFmpeg-transcoded m4a), then edit the attached narration — trim
@@ -143,10 +144,11 @@ class _AudioRecorderPanelState extends State<AudioRecorderPanel> {
             'trimEnd': end,
           }));
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.l10n.audioTrimNoFfmpeg),
-          duration: const Duration(seconds: 2),
-        ));
+        showAppSnackBar(
+  context,
+  context.l10n.audioTrimNoFfmpeg,
+  duration: const Duration(seconds: 2)
+);
       }
     }
   }

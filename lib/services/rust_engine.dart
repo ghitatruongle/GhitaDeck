@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../src/rust/api/engine.dart' as rust_api;
 import '../src/rust/frb_generated.dart' as rust_bridge;
+import 'image_codec.dart';
 import 'zip_codec.dart';
 
 /// Processing core the app runs export/media work on.
@@ -52,8 +53,15 @@ class RustEngineService extends ChangeNotifier {
   Future<void> loadPreference() async {
     final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getString(prefKey);
+    if (stored == null) {
+      // No explicit choice: each component keeps its MEASURED default
+      // (zip → Dart, images → Rust; see the benchmark docs).
+      notifyListeners();
+      return;
+    }
     _preferred = stored == 'rust' ? EngineKind.rust : EngineKind.dart;
     ZipEngineConfig.setPreferredRust(_preferred == EngineKind.rust);
+    ImageEngineConfig.setPreferredRust(_preferred == EngineKind.rust);
     notifyListeners();
   }
 
@@ -69,6 +77,7 @@ class RustEngineService extends ChangeNotifier {
       _status = EngineStatus.rustReady;
       _detail = version;
       ZipEngineConfig.markRustReady();
+      ImageEngineConfig.markRustReady();
     } catch (e) {
       _status = EngineStatus.fallingBack;
       _detail = '$e';
@@ -85,6 +94,7 @@ class RustEngineService extends ChangeNotifier {
   Future<void> setEngine(EngineKind kind) async {
     _preferred = kind;
     ZipEngineConfig.setPreferredRust(kind == EngineKind.rust);
+    ImageEngineConfig.setPreferredRust(kind == EngineKind.rust);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(prefKey, kind.name);
     if (kind == EngineKind.rust && _status != EngineStatus.rustReady) {

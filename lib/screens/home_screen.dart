@@ -782,10 +782,9 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icons.help_outline,
             tooltip: context.l10n.help,
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                    content: Text('${BuildInfo.productName} v${BuildInfo.displayVersion} ΓÇö Office 365 Style')),
-              );
+              showAppSnackBar(context,
+          context.l10n.homeOffice365StyleNotice(
+              BuildInfo.productName, BuildInfo.displayVersion));
             },
             isDark: isDark,
           ),
@@ -859,8 +858,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _present(BuildContext context, PresentationState state,
       {int startSlide = 0}) async {
     if (state.slides.isEmpty) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(context.l10n.noSlides)));
+      showAppSnackBar(context, context.l10n.noSlides);
       return;
     }
     // Track 36: Set Up Show dialog ΓÇö mode, options, pen colour, custom show.
@@ -885,8 +883,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _openPresenterView(BuildContext context, PresentationState state) {
     if (state.slides.isEmpty) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(context.l10n.noSlides)));
+      showAppSnackBar(context, context.l10n.noSlides);
       return;
     }
     Navigator.of(context).push(MaterialPageRoute(

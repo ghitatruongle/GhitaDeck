@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/presentation_state.dart';
 import '../screens/widgets/slide_preview.dart';
+import '../utils/snackbar_helper.dart';
+import '../l10n/l10n.dart';
 
 /// Slide Sorter — grid view of all slides, similar to PowerPoint's Slide Sorter.
 /// Supports drag-and-drop reorder, multi-select, and bulk actions.
@@ -168,9 +170,7 @@ class _SlideSorterScreenState extends State<SlideSorterScreen> {
       state.duplicateSlide(index);
     }
     setState(() => _selectedIndexes.clear());
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Duplicated ${sortedIndexes.length} slides')),
-    );
+    showAppSnackBar(context, context.l10n.sorterDuplicatedSlidesNotice(sortedIndexes.length));
   }
 
   void _deleteSelected() {
@@ -190,15 +190,13 @@ class _SlideSorterScreenState extends State<SlideSorterScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
-              final messenger = ScaffoldMessenger.of(context);
               for (final index in sortedIndexes) {
                 state.removeSlide(index);
               }
               setState(() => _selectedIndexes.clear());
               Navigator.pop(context);
-              messenger.showSnackBar(
-                SnackBar(content: Text('Deleted ${sortedIndexes.length} slides')),
-              );
+              showAppSnackBar(
+                  context, context.l10n.sorterDeletedSlidesNotice(sortedIndexes.length));
             },
             child: const Text('Delete'),
           ),

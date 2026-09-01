@@ -4,6 +4,7 @@
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
 import 'api/engine.dart';
+import 'api/image.dart';
 import 'api/zip.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -26,7 +27,28 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   bool dco_decode_bool(dynamic raw);
 
   @protected
+  ImageJob dco_decode_box_autoadd_image_job(dynamic raw);
+
+  @protected
+  int dco_decode_i_32(dynamic raw);
+
+  @protected
   PlatformInt64 dco_decode_i_64(dynamic raw);
+
+  @protected
+  ImageJob dco_decode_image_job(dynamic raw);
+
+  @protected
+  ImageOpResult dco_decode_image_op_result(dynamic raw);
+
+  @protected
+  List<ImageJob> dco_decode_list_image_job(dynamic raw);
+
+  @protected
+  List<ImageOpResult> dco_decode_list_image_op_result(dynamic raw);
+
+  @protected
+  List<int> dco_decode_list_prim_u_8_loose(dynamic raw);
 
   @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
@@ -50,7 +72,29 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   bool sse_decode_bool(SseDeserializer deserializer);
 
   @protected
+  ImageJob sse_decode_box_autoadd_image_job(SseDeserializer deserializer);
+
+  @protected
+  int sse_decode_i_32(SseDeserializer deserializer);
+
+  @protected
   PlatformInt64 sse_decode_i_64(SseDeserializer deserializer);
+
+  @protected
+  ImageJob sse_decode_image_job(SseDeserializer deserializer);
+
+  @protected
+  ImageOpResult sse_decode_image_op_result(SseDeserializer deserializer);
+
+  @protected
+  List<ImageJob> sse_decode_list_image_job(SseDeserializer deserializer);
+
+  @protected
+  List<ImageOpResult> sse_decode_list_image_op_result(
+      SseDeserializer deserializer);
+
+  @protected
+  List<int> sse_decode_list_prim_u_8_loose(SseDeserializer deserializer);
 
   @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
@@ -68,16 +112,36 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ZipEntry sse_decode_zip_entry(SseDeserializer deserializer);
 
   @protected
-  int sse_decode_i_32(SseDeserializer deserializer);
-
-  @protected
   void sse_encode_String(String self, SseSerializer serializer);
 
   @protected
   void sse_encode_bool(bool self, SseSerializer serializer);
 
   @protected
+  void sse_encode_box_autoadd_image_job(
+      ImageJob self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_i_32(int self, SseSerializer serializer);
+
+  @protected
   void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_image_job(ImageJob self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_image_op_result(ImageOpResult self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_image_job(List<ImageJob> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_image_op_result(
+      List<ImageOpResult> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_prim_u_8_loose(List<int> self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_prim_u_8_strict(
@@ -94,9 +158,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_zip_entry(ZipEntry self, SseSerializer serializer);
-
-  @protected
-  void sse_encode_i_32(int self, SseSerializer serializer);
 }
 
 // Section: wire_class

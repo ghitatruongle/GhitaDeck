@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import '../../l10n/l10n.dart';
 import '../../models/user_profile.dart';
 import '../../services/cloud_sync_service.dart';
+import '../../utils/snackbar_helper.dart';
 
 /// Local profile editor (Track 49, FEAT 84): name + avatar color/emoji.
 class ProfileDialog extends StatefulWidget {
@@ -293,9 +294,7 @@ class _CloudSyncDialogState extends State<CloudSyncDialog> {
         '${widget.projectName}_v${v.version}.ghita';
     await File(path).writeAsBytes(bytes, flush: true);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.versionsRestored)),
-      );
+      showAppSnackBar(context, context.l10n.versionsRestored);
     }
   }
 

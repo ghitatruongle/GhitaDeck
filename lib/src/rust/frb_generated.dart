@@ -4,6 +4,7 @@
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
 import 'api/engine.dart';
+import 'api/image.dart';
 import 'api/zip.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -69,7 +70,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => 1786734021;
+  int get rustContentHash => -324062582;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -82,6 +83,13 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 
 abstract class RustLibApi extends BaseApi {
   Future<String> crateApiEngineHelloZip();
+
+  ImageOpResult crateApiImageImgProcess({required ImageJob job});
+
+  Future<List<ImageOpResult>> crateApiImageImgProcessBatch(
+      {required List<ImageJob> jobs});
+
+  String crateApiImageImgSha256({required List<int> bytes});
 
   Future<Uint8List> crateApiZipZipArchive(
       {required List<ZipEntry> entries, required PlatformInt64 level});
@@ -119,6 +127,78 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  ImageOpResult crateApiImageImgProcess({required ImageJob job}) {
+    return handler.executeSync(SyncTask(
+      callFfi: () {
+        final serializer = SseSerializer(generalizedFrbRustBinding);
+        sse_encode_box_autoadd_image_job(job, serializer);
+        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 2)!;
+      },
+      codec: SseCodec(
+        decodeSuccessData: sse_decode_image_op_result,
+        decodeErrorData: sse_decode_String,
+      ),
+      constMeta: kCrateApiImageImgProcessConstMeta,
+      argValues: [job],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiImageImgProcessConstMeta => const TaskConstMeta(
+        debugName: "img_process",
+        argNames: ["job"],
+      );
+
+  @override
+  Future<List<ImageOpResult>> crateApiImageImgProcessBatch(
+      {required List<ImageJob> jobs}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        final serializer = SseSerializer(generalizedFrbRustBinding);
+        sse_encode_list_image_job(jobs, serializer);
+        pdeCallFfi(generalizedFrbRustBinding, serializer,
+            funcId: 3, port: port_);
+      },
+      codec: SseCodec(
+        decodeSuccessData: sse_decode_list_image_op_result,
+        decodeErrorData: sse_decode_String,
+      ),
+      constMeta: kCrateApiImageImgProcessBatchConstMeta,
+      argValues: [jobs],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiImageImgProcessBatchConstMeta =>
+      const TaskConstMeta(
+        debugName: "img_process_batch",
+        argNames: ["jobs"],
+      );
+
+  @override
+  String crateApiImageImgSha256({required List<int> bytes}) {
+    return handler.executeSync(SyncTask(
+      callFfi: () {
+        final serializer = SseSerializer(generalizedFrbRustBinding);
+        sse_encode_list_prim_u_8_loose(bytes, serializer);
+        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 4)!;
+      },
+      codec: SseCodec(
+        decodeSuccessData: sse_decode_String,
+        decodeErrorData: null,
+      ),
+      constMeta: kCrateApiImageImgSha256ConstMeta,
+      argValues: [bytes],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiImageImgSha256ConstMeta => const TaskConstMeta(
+        debugName: "img_sha256",
+        argNames: ["bytes"],
+      );
+
+  @override
   Future<Uint8List> crateApiZipZipArchive(
       {required List<ZipEntry> entries, required PlatformInt64 level}) {
     return handler.executeNormal(NormalTask(
@@ -127,7 +207,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_list_zip_entry(entries, serializer);
         sse_encode_i_64(level, serializer);
         pdeCallFfi(generalizedFrbRustBinding, serializer,
-            funcId: 2, port: port_);
+            funcId: 5, port: port_);
       },
       codec: SseCodec(
         decodeSuccessData: sse_decode_list_prim_u_8_strict,
@@ -157,9 +237,70 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  ImageJob dco_decode_box_autoadd_image_job(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_image_job(raw);
+  }
+
+  @protected
+  int dco_decode_i_32(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as int;
+  }
+
+  @protected
   PlatformInt64 dco_decode_i_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dcoDecodeI64(raw);
+  }
+
+  @protected
+  ImageJob dco_decode_image_job(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 5)
+      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+    return ImageJob(
+      bytes: dco_decode_list_prim_u_8_strict(arr[0]),
+      ext: dco_decode_String(arr[1]),
+      maxWidth: dco_decode_i_64(arr[2]),
+      allowJpeg: dco_decode_bool(arr[3]),
+      jpegQuality: dco_decode_i_64(arr[4]),
+    );
+  }
+
+  @protected
+  ImageOpResult dco_decode_image_op_result(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 6)
+      throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
+    return ImageOpResult(
+      bytes: dco_decode_list_prim_u_8_strict(arr[0]),
+      ext: dco_decode_String(arr[1]),
+      width: dco_decode_i_32(arr[2]),
+      height: dco_decode_i_32(arr[3]),
+      changed: dco_decode_bool(arr[4]),
+      resized: dco_decode_bool(arr[5]),
+    );
+  }
+
+  @protected
+  List<ImageJob> dco_decode_list_image_job(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_image_job).toList();
+  }
+
+  @protected
+  List<ImageOpResult> dco_decode_list_image_op_result(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_image_op_result).toList();
+  }
+
+  @protected
+  List<int> dco_decode_list_prim_u_8_loose(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as List<int>;
   }
 
   @protected
@@ -213,9 +354,87 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  ImageJob sse_decode_box_autoadd_image_job(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_image_job(deserializer));
+  }
+
+  @protected
+  int sse_decode_i_32(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getInt32();
+  }
+
+  @protected
   PlatformInt64 sse_decode_i_64(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getPlatformInt64();
+  }
+
+  @protected
+  ImageJob sse_decode_image_job(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_bytes = sse_decode_list_prim_u_8_strict(deserializer);
+    var var_ext = sse_decode_String(deserializer);
+    var var_maxWidth = sse_decode_i_64(deserializer);
+    var var_allowJpeg = sse_decode_bool(deserializer);
+    var var_jpegQuality = sse_decode_i_64(deserializer);
+    return ImageJob(
+        bytes: var_bytes,
+        ext: var_ext,
+        maxWidth: var_maxWidth,
+        allowJpeg: var_allowJpeg,
+        jpegQuality: var_jpegQuality);
+  }
+
+  @protected
+  ImageOpResult sse_decode_image_op_result(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_bytes = sse_decode_list_prim_u_8_strict(deserializer);
+    var var_ext = sse_decode_String(deserializer);
+    var var_width = sse_decode_i_32(deserializer);
+    var var_height = sse_decode_i_32(deserializer);
+    var var_changed = sse_decode_bool(deserializer);
+    var var_resized = sse_decode_bool(deserializer);
+    return ImageOpResult(
+        bytes: var_bytes,
+        ext: var_ext,
+        width: var_width,
+        height: var_height,
+        changed: var_changed,
+        resized: var_resized);
+  }
+
+  @protected
+  List<ImageJob> sse_decode_list_image_job(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <ImageJob>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_image_job(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<ImageOpResult> sse_decode_list_image_op_result(
+      SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <ImageOpResult>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_image_op_result(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<int> sse_decode_list_prim_u_8_loose(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var len_ = sse_decode_i_32(deserializer);
+    return deserializer.buffer.getUint8List(len_);
   }
 
   @protected
@@ -258,12 +477,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  int sse_decode_i_32(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return deserializer.buffer.getInt32();
-  }
-
-  @protected
   void sse_encode_String(String self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_list_prim_u_8_strict(utf8.encoder.convert(self), serializer);
@@ -276,9 +489,73 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_box_autoadd_image_job(
+      ImageJob self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_image_job(self, serializer);
+  }
+
+  @protected
+  void sse_encode_i_32(int self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putInt32(self);
+  }
+
+  @protected
   void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putPlatformInt64(self);
+  }
+
+  @protected
+  void sse_encode_image_job(ImageJob self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_list_prim_u_8_strict(self.bytes, serializer);
+    sse_encode_String(self.ext, serializer);
+    sse_encode_i_64(self.maxWidth, serializer);
+    sse_encode_bool(self.allowJpeg, serializer);
+    sse_encode_i_64(self.jpegQuality, serializer);
+  }
+
+  @protected
+  void sse_encode_image_op_result(
+      ImageOpResult self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_list_prim_u_8_strict(self.bytes, serializer);
+    sse_encode_String(self.ext, serializer);
+    sse_encode_i_32(self.width, serializer);
+    sse_encode_i_32(self.height, serializer);
+    sse_encode_bool(self.changed, serializer);
+    sse_encode_bool(self.resized, serializer);
+  }
+
+  @protected
+  void sse_encode_list_image_job(
+      List<ImageJob> self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_image_job(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_image_op_result(
+      List<ImageOpResult> self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_image_op_result(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_prim_u_8_loose(
+      List<int> self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    serializer.buffer
+        .putUint8List(self is Uint8List ? self : Uint8List.fromList(self));
   }
 
   @protected
@@ -316,11 +593,5 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.name, serializer);
     sse_encode_list_prim_u_8_strict(self.data, serializer);
     sse_encode_bool(self.stored, serializer);
-  }
-
-  @protected
-  void sse_encode_i_32(int self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    serializer.buffer.putInt32(self);
   }
 }

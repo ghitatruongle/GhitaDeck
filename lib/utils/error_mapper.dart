@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'snackbar_helper.dart';
 
 /// Utility class để map technical errors thành user-friendly messages
 /// Hỗ trợ cả tiếng Việt và tiếng Anh
@@ -182,14 +183,7 @@ class ErrorMapper {
     final locale = Localizations.localeOf(context).languageCode;
     final message = mapErrorToUserMessage(error, locale: locale, context: context);
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red.shade700,
-        duration: duration,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    showAppSnackBar(context, message);
   }
   
   /// Hiển thị error message dưới dạng dialog

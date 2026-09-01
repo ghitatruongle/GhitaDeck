@@ -74,6 +74,7 @@ class HtmlExportService {
     int? imageMaxWidth,
     String playerLocale = 'en',
     ExportCancelToken? cancelToken,
+    ExportProgressCallback? onProgress,
   }) async {
     if (slides.isEmpty) {
       throw Exception('No slides to export.');
@@ -91,6 +92,7 @@ class HtmlExportService {
       imageMaxWidth: imageMaxWidth,
       playerLocale: playerLocale,
       cancelToken: cancelToken,
+      onProgress: onProgress,
     );
 
     final Directory targetDir = await getApplicationDocumentsDirectory();
@@ -111,6 +113,7 @@ class HtmlExportService {
     int? imageMaxWidth,
     String playerLocale = 'en',
     ExportCancelToken? cancelToken,
+    ExportProgressCallback? onProgress,
   }) async {
     if (slides.isEmpty) {
       throw Exception('No slides to export.');
@@ -123,7 +126,9 @@ class HtmlExportService {
       imageMaxWidth: imageMaxWidth,
       playerLocale: playerLocale,
       cancelToken: cancelToken,
+      onProgress: onProgress,
     );
+    onProgress?.call(ExportProgressBudget.finalizing(slides.length));
     final File htmlFile = File(filePath);
     await htmlFile.create(recursive: true);
     await htmlFile.writeAsString(htmlContent, flush: true);
@@ -168,6 +173,7 @@ class HtmlExportService {
     String playerLocale = 'en',
     ExportCancelToken? cancelToken,
     DeckMeta? deckMeta,
+    ExportProgressCallback? onProgress,
   }) {
     final keySource = jsonEncode([
       slides,
@@ -201,6 +207,7 @@ class HtmlExportService {
       playerLocale: playerLocale,
       cancelToken: cancelToken,
       deckMeta: deckMeta,
+      onProgress: onProgress,
     );
     _deckCache[key] = _DeckCacheEntry(keySource, html);
     if (_deckCache.length > _deckCacheCapacity) {
@@ -220,6 +227,7 @@ class HtmlExportService {
     String playerLocale = 'en',
     ExportCancelToken? cancelToken,
     DeckMeta? deckMeta,
+    ExportProgressCallback? onProgress,
   }) {
     final buffer = StringBuffer();
     cancelToken?.throwIfCancelled();
@@ -235,6 +243,8 @@ class HtmlExportService {
     final slideTransitions = <String>[];
     final usedEffects = <SlideEffect>{};
     for (int i = 0; i < slides.length; i++) {
+      onProgress?.call(ExportProgressBudget.forSlide(i, slides.length));
+      cancelToken?.throwIfCancelled();
       final slide = slides[i];
       final color = includeBackgrounds ? _extractSlideBgColor(slide) : null;
       if (color != null) {

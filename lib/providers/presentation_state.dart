@@ -35,6 +35,7 @@ import '../services/zoom_feature_service.dart';
 import '../services/cameo_service.dart';
 import '../services/html_export_service.dart';
 import '../services/export_isolate.dart';
+import '../services/export_primitives.dart';
 import '../services/smart_draft_manager.dart';
 import '../services/time_machine_history_service.dart';
 import '../services/project_bundle_service.dart';
@@ -1048,11 +1049,15 @@ class PresentationState with ChangeNotifier {
   /// format-only export.
   Future<String> exportWithOptions(
     String fileName,
-    ExportOptions options,
-  ) async {
+    ExportOptions options, {
+    ExportProgressCallback? onProgress,
+    ExportCancelToken? cancelToken,
+  }) async {
     exportStatus = 'exporting';
     notifyListeners();
     try {
+      onProgress?.call(ExportProgressBudget.preparing(
+          options.selectSlides(_slideMaps()).length));
       final selectedSlides = options.selectSlides(_slideMaps());
       final targetDir = await getApplicationDocumentsDirectory();
       final safeName =
@@ -1078,6 +1083,8 @@ class PresentationState with ChangeNotifier {
                 _autoAdvance ? Duration(seconds: _autoAdvanceSeconds) : null,
             fitContent: options.fitContent,
             theme: options.theme,
+            onProgress: onProgress,
+            cancelToken: cancelToken,
           );
           break;
         case PresentationExportFormat.html:
@@ -1089,6 +1096,8 @@ class PresentationState with ChangeNotifier {
             includeBackgrounds: options.includeBackgrounds,
             imageMaxWidth: options.quality.imageMaxWidth,
             playerLocale: options.htmlPlayerLocale,
+            onProgress: onProgress,
+            cancelToken: cancelToken,
           );
           break;
         case PresentationExportFormat.pdf:
@@ -1105,9 +1114,13 @@ class PresentationState with ChangeNotifier {
             includeHiddenSlides: options.includeHiddenSlides,
             notesPages: options.pdfNotesPages,
             bookmarks: options.pdfBookmarks,
+            onProgress: onProgress,
+            cancelToken: cancelToken,
           );
           break;
         case PresentationExportFormat.docx:
+          onProgress?.call(ExportProgressBudget.finalizing(
+              selectedSlides.length));
           path = await DocxReportService.exportReport(
             selectedSlides,
             outputPath,

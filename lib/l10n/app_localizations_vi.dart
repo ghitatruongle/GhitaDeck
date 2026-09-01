@@ -837,6 +837,9 @@ class AppLocalizationsVi extends AppLocalizations {
       'Dừng quá trình xuất đang chạy và bỏ kết quả của nó.';
 
   @override
+  String get exportCancelled => 'Đã hủy xuất.';
+
+  @override
   String get fitContent => 'Vừa khít với slide';
 
   @override
@@ -2617,14 +2620,276 @@ class AppLocalizationsVi extends AppLocalizations {
   String get docxIncludeSlideList => 'Kèm danh sách slide ở cuối báo cáo';
 
   @override
-  String get imageOptimizerBetaTitle => 'Tối ưu ảnh (beta)';
+  String get imageOptimizerBetaTitle => 'Tối ưu ảnh';
 
   @override
   String get imageOptimizerBetaSubtitle =>
-      'Thử nghiệm: chuyển ảnh PNG lớn không trong suốt sang JPEG khi xuất (PNG trong suốt giữ nguyên); hiện thống kê tiết kiệm sau mỗi lần xuất';
+      'Chuyển ảnh PNG lớn không trong suốt sang JPEG khi xuất (PNG trong suốt giữ nguyên); hiện thống kê tiết kiệm sau mỗi lần xuất. Chất lượng ăn theo lựa chọn chất lượng xuất (150/300/600)';
 
   @override
   String imageSavings(String summary, String count) {
     return 'Tiết kiệm: $summary ($count ảnh)';
+  }
+
+  @override
+  String get themeResetNotice => 'Đặt lại chủ đề mặc định';
+
+  @override
+  String themePresetAppliedNotice(String name) {
+    return 'Đã áp dụng preset $name';
+  }
+
+  @override
+  String get themeCopiedNotice => 'Đã sao chép chủ đề!';
+
+  @override
+  String get themeExportFailedNotice => 'Không xuất chủ đề được';
+
+  @override
+  String get themeImportedNotice => 'Đã nhập chủ đề thành công!';
+
+  @override
+  String get themeImportInvalidNotice =>
+      'Nhập chủ đề thất bại. Định dạng không hợp lệ.';
+
+  @override
+  String get themeClipboardEmptyNotice => 'Clipboard đang trống';
+
+  @override
+  String get aiSystemPromptResetNotice =>
+      'Đã đặt lại prompt hệ thống mặc định!';
+
+  @override
+  String get aiSystemPromptSavedNotice => 'Đã lưu prompt hệ thống!';
+
+  @override
+  String get aiProviderMinOneModelNotice =>
+      'Nhà cung cấp phải có ít nhất 1 model.';
+
+  @override
+  String get aiProviderSavedNotice => 'Đã lưu cấu hình nhà cung cấp!';
+
+  @override
+  String aiAddedAllSlidesNotice(int count) {
+    return 'Đã thêm $count slide!';
+  }
+
+  @override
+  String get aiAddedSlidesNotice => 'Đã thêm vào slide trình bày!';
+
+  @override
+  String aiTranslatedNotice(int done, int total) {
+    return '$done/$total đã dịch…';
+  }
+
+  @override
+  String aiSlideErrorNotice(int index, String error) {
+    return 'Lỗi slide $index: $error';
+  }
+
+  @override
+  String get m9NoMatchesNotice => 'Không tìm thấy kết quả phù hợp';
+
+  @override
+  String get m9FixesAppliedNotice => 'Đã áp dụng các sửa đổi.';
+
+  @override
+  String wizardProviderConfiguredNotice(String name) {
+    return 'Đã cấu hình nhà cung cấp AI thành công: $name';
+  }
+
+  @override
+  String get wizardFetchingModelsNotice =>
+      'Đang lấy danh sách models từ server...';
+
+  @override
+  String wizardModelsFoundNotice(int count) {
+    return 'Đã tìm thấy $count model từ API';
+  }
+
+  @override
+  String get wizardModelsNotFoundNotice =>
+      'Không lấy được models tự động; bạn có thể tự nhập tên model ở trên';
+
+  @override
+  String sorterDeletedSlidesNotice(int count) {
+    return 'Đã xóa $count slide';
+  }
+
+  @override
+  String get recentNewProjectNotice => 'Đã tạo dự án mới!';
+
+  @override
+  String get recentUndoAction => 'Hoàn tác';
+
+  @override
+  String get wizardCompleteStepsNotice =>
+      'Vui lòng hoàn thành tất cả các bước trước khi tiếp tục.';
+
+  @override
+  String get wizardProviderFieldsNotice =>
+      'Vui lòng nhập tên nhà cung cấp và Base URL';
+
+  @override
+  String get providerTestingNotice => 'Đang kiểm tra kết nối...';
+
+  @override
+  String templateAppliedPreviewNotice(String name) {
+    return 'Đã áp dụng template: $name';
+  }
+
+  @override
+  String templateAppliedTemplateNotice(String name) {
+    return 'Đã áp dụng template: $name';
+  }
+
+  @override
+  String sorterDuplicatedSlidesNotice(int count) {
+    return 'Đã nhân bản $count slide';
+  }
+
+  @override
+  String recentOpenedProjectNotice(String name) {
+    return 'Đã mở dự án: $name';
+  }
+
+  @override
+  String get recentGhitaOpenFailedNotice =>
+      'Không thể mở file .ghita. File có thể bị lỗi.';
+
+  @override
+  String get recentProjectSavedNotice => 'Đã lưu dự án thành công!';
+
+  @override
+  String get recentProjectSaveFailedNotice => 'Lỗi lưu dự án';
+
+  @override
+  String get recentFileOpenFailedNotice =>
+      'Không thể mở file. File có thể đã bị xoá.';
+
+  @override
+  String recentBackupExportedNotice(String name) {
+    return 'Đã xuất backup thành công: $name';
+  }
+
+  @override
+  String get recentSettingsRestoredNotice => 'Đã khôi phục cài đặt thành công!';
+
+  @override
+  String providerModelsUpdatedNotice(int count, String name) {
+    return '✓ Đã cập nhật $count mô hình cho $name';
+  }
+
+  @override
+  String providerConnectionErrorNotice(String name, String error) {
+    return 'Lỗi kết nối $name: $error';
+  }
+
+  @override
+  String providerModelsFetchFailedNotice(String name) {
+    return 'Không thể lấy danh sách model tự động từ $name. Bạn có thể nhập model thủ công.';
+  }
+
+  @override
+  String get providerLocalScanNotice =>
+      'Đang quét các dịch vụ AI Local (Ollama, LM Studio, LocalAI)...';
+
+  @override
+  String get providerLocalScanEmptyNotice =>
+      'Không tìm thấy dịch vụ AI Local nào đang chạy trên máy.';
+
+  @override
+  String providerModelSelectedNotice(String model) {
+    return 'Đã chọn model: $model';
+  }
+
+  @override
+  String get providerMissingFieldsNotice =>
+      'Vui lòng điền đủ Tên, Base URL và Model';
+
+  @override
+  String get providerOnlyOneNotice =>
+      'Không thể xóa nhà cung cấp duy nhất còn lại.';
+
+  @override
+  String providerDeletedNotice(String name) {
+    return 'Đã xóa $name';
+  }
+
+  @override
+  String effectsAppliedNotice(String effect) {
+    return 'Đã áp dụng hiệu ứng \"$effect\"!';
+  }
+
+  @override
+  String get aiTranslationHintNotice =>
+      'Bản dịch dùng AI provider — mỗi slide một prompt.';
+
+  @override
+  String get aiDeckTranslatedNotice => 'Đã dịch deck.';
+
+  @override
+  String aiNameExistsNotice(String name) {
+    return '\"$name\" đã tồn tại.';
+  }
+
+  @override
+  String get dictationViMissingNotice =>
+      'Không tìm thấy giọng đọc tiếng Việt trên máy này — dùng tiếng Anh.';
+
+  @override
+  String homeOffice365StyleNotice(String name, String version) {
+    return '$name v$version — Office 365 Style';
+  }
+
+  @override
+  String get animeSelectShapeNotice => 'Chọn một hình trước';
+
+  @override
+  String get animeNoneNotice => 'Hình đã chọn không có animation';
+
+  @override
+  String get animeCopiedNotice => 'Đã sao chép animation vào đích';
+
+  @override
+  String m9ReplacedCountNotice(int count) {
+    return 'Đã thay $count chỗ';
+  }
+
+  @override
+  String m9AddinRanNotice(String addin, int added, int updated) {
+    return 'Đã chạy \"$addin\": +$added slide, $updated thay đổi';
+  }
+
+  @override
+  String reuseInsertedNotice(int count) {
+    return 'Đã chèn $count slide';
+  }
+
+  @override
+  String get aiToolsApiKeyNotice =>
+      'Vui lòng cấu hình API Key trong Cài Đặt trước!';
+
+  @override
+  String get aiToolsScriptCreatedNotice =>
+      'Đã tạo thành công Kịch bản Diễn giả!';
+
+  @override
+  String get aiToolsSlideUpdatedNotice => 'Đã cập nhật nội dung Slide!';
+
+  @override
+  String get fontBothNamesNotice => 'Nhập cả hai tên phông';
+
+  @override
+  String get fontReplacedNotice => 'Đã thay phông trên toàn bộ deck';
+
+  @override
+  String m9MergedSummaryNotice(int count, int fromA, int fromB, int both) {
+    return 'Đã hợp nhất $count slide (A:$fromA B:$fromB cả hai:$both)';
+  }
+
+  @override
+  String fontCaseAppliedNotice(String label) {
+    return 'Đã áp dụng: $label';
   }
 }

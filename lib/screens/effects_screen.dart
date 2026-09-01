@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../providers/presentation_state.dart';
 import '../services/effect_preview_service.dart';
 import '../utils/effect_helpers.dart';
+import '../utils/snackbar_helper.dart';
+import '../../l10n/l10n.dart';
 
 class EffectsScreen extends StatefulWidget {
   const EffectsScreen({super.key});
@@ -184,12 +186,7 @@ class _EffectsScreenState extends State<EffectsScreen> {
                   FilledButton.icon(
                     onPressed: () {
                       presentationState.setEffect(_selectedSlideEffect);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                              'Applied "${_effectDisplayName(_selectedSlideEffect)}" effect!'),
-                        ),
-                      );
+                      showAppSnackBar(context, context.l10n.effectsAppliedNotice(_effectDisplayName(_selectedSlideEffect)));
                     },
                     icon: const Icon(Icons.check_circle_outline),
                     label: const Text('Apply to Export'),

@@ -5,6 +5,7 @@ import '../l10n/l10n.dart';
 import '../models/ppt_theme_setting.dart';
 import '../providers/theme_provider.dart';
 import '../theme/office_colors.dart';
+import '../utils/snackbar_helper.dart';
 
 /// Theme Settings Screen - Customize colors, fonts, and presets
 class ThemeSettingsScreen extends StatefulWidget {
@@ -56,7 +57,7 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
             tooltip: 'Reset to default',
             onPressed: () {
               themeProvider.resetToDefault();
-              _showSnackBar('Theme reset to Office Blue');
+              _showSnackBar(context.l10n.themeResetNotice);
             },
           ),
         ],
@@ -176,7 +177,7 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
         return InkWell(
           onTap: () {
             provider.applyPreset(info.preset);
-            _showSnackBar('Applied ${info.name} preset');
+            _showSnackBar(context.l10n.themePresetAppliedNotice(info.name));
           },
           borderRadius: BorderRadius.circular(8),
           child: Container(
@@ -569,9 +570,9 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
     try {
       final json = provider.exportToJson();
       Clipboard.setData(ClipboardData(text: json));
-      _showSnackBar('Theme copied to clipboard!');
+      _showSnackBar(context.l10n.themeCopiedNotice);
     } catch (e) {
-      _showSnackBar('Failed to export theme');
+      _showSnackBar(context.l10n.themeExportFailedNotice);
     }
   }
 
@@ -581,23 +582,21 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
       if (data?.text != null) {
         final success = provider.importFromJson(data!.text!);
         if (success && mounted) {
-          _showSnackBar('Theme imported successfully!');
+          _showSnackBar(context.l10n.themeImportedNotice);
         } else if (mounted) {
-          _showSnackBar('Failed to import theme. Invalid format.');
+          _showSnackBar(context.l10n.themeImportInvalidNotice);
         }
-      } else {
-        _showSnackBar('Clipboard is empty');
+      } else if (mounted) {
+        _showSnackBar(context.l10n.themeClipboardEmptyNotice);
       }
     } catch (e) {
       // importFromJson can throw on malformed JSON — don't crash.
-      _showSnackBar('Failed to import theme. Invalid format.');
+      if (mounted) _showSnackBar(context.l10n.themeImportInvalidNotice);
     }
   }
 
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
-    );
+    showAppSnackBar(context, message, duration: const Duration(seconds: 2));
   }
 }
 

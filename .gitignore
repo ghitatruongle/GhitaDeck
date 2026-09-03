@@ -66,3 +66,6 @@ Desktop.ini
 
 # Local scratch documents (internal notes never belong in git)
 *.local.md
+
+# T17 preview tooling: Edge headless profiles are regenerable junk
+/tool/template_previews/_edgeprofile*/

@@ -8,6 +8,7 @@
 // ignore_for_file: argument_type_not_assignable
 
 import 'api/engine.dart';
+import 'api/htmlparse.dart';
 import 'api/image.dart';
 import 'api/zip.dart';
 import 'dart:async';

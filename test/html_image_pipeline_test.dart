@@ -6,6 +6,8 @@ import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ghita_ppt_converter/services/export_job.dart';
 import 'package:ghita_ppt_converter/services/html_image_loader.dart';
+import 'package:ghita_ppt_converter/services/image_codec.dart';
+import 'package:ghita_ppt_converter/services/image_optimizer_service.dart';
 import 'package:ghita_ppt_converter/services/ppt_generator.dart';
 import 'package:image/image.dart' as img;
 
@@ -52,6 +54,9 @@ void main() {
 
   String dataUri(Uint8List bytes) =>
       'data:image/png;base64,${base64Encode(bytes)}';
+
+  String dataUriWith(Uint8List bytes, String mime) =>
+      'data:$mime;base64,${base64Encode(bytes)}';
 
   Uint8List crc32(List<int> bytes) {
     var crc = 0xFFFFFFFF;
@@ -331,4 +336,232 @@ void main() {
     await job.run();
     expect(File('$out.warnings.log').existsSync(), isFalse);
   });
+
+  test('B18: editing a local file invalidates the processed cache', () async {
+    final imgPath = '${tempDir.path}/photo.png';
+    File(imgPath).writeAsBytesSync(opaquePng(600, 400));
+    final first = HtmlImageLoader.load(imgPath, maxWidth: 200)!;
+    // Unchanged → served from the cache (same bytes, one decode only).
+    final again = HtmlImageLoader.load(imgPath, maxWidth: 200)!;
+    expect(again.bytes, orderedEquals(first.bytes),
+        reason: 'unchanged image must be served from the cache');
+
+    // Same path, same options, different pixels → must reprocess.
+    File(imgPath).writeAsBytesSync(opaquePng(600, 300)); // different aspect
+    final second = HtmlImageLoader.load(imgPath, maxWidth: 200)!;
+    expect(second.height, isNot(equals(first.height)),
+        reason: 'edited file must NOT reuse the stale processed entry');
+    expect(second.width, 200);
+    expect(second.height, 100);
+  });
+
+  test('B18: remote image is re-fetched when the server content changes',
+      () async {
+    var served = opaquePng(32, 24);
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    server.listen((request) {
+      request.response
+        ..statusCode = 200
+        ..headers.contentType = ContentType('image', 'png')
+        ..add(served)
+        ..close();
+    });
+    final url = 'http://127.0.0.1:${server.port}/pic.png';
+    try {
+      // Export 1: server serves 32×24.
+      await HtmlImageLoader.prefetchSlides(
+          [{'title': 'x', 'htmlContent': '<img src="$url">'}]);
+      expect(HtmlImageLoader.load(url)!.width, 32);
+      // Export 2: same URL, new content (64×48) — the old disk cache entry
+      // must not be served.
+      HtmlImageLoader.clearCaches();
+      served = opaquePng(64, 48);
+      await HtmlImageLoader.prefetchSlides(
+          [{'title': 'x', 'htmlContent': '<img src="$url">'}]);
+      final loaded = HtmlImageLoader.load(url)!;
+      expect(loaded.width, 64,
+          reason: 'remote content change must be picked up (B18)');
+      expect(loaded.height, 48);
+    } finally {
+      await server.close(force: true);
+    }
+  });
+
+  test('B22: truncated processed-cache entry is rejected and reprocessed',
+      () async {
+    final imgPath = '${tempDir.path}/photo.png';
+    final png = opaquePng(600, 400);
+    File(imgPath).writeAsBytesSync(png);
+    HtmlImageLoader.load(imgPath, maxWidth: 200); // writes the disk entry
+
+    final cacheDir = Directory('${tempDir.path}/image_cache');
+    final procFile = cacheDir
+        .listSync()
+        .whereType<File>()
+        .firstWhere((f) =>
+            f.uri.pathSegments.last.startsWith('proc_') &&
+            !f.uri.pathSegments.last.endsWith('.json'));
+    final goodLength = procFile.lengthSync();
+    final half = procFile.readAsBytesSync().sublist(0, goodLength ~/ 2);
+    procFile.writeAsBytesSync(half);
+    HtmlImageLoader.clearCaches(); // force the disk read
+
+    final loaded = HtmlImageLoader.load(imgPath, maxWidth: 200)!;
+    expect(loaded.bytes, isNot(orderedEquals(half)),
+        reason: 'truncated cache bytes must never be embedded');
+    expect(procFile.lengthSync(), greaterThan(half.length),
+        reason: 'the corrupt entry must be replaced with a valid one');
+  });
+
+  test('B23: processed-cache sidecar stays small even for a data-URI image',
+      () async {
+    final bigPng = opaquePng(600, 400);
+    final uri = dataUri(bigPng);
+    HtmlImageLoader.load(uri, maxWidth: 200);
+    HtmlImageLoader.clearCaches(); // memory out — disk sidecar is read next
+    HtmlImageLoader.load(uri, maxWidth: 200); // read the disk entry
+    final dir = Directory('${tempDir.path}/image_cache');
+    final metas = dir
+        .listSync()
+        .whereType<File>()
+        .where((f) => f.uri.pathSegments.last.endsWith('.json'))
+        .toList();
+    expect(metas, isNotEmpty);
+    for (final meta in metas) {
+      expect(meta.lengthSync(), lessThan(2048),
+          reason: 'meta JSON must hold a hash, not the MB-size options blob');
+    }
+  });
+
+  test('B24: processed-cache hits still count optimization savings', () async {
+    ImageOptimizationStats.reset();
+    ImageOptimizerConfig.betaEnabled = true;
+    addTearDown(() => ImageOptimizerConfig.betaEnabled = false);
+    final imgPath = '${tempDir.path}/photo.png';
+    File(imgPath).writeAsBytesSync(opaquePng(600, 400));
+    HtmlImageLoader.load(imgPath, maxWidth: 200, allowJpeg: true); // processes
+    final firstCount = ImageOptimizationStats.processedCount;
+    expect(firstCount, greaterThan(0),
+        reason: 'the fresh conversion must already be tallied');
+
+    // Next export (new session, same disk cache): everything comes from the
+    // processed cache — the saving must still be counted (B24).
+    HtmlImageLoader.clearCaches();
+    HtmlImageLoader.load(imgPath, maxWidth: 200, allowJpeg: true);
+    expect(ImageOptimizationStats.processedCount, greaterThan(firstCount),
+        reason: 'cache hits must keep tallying savings (B24)');
+    expect(ImageOptimizationStats.savedBytes, greaterThan(0));
+  });
+
+  test('B19: decompression bombs are rejected before any decode', () {
+    // Tiny PNG whose IHDR claims 40000×40000: decoding would allocate ~6 GB.
+    final bomb = pngWithFakeDims(40000, 40000);
+    expect(HtmlImageLoader.load(dataUri(bomb)), isNull,
+        reason: 'data-URI bomb must be dropped before decode');
+    expect(HtmlImageLoader.warnings.any((w) => w.reason.contains('pixel')),
+        isTrue);
+
+    final imgPath = '${tempDir.path}/bomb.png';
+    File(imgPath).writeAsBytesSync(bomb);
+    expect(HtmlImageLoader.load(imgPath), isNull,
+        reason: 'local-file bomb must also be dropped');
+  });
+
+  test('B21: WebP/BMP/SVG are dropped with an accurate warning', () {
+    final webp = Uint8List.fromList(
+        [0x52, 0x49, 0x46, 0x46, 20, 0, 0, 0, 0x57, 0x45, 0x42, 0x50, 0, 0, 0, 0]);
+    final bmp = Uint8List.fromList([0x42, 0x4D, 0, 0, 0, 0, 0, 0, 0, 0]);
+    final svg = Uint8List.fromList(
+        '<svg xmlns="http://www.w3.org/2000/svg"></svg>'.codeUnits);
+
+    expect(HtmlImageLoader.load(dataUriWith(webp, 'image/webp')), isNull);
+    expect(HtmlImageLoader.warnings.last.reason,
+        contains('unsupported format webp'),
+        reason: 'B21: must name the real problem, not "not an image"');
+    expect(HtmlImageLoader.load(dataUriWith(bmp, 'image/bmp')), isNull);
+    expect(HtmlImageLoader.warnings.last.reason,
+        contains('unsupported format bmp'));
+    expect(HtmlImageLoader.load(dataUriWith(svg, 'image/svg+xml')), isNull);
+    expect(HtmlImageLoader.warnings.last.reason,
+        contains('unsupported format svg'),
+        reason: 'B21: SVG falls through to the icon pipeline — a plain <img> '
+            'must be reported accurately, never "file not found"');
+  });
+
+  test('B21: remote WebP (image/webp MIME) drops with the same warning',
+      () async {
+    final webp = Uint8List.fromList(
+        [0x52, 0x49, 0x46, 0x46, 20, 0, 0, 0, 0x57, 0x45, 0x42, 0x50, 0, 0, 0, 0]);
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    server.listen((request) {
+      request.response
+        ..statusCode = 200
+        ..headers.contentType = ContentType('image', 'webp')
+        ..add(webp)
+        ..close();
+    });
+    final url = 'http://127.0.0.1:${server.port}/pic.webp';
+    try {
+      await HtmlImageLoader.prefetchSlides(
+          [{'title': 'x', 'htmlContent': '<img src="$url">'}]);
+      expect(HtmlImageLoader.load(url), isNull);
+      expect(
+          HtmlImageLoader.warnings.any((w) => w.reason.contains('webp')),
+          isTrue,
+          reason: 'MIME-recognized formats must be reported accurately');
+    } finally {
+      await server.close(force: true);
+    }
+  });
+
+  test('B20/B6a: backend tag splits the processed cache; dartOnly never Rust',
+      () async {
+    ImageEngineConfig.setPreferredRust(false);
+    addTearDown(() => ImageEngineConfig.setPreferredRust(false));
+    final imgPath = '${tempDir.path}/photo.png';
+    File(imgPath).writeAsBytesSync(opaquePng(600, 400));
+    final cacheDir = Directory('${tempDir.path}/image_cache');
+    int procCount() => cacheDir.existsSync()
+        ? cacheDir
+            .listSync()
+            .whereType<File>()
+            .where((f) =>
+                f.uri.pathSegments.last.startsWith('proc_') &&
+                !f.uri.pathSegments.last.endsWith('.json'))
+            .length
+        : 0;
+
+    HtmlImageLoader.load(imgPath); // dart-tagged entry
+    final dartCount = procCount();
+    expect(dartCount, 1);
+
+    // "Rust ready" with no DLL: process() falls back internally, but the
+    // cache KEY still separates the backends (no cross-serving Rust output
+    // into a Dart run or vice versa).
+    ImageEngineConfig.setPreferredRust(true);
+    ImageEngineConfig.markRustReady();
+    HtmlImageLoader.load(imgPath); // rust-tagged entry
+    expect(procCount(), dartCount + 1,
+        reason: 'B20: dart/rust tagged entries must not share a cache slot');
+
+    // B6a: the UI-isolate renderer forces dartOnly — its load must never
+    // route to the (synchronous) Rust FRB call, even when Rust is ready.
+    final loaded =
+        HtmlImageLoader.load(imgPath, maxWidth: 200, dartOnly: true);
+    expect(loaded, isNotNull);
+    expect(ImageCodec.lastBackend, 'dart',
+        reason: 'B6a: dartOnly must use the Dart implementation');
+  });
+}
+
+/// A valid small PNG with the IHDR dimensions overwritten to [w]×[h] — the
+/// header check (B19) reads these without validating the chunk CRC, so the
+/// decoder never runs.
+Uint8List pngWithFakeDims(int w, int h) {
+  final small = img.encodePng(img.Image(width: 16, height: 16));
+  final out = Uint8List.fromList(small);
+  final bd = ByteData.sublistView(out);
+  bd.setUint32(16, w);
+  bd.setUint32(20, h);
+  return out;
 }

@@ -2,8 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../src/rust/api/engine.dart' as rust_api;
-import '../src/rust/frb_generated.dart' as rust_bridge;
+import 'engine_audit_log.dart';
 import 'image_codec.dart';
+import 'html_parse_codec.dart';
+import 'rust_bridge_init.dart';
 import 'zip_codec.dart';
 
 /// Processing core the app runs export/media work on.
@@ -20,8 +22,10 @@ enum EngineStatus { rustReady, dart, fallingBack }
 /// never at startup, so boot stays light and privacy posture is unchanged.
 /// The default initialiser can be swapped in tests to simulate a broken DLL.
 class RustEngineService extends ChangeNotifier {
-  RustEngineService({Future<String> Function()? rustInit})
-      : _rustInitOverride = rustInit;
+  RustEngineService({Future<String> Function()? rustInit,
+      Future<String> Function()? rustProbe})
+      : _rustInitOverride = rustInit,
+        _rustProbeOverride = rustProbe;
 
   static const String prefKey = 'app_engine_kind';
   // T02 measurement-driven default: on media-heavy decks Dart encode (105–119
@@ -34,6 +38,11 @@ class RustEngineService extends ChangeNotifier {
   /// failing fake is injected to exercise the fallback path.
   Future<String> Function()? get rustInit => _rustInitOverride;
   final Future<String> Function()? _rustInitOverride;
+
+  /// Test hook for the post-"twice" round-trip (B2): when [RustLib.init]
+  /// fails with "should not initialize twice", the DLL is already loaded in
+  /// this isolate, so a bridge call verifies it and yields the version.
+  final Future<String> Function()? _rustProbeOverride;
 
   EngineKind _preferred = defaultEngine;
   EngineStatus _status = EngineStatus.dart;
@@ -74,19 +83,48 @@ class RustEngineService extends ChangeNotifier {
       final init = _rustInitOverride;
       final version =
           init != null ? await init() : await _defaultRustInit();
-      _status = EngineStatus.rustReady;
-      _detail = version;
-      ZipEngineConfig.markRustReady();
-      ImageEngineConfig.markRustReady();
+      if (version.isEmpty) {
+        throw StateError('ghita_core returned an empty version');
+      }
+      _markReady(version);
+      await EngineAuditLog.append('engine ready', version);
     } catch (e) {
-      _status = EngineStatus.fallingBack;
-      _detail = '$e';
-      debugPrint('RustEngineService: falling back to Dart — $e');
+      // "Should not initialize flutter_rust_bridge twice" (B2) means another
+      // component already loaded the DLL in THIS isolate — that is a success
+      // signal, not a missing-DLL failure. Verify via a bridge round-trip.
+      final msg = e.toString().toLowerCase();
+      if (msg.contains('twice')) {
+        try {
+          final version = await (_rustProbeOverride?.call() ??
+              rust_api.helloZip());
+          _markReady(version);
+          await EngineAuditLog.append('engine ready', 'twice→probe $version');
+        } catch (probeError) {
+          _status = EngineStatus.fallingBack;
+          _detail = '$probeError';
+          debugPrint('RustEngineService: falling back to Dart — $probeError');
+          await EngineAuditLog.append(
+              'engine fallback', 'twice→probe failed: $probeError');
+        }
+      } else {
+        _status = EngineStatus.fallingBack;
+        _detail = '$e';
+        debugPrint('RustEngineService: falling back to Dart — $e');
+        await EngineAuditLog.append('engine fallback', e.toString());
+      }
     } finally {
       _initialized = true;
       _initializing = false;
       notifyListeners();
     }
+  }
+
+  void _markReady(String version) {
+    _status = EngineStatus.rustReady;
+    _detail = version;
+    ZipEngineConfig.markRustReady();
+    ImageEngineConfig.markRustReady();
+    HtmlParseEngineConfig.markRustReady();
   }
 
   /// Persists the user's engine choice. Re-selecting Rust while it is still in
@@ -106,7 +144,8 @@ class RustEngineService extends ChangeNotifier {
   }
 
   Future<String> _defaultRustInit() async {
-    await rust_bridge.RustLib.init();
+    // B6c: same per-isolate single-flight hub as the worker components.
+    await RustBridgeInit.ensureReady();
     // Round-trip call proves the bridge, not just the DLL load.
     final version = await rust_api.helloZip();
     if (version.isEmpty) {

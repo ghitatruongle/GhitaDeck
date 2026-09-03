@@ -2614,6 +2614,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get engineFallbackHint =>
+      'The app keeps working on the Dart engine — exports never break. Check that the install is complete, then restart the app to retry the Rust engine.';
+
+  @override
   String get docxReportOptions => 'Word report options';
 
   @override
@@ -2628,8 +2632,129 @@ class AppLocalizationsEn extends AppLocalizations {
       'Convert large opaque PNGs to JPEG on export (transparent PNGs stay PNG); shows the savings after each export. Quality follows the export quality setting (150/300/600).';
 
   @override
-  String imageSavings(String summary, String count) {
-    return 'Saved: $summary ($count images)';
+  String get exportFormatLabelPptx => 'PowerPoint (.pptx)';
+
+  @override
+  String get exportFormatLabelHtml => 'HTML presentation (.html)';
+
+  @override
+  String get exportFormatLabelPdf => 'PDF document (.pdf)';
+
+  @override
+  String get exportFormatLabelDocx => 'Word report (.docx)';
+
+  @override
+  String get exportRatioWidescreen => '16:9 (Widescreen)';
+
+  @override
+  String get exportRatioStandard => '4:3 (Standard)';
+
+  @override
+  String get exportRatioSquare => '1:1 (Square)';
+
+  @override
+  String get exportRatioPortrait => '9:16 (Portrait/Mobile)';
+
+  @override
+  String get exportQualityLow => 'Low (150 px images)';
+
+  @override
+  String get exportQualityMedium => 'Medium (300 px images)';
+
+  @override
+  String get exportQualityHigh => 'High (600 px images)';
+
+  @override
+  String exportSlideCount(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n slides',
+      one: '1 slide',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get findReplaceTitle => 'Find & Replace';
+
+  @override
+  String get commandPaletteHint =>
+      'Type a command or search keyword (Ctrl+K)...';
+
+  @override
+  String get commandPaletteEmpty => 'No matching command';
+
+  @override
+  String statusBarSlideProgress(int current, int total) {
+    return 'Slide $current / $total';
+  }
+
+  @override
+  String statusBarWords(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n words',
+      one: '1 word',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get statusBarExporting => 'Exporting...';
+
+  @override
+  String get statusBarExported => 'Exported';
+
+  @override
+  String get statusBarError => 'Error';
+
+  @override
+  String get statusBarSaved => 'Saved';
+
+  @override
+  String statusBarViewLabel(String view) {
+    return '$view view';
+  }
+
+  @override
+  String statusBarStatusLabel(int current, int total, int zoom, String auto) {
+    return 'Presentation status: slide $current of $total, zoom $zoom percent$auto';
+  }
+
+  @override
+  String get zoomDialogTitle => 'Zoom';
+
+  @override
+  String get goToSlideTitle => 'Go to slide';
+
+  @override
+  String goToSlideLabel(int total) {
+    return 'Slide number (1-$total)';
+  }
+
+  @override
+  String get goButton => 'Go';
+
+  @override
+  String get viewModeNormal => 'Normal';
+
+  @override
+  String get viewModeSorter => 'Sorter';
+
+  @override
+  String get viewModeReading => 'Reading';
+
+  @override
+  String imageSavings(String summary, num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count images',
+      one: '1 image',
+    );
+    return 'Saved: $summary ($_temp0)';
   }
 
   @override
@@ -2891,4 +3016,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String fontCaseAppliedNotice(String label) {
     return 'Case applied: $label';
   }
+
+  @override
+  String get templateNameBusiness => 'Business';
+
+  @override
+  String get templateDescriptionBusiness =>
+      'Professional blue presentation for corporate and business topics';
+
+  @override
+  String get templateNameCreative => 'Creative';
+
+  @override
+  String get templateDescriptionCreative =>
+      'Vibrant colorful design for creative and design presentations';
+
+  @override
+  String get templateNameAcademic => 'Academic';
+
+  @override
+  String get templateDescriptionAcademic =>
+      'Clean scholarly layout for academic and research presentations';
+
+  @override
+  String get templateNameMarketing => 'Marketing';
+
+  @override
+  String get templateDescriptionMarketing =>
+      'Bold and confident layout for marketing and sales pitches';
+
+  @override
+  String get templateNameMinimal => 'Minimal';
+
+  @override
+  String get templateDescriptionMinimal =>
+      'Ultra clean monochrome design for minimalist presentations';
 }

@@ -5090,6 +5090,12 @@ abstract class AppLocalizations {
   /// **'Rust engine unavailable ({reason}); running on Dart'**
   String engineStatusFallback(String reason);
 
+  /// No description provided for @engineFallbackHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The app keeps working on the Dart engine — exports never break. Check that the install is complete, then restart the app to retry the Rust engine.'**
+  String get engineFallbackHint;
+
   /// No description provided for @docxReportOptions.
   ///
   /// In en, this message translates to:
@@ -5114,11 +5120,191 @@ abstract class AppLocalizations {
   /// **'Convert large opaque PNGs to JPEG on export (transparent PNGs stay PNG); shows the savings after each export. Quality follows the export quality setting (150/300/600).'**
   String get imageOptimizerBetaSubtitle;
 
+  /// No description provided for @exportFormatLabelPptx.
+  ///
+  /// In en, this message translates to:
+  /// **'PowerPoint (.pptx)'**
+  String get exportFormatLabelPptx;
+
+  /// No description provided for @exportFormatLabelHtml.
+  ///
+  /// In en, this message translates to:
+  /// **'HTML presentation (.html)'**
+  String get exportFormatLabelHtml;
+
+  /// No description provided for @exportFormatLabelPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF document (.pdf)'**
+  String get exportFormatLabelPdf;
+
+  /// No description provided for @exportFormatLabelDocx.
+  ///
+  /// In en, this message translates to:
+  /// **'Word report (.docx)'**
+  String get exportFormatLabelDocx;
+
+  /// No description provided for @exportRatioWidescreen.
+  ///
+  /// In en, this message translates to:
+  /// **'16:9 (Widescreen)'**
+  String get exportRatioWidescreen;
+
+  /// No description provided for @exportRatioStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'4:3 (Standard)'**
+  String get exportRatioStandard;
+
+  /// No description provided for @exportRatioSquare.
+  ///
+  /// In en, this message translates to:
+  /// **'1:1 (Square)'**
+  String get exportRatioSquare;
+
+  /// No description provided for @exportRatioPortrait.
+  ///
+  /// In en, this message translates to:
+  /// **'9:16 (Portrait/Mobile)'**
+  String get exportRatioPortrait;
+
+  /// No description provided for @exportQualityLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low (150 px images)'**
+  String get exportQualityLow;
+
+  /// No description provided for @exportQualityMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium (300 px images)'**
+  String get exportQualityMedium;
+
+  /// No description provided for @exportQualityHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High (600 px images)'**
+  String get exportQualityHigh;
+
+  /// No description provided for @exportSlideCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{n, plural, =1{1 slide} other{{n} slides}}'**
+  String exportSlideCount(int n);
+
+  /// No description provided for @findReplaceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Find & Replace'**
+  String get findReplaceTitle;
+
+  /// No description provided for @commandPaletteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a command or search keyword (Ctrl+K)...'**
+  String get commandPaletteHint;
+
+  /// No description provided for @commandPaletteEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching command'**
+  String get commandPaletteEmpty;
+
+  /// No description provided for @statusBarSlideProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Slide {current} / {total}'**
+  String statusBarSlideProgress(int current, int total);
+
+  /// No description provided for @statusBarWords.
+  ///
+  /// In en, this message translates to:
+  /// **'{n, plural, =1{1 word} other{{n} words}}'**
+  String statusBarWords(int n);
+
+  /// No description provided for @statusBarExporting.
+  ///
+  /// In en, this message translates to:
+  /// **'Exporting...'**
+  String get statusBarExporting;
+
+  /// No description provided for @statusBarExported.
+  ///
+  /// In en, this message translates to:
+  /// **'Exported'**
+  String get statusBarExported;
+
+  /// No description provided for @statusBarError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get statusBarError;
+
+  /// No description provided for @statusBarSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get statusBarSaved;
+
+  /// No description provided for @statusBarViewLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{view} view'**
+  String statusBarViewLabel(String view);
+
+  /// No description provided for @statusBarStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Presentation status: slide {current} of {total}, zoom {zoom} percent{auto}'**
+  String statusBarStatusLabel(int current, int total, int zoom, String auto);
+
+  /// No description provided for @zoomDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom'**
+  String get zoomDialogTitle;
+
+  /// No description provided for @goToSlideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to slide'**
+  String get goToSlideTitle;
+
+  /// No description provided for @goToSlideLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Slide number (1-{total})'**
+  String goToSlideLabel(int total);
+
+  /// No description provided for @goButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Go'**
+  String get goButton;
+
+  /// No description provided for @viewModeNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get viewModeNormal;
+
+  /// No description provided for @viewModeSorter.
+  ///
+  /// In en, this message translates to:
+  /// **'Sorter'**
+  String get viewModeSorter;
+
+  /// No description provided for @viewModeReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading'**
+  String get viewModeReading;
+
   /// No description provided for @imageSavings.
   ///
   /// In en, this message translates to:
-  /// **'Saved: {summary} ({count} images)'**
-  String imageSavings(String summary, String count);
+  /// **'Saved: {summary} ({count, plural, =1{1 image} other{{count} images}})'**
+  String imageSavings(String summary, num count);
 
   /// No description provided for @themeResetNotice.
   ///
@@ -5509,6 +5695,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Case applied: {label}'**
   String fontCaseAppliedNotice(String label);
+
+  /// No description provided for @templateNameBusiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Business'**
+  String get templateNameBusiness;
+
+  /// No description provided for @templateDescriptionBusiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Professional blue presentation for corporate and business topics'**
+  String get templateDescriptionBusiness;
+
+  /// No description provided for @templateNameCreative.
+  ///
+  /// In en, this message translates to:
+  /// **'Creative'**
+  String get templateNameCreative;
+
+  /// No description provided for @templateDescriptionCreative.
+  ///
+  /// In en, this message translates to:
+  /// **'Vibrant colorful design for creative and design presentations'**
+  String get templateDescriptionCreative;
+
+  /// No description provided for @templateNameAcademic.
+  ///
+  /// In en, this message translates to:
+  /// **'Academic'**
+  String get templateNameAcademic;
+
+  /// No description provided for @templateDescriptionAcademic.
+  ///
+  /// In en, this message translates to:
+  /// **'Clean scholarly layout for academic and research presentations'**
+  String get templateDescriptionAcademic;
+
+  /// No description provided for @templateNameMarketing.
+  ///
+  /// In en, this message translates to:
+  /// **'Marketing'**
+  String get templateNameMarketing;
+
+  /// No description provided for @templateDescriptionMarketing.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold and confident layout for marketing and sales pitches'**
+  String get templateDescriptionMarketing;
+
+  /// No description provided for @templateNameMinimal.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimal'**
+  String get templateNameMinimal;
+
+  /// No description provided for @templateDescriptionMinimal.
+  ///
+  /// In en, this message translates to:
+  /// **'Ultra clean monochrome design for minimalist presentations'**
+  String get templateDescriptionMinimal;
 }
 
 class _AppLocalizationsDelegate

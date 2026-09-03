@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
+
 /// Status Bar at the bottom of the editor, similar to PowerPoint's status bar.
 /// Shows: slide counter, zoom slider, view mode toggles, auto-save indicator.
 class StatusBar extends StatelessWidget {
@@ -28,6 +30,7 @@ class StatusBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       height: 28,
@@ -43,8 +46,12 @@ class StatusBar extends StatelessWidget {
       ),
       child: Semantics(
         container: true,
-        label:
-            'Presentation status: slide ${currentSlide > 0 ? currentSlide : 1} of $totalSlides, zoom ${(zoomLevel * 100).round()} percent${autoSaveStatus == null ? '' : ', $autoSaveStatus'}',
+        label: l10n.statusBarStatusLabel(
+          currentSlide > 0 ? currentSlide : 1,
+          totalSlides,
+          (zoomLevel * 100).round(),
+          autoSaveStatus == null ? '' : ', $autoSaveStatus',
+        ),
         child: Row(
           children: [
             // Slide counter
@@ -52,8 +59,9 @@ class StatusBar extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               totalSlides > 0
-                  ? 'Slide ${currentSlide.clamp(1, totalSlides)} / $totalSlides'
-                  : 'Slide 0 / 0',
+                  ? l10n.statusBarSlideProgress(
+                      currentSlide.clamp(1, totalSlides), totalSlides)
+                  : l10n.statusBarSlideProgress(0, 0),
               style: TextStyle(
                 fontSize: 11,
                 color: theme.colorScheme.onPrimaryContainer,
@@ -65,7 +73,7 @@ class StatusBar extends StatelessWidget {
               Icon(Icons.notes, size: 12, color: theme.colorScheme.outline),
               const SizedBox(width: 4),
               Text(
-                '$wordCount từ',
+                l10n.statusBarWords(wordCount!),
                 style: TextStyle(
                   fontSize: 10,
                   color: theme.colorScheme.onSurfaceVariant,
@@ -93,8 +101,7 @@ class StatusBar extends StatelessWidget {
                 color: theme.colorScheme.surface.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(3),
               ),
-              child: Text(
-                'Vietnamese',
+              child: Text(language,
                 style: TextStyle(
                   fontSize: 10,
                   color: theme.colorScheme.onSurfaceVariant,
@@ -126,12 +133,12 @@ class StatusBar extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 autoSaveStatus == 'exporting'
-                    ? 'Đang xuất...'
+                    ? l10n.statusBarExporting
                     : autoSaveStatus == 'success'
-                        ? 'Đã xuất'
+                        ? l10n.statusBarExported
                         : autoSaveStatus == 'error'
-                            ? 'Lỗi'
-                            : 'Đã lưu',
+                            ? l10n.statusBarError
+                            : l10n.statusBarSaved,
                 style: TextStyle(
                   fontSize: 10,
                   color: theme.colorScheme.onSurfaceVariant,
@@ -194,9 +201,12 @@ class StatusBar extends StatelessWidget {
             const SizedBox(width: 12),
 
             // View mode toggles
-            _viewModeButton(context, Icons.edit_note, 'Normal', true),
-            _viewModeButton(context, Icons.grid_view, 'Sorter', false),
-            _viewModeButton(context, Icons.auto_stories, 'Reading', false),
+            _viewModeButton(
+                context, Icons.edit_note, l10n.viewModeNormal, true),
+            _viewModeButton(
+                context, Icons.grid_view, l10n.viewModeSorter, false),
+            _viewModeButton(
+                context, Icons.auto_stories, l10n.viewModeReading, false),
           ],
         ),
       ),
@@ -208,7 +218,7 @@ class StatusBar extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Semantics(
-      label: '$tooltip view',
+      label: AppLocalizations.of(context).statusBarViewLabel(tooltip),
       selected: isActive,
       readOnly: true,
       child: Tooltip(

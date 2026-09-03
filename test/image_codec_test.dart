@@ -91,6 +91,74 @@ void main() {
       expect(result.width, 2);
       expect(result.height, 1);
     });
+
+    test('B1: JPEG with EXIF orientation 6/8 stays portrait after downscale',
+        () {
+      // Phone portrait: the raw JPEG stores 8×4 (landscape) so EXIF 6/8
+      // makes the displayed photo 4×8 portrait. The regressions caught here:
+      // (a) no bake — the decoder leaves 8×4 sideways, resize gives 2×1;
+      // (b) double bake — a manual fallback rotation on top of the baked
+      // decode also gives 2×1. correct output is 2×4.
+      for (final orientation in [6, 8]) {
+        final jpg = _jpgWithExifRotation(8, 4, orientation);
+        final result = ImageCodec.processDart(jpg, 'jpg', maxWidth: 2);
+        expect(result.width, 2, reason: 'orientation $orientation');
+        expect(result.height, 4, reason: 'orientation $orientation');
+        final decoded = img.decodeImage(result.bytes)!;
+        expect(decoded.width, lessThan(decoded.height),
+            reason: 'photo must stay portrait (orientation $orientation)');
+      }
+    });
+
+    test('B16: JPEG with EXIF orientation is baked, never raw-passthrough',
+        () {
+      // Contract: every output image is EXIF-baked. Raw EXIF bytes must not
+      // be embedded verbatim — the deck renderer (and PowerShell/COM viewers)
+      // display raw pixels, so an un-baked JPEG comes out sideways.
+      final jpg = _jpgWithExifRotation(8, 4, 6);
+      final result = ImageCodec.processDart(jpg, 'jpg');
+      expect(result.changed, isTrue,
+          reason: 'EXIF bytes must be replaced by baked pixels');
+      expect(result.ext, 'jpg');
+      expect(result.width, 4,
+          reason: 'dimensions must be the baked 4×8 portrait');
+      expect(result.height, 8);
+      final decoded = img.decodeImage(result.bytes)!;
+      expect(decoded.width, lessThan(decoded.height),
+          reason: 'photo must stay portrait');
+      expect(decoded.exif.imageIfd.orientation, isNull,
+          reason: 'no orientation tag may survive into the deck');
+    });
+
+    test('B3: EXIF orientations 2–8 match the reference bakeOrientation', () {
+      // 2×3 asymmetric image (first pixel = red anchor) so mirror/rotate
+      // variants are distinguishable from each other.
+      for (var orientation = 2; orientation <= 8; orientation++) {
+        final image = img.Image(width: 2, height: 3);
+        image.setPixelRgb(0, 0, 255, 0, 0); // red anchor
+        image.setPixelRgb(1, 0, 0, 255, 0); // green
+        image.setPixelRgb(0, 1, 0, 0, 255); // blue
+        image.setPixelRgb(1, 2, 255, 255, 255); // white
+        final png = _pngBytesWithExifRotation(
+            Uint8List.fromList(img.encodePng(image)), orientation);
+        final result = ImageCodec.processDart(png, 'png');
+        final expected = img.bakeOrientation(
+            img.Image.from(image
+              ..exif.imageIfd.orientation = orientation));
+        expect(result.width, expected.width,
+            reason: 'orientation $orientation width');
+        expect(result.height, expected.height,
+            reason: 'orientation $orientation height');
+        final actual = img.decodeImage(result.bytes)!;
+        // Compare the anchor pixel through the expected transform.
+        expect(actual.getPixel(0, 0).r, expected.getPixel(0, 0).r,
+            reason: 'orientation $orientation pixel(0,0).r');
+        expect(actual.getPixel(0, 0).g, expected.getPixel(0, 0).g,
+            reason: 'orientation $orientation pixel(0,0).g');
+        expect(actual.getPixel(0, 0).b, expected.getPixel(0, 0).b,
+            reason: 'orientation $orientation pixel(0,0).b');
+      }
+    });
   });
 
   group('ImageCodec engine selection', () {
@@ -157,10 +225,52 @@ Uint8List _gif(int w, int h) {
   return Uint8List.fromList(img.encodeGif(image));
 }
 
+/// JPEG embedded with a hand-crafted EXIF APP1 segment carrying
+/// [orientation] (TIFF IFD0 tag 0x0112) so real-world phone captures are
+/// reproduced in tests (B1).
+Uint8List _jpgWithExifRotation(int w, int h, int orientation) {
+  final jpg = _jpg(w, h);
+
+  final tiff = BytesBuilder()
+    ..add([0x49, 0x49, 0x2A, 0x00]) // little-endian TIFF
+    ..add([8, 0, 0, 0]) // IFD0 offset
+    ..add([1, 0]) // one entry
+    ..add([0x12, 0x01]) // tag 0x0112 -> arbitrary orientation value
+    ..add([3, 0]) // SHORT
+    ..add([1, 0, 0, 0]) // count
+    ..add([orientation, 0, 0, 0]) // inline value
+    ..add([0, 0, 0, 0]); // next IFD
+
+  final app1Payload = BytesBuilder()
+    ..add('Exif\x00\x00'.codeUnits)
+    ..add(tiff.takeBytes());
+  final segment = BytesBuilder()
+    ..add([0xFF, 0xE1]) // APP1 marker
+    ..add(_be16(app1Payload.length + 2))
+    ..add(app1Payload.takeBytes());
+
+  // Insert the APP1 segment right after the SOI (before the first JFIF
+  // APP0 if present, and before SOS). findSoi then splice.
+  const soiEnd = 2;
+  return Uint8List.fromList([
+    ...jpg.sublist(0, soiEnd),
+    ...segment.takeBytes(),
+    ...jpg.sublist(soiEnd),
+  ]);
+}
+
+Uint8List _be16(int v) =>
+    Uint8List(2)..buffer.asByteData().setUint16(0, v, Endian.big);
+
 /// PNG with a hand-crafted eXIf chunk carrying [orientation] (TIFF IFD0 tag
 /// 0x0112), inserted right after IHDR.
-Uint8List _pngWithExifRotation(int w, int h, int orientation) {
-  final png = _png(w, h, alpha: false);
+Uint8List _pngWithExifRotation(int w, int h, int orientation) =>
+    _pngBytesWithExifRotation(_png(w, h, alpha: false), orientation);
+
+/// Slices the [orientation] TIFF metadata into an existing PNG ([pngBytes])
+/// as an `eXIf` chunk right after IHDR.
+Uint8List _pngBytesWithExifRotation(Uint8List pngBytes, int orientation) {
+  final png = pngBytes;
 
   final tiff = BytesBuilder()
     ..add([0x49, 0x49, 0x2A, 0x00]) // little-endian TIFF

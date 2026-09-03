@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: file:; media-src data: file:; font-src data:; style-src 'unsafe-inline';">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #581c87;
+    color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .slide-canvas {
+    width: 100%;
+    height: 100%;
+    padding: 3.5vw 4.5vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    overflow: hidden;
+    position: relative;
+  }
+</style>
+</head><body>
+<div class="slide-canvas">
+<div data-bg-color="#581c87" class="slide" style="font-family: 'Segoe UI', system-ui, sans-serif; color: #e2e8f0; padding: 48px; height: 100%; box-sizing: border-box;">
+  <h1 style="font-size: 2.6em; margin: 0 0 8px 0; color: #f0abfc; letter-spacing: -1px;">My Portfolio</h1>
+  <h2 style="font-size: 1.1em; font-weight: 400; color: #c084fc; margin: 0 0 36px 0;">Selected Works &mdash; 2024&ndash;2026</h2>
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+    <div style="background: linear-gradient(135deg, #7c3aed, #a78bfa); border-radius: 12px; padding: 28px 20px; text-align: center;">
+      <p style="font-size: 2em; margin: 0;">&#127912;</p>
+      <p style="margin: 8px 0 4px; font-weight: 600; font-size: 1em;">Brand Identity</p>
+      <p style="margin: 0; font-size: 0.8em; color: #ddd6fe;">Nexus Corp Rebrand</p>
+    </div>
+    <div style="background: linear-gradient(135deg, #9333ea, #c084fc); border-radius: 12px; padding: 28px 20px; text-align: center;">
+      <p style="font-size: 2em; margin: 0;">&#128241;</p>
+      <p style="margin: 8px 0 4px; font-weight: 600; font-size: 1em;">Mobile App UI</p>
+      <p style="margin: 0; font-size: 0.8em; color: #ddd6fe;">FinTrack Pro Design</p>
+    </div>
+    <div style="background: linear-gradient(135deg, #6b21a8, #a855f7); border-radius: 12px; padding: 28px 20px; text-align: center;">
+      <p style="font-size: 2em; margin: 0;">&#127909;</p>
+      <p style="margin: 8px 0 4px; font-weight: 600; font-size: 1em;">Motion Graphics</p>
+      <p style="margin: 0; font-size: 0.8em; color: #ddd6fe;">Product Launch Film</p>
+    </div>
+  </div>
+  <p style="margin: 32px 0 0; text-align: center; font-size: 0.9em; color: #c084fc;">hello@myportfolio.com &nbsp;|&nbsp; portfolio.dev</p>
+</div>
+
+</div>
+</body></html>

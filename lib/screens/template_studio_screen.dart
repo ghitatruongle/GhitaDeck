@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/template_service.dart';
 import '../../models/slide_template.dart';
+import '../l10n/app_localizations.dart';
 import '../l10n/l10n.dart';
 import '../utils/snackbar_helper.dart';
 
@@ -54,13 +55,37 @@ class _TemplateStudioScreenState extends State<TemplateStudioScreen> {
     }
   }
 
+  /// Localized name/description for built-in templates (T17 i18n).
+  /// Falls back to the JSON value for user templates or templates without a
+  /// dedicated l10n key.
+  String _localizedName(AppLocalizations l10n, SlideTemplate t) {
+    if (t.id == 'business') return l10n.templateNameBusiness;
+    if (t.id == 'creative') return l10n.templateNameCreative;
+    if (t.id == 'academic') return l10n.templateNameAcademic;
+    if (t.id == 'marketing') return l10n.templateNameMarketing;
+    if (t.id == 'minimal') return l10n.templateNameMinimal;
+    return t.name;
+  }
+
+  String _localizedDescription(AppLocalizations l10n, SlideTemplate t) {
+    if (t.id == 'business') return l10n.templateDescriptionBusiness;
+    if (t.id == 'creative') return l10n.templateDescriptionCreative;
+    if (t.id == 'academic') return l10n.templateDescriptionAcademic;
+    if (t.id == 'marketing') return l10n.templateDescriptionMarketing;
+    if (t.id == 'minimal') return l10n.templateDescriptionMinimal;
+    return t.description;
+  }
+
   void _filterTemplates() {
     setState(() {
       _filteredTemplates = _allTemplates.where((t) {
         final matchesCategory = _selectedCategory == 'All' || t.category == _selectedCategory;
         final matchesSearch = _searchQuery.isEmpty ||
             t.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            t.description.toLowerCase().contains(_searchQuery.toLowerCase());
+            t.description.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            _localizedName(context.l10n, t)
+                .toLowerCase()
+                .contains(_searchQuery.toLowerCase());
         return matchesCategory && matchesSearch;
       }).toList();
     });
@@ -217,7 +242,7 @@ class _TemplateStudioScreenState extends State<TemplateStudioScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          template.name,
+                          _localizedName(context.l10n, template),
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -238,7 +263,7 @@ class _TemplateStudioScreenState extends State<TemplateStudioScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    template.description,
+                    _localizedDescription(context.l10n, template),
                     style: theme.textTheme.bodySmall,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -252,7 +277,7 @@ class _TemplateStudioScreenState extends State<TemplateStudioScreen> {
                       label: const Text('Sử dụng', style: TextStyle(fontSize: 12)),
                       onPressed: () {
                         widget.onApplyTemplate?.call(template);
-                        showAppSnackBar(context, context.l10n.templateAppliedTemplateNotice(template.name));
+                        showAppSnackBar(context, context.l10n.templateAppliedTemplateNotice(_localizedName(context.l10n, template)));
                       },
                     ),
                   ),
@@ -295,7 +320,7 @@ class _TemplateStudioScreenState extends State<TemplateStudioScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(template.name, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                          Text(_localizedName(context.l10n, template), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                           Text(template.category, style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
                         ],
                       ),
@@ -314,7 +339,7 @@ class _TemplateStudioScreenState extends State<TemplateStudioScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(template.description, style: theme.textTheme.bodyLarge),
+                      Text(_localizedDescription(context.l10n, template), style: theme.textTheme.bodyLarge),
                       const SizedBox(height: 16),
                       // HTML preview
                       Container(
@@ -361,7 +386,7 @@ class _TemplateStudioScreenState extends State<TemplateStudioScreen> {
                       onPressed: () {
                         Navigator.pop(ctx);
                         widget.onApplyTemplate?.call(template);
-                        showAppSnackBar(context, context.l10n.templateAppliedTemplateNotice(template.name));
+                        showAppSnackBar(context, context.l10n.templateAppliedTemplateNotice(_localizedName(context.l10n, template)));
                       },
                     ),
                   ],

@@ -23,8 +23,10 @@ Write custom HTML for slides — the engine preserves rich content in the output
 - **PPTX** — full OOXML package (theme, notes slides, embedded media)
 - **PDF** — one landscape page per slide, same HTML interpretation as PPTX, with embedded Unicode system font (full Vietnamese support); optional **PDF bookmarks** (outline panel, one entry per slide) and **dedicated speaker-notes pages** interleaved after their slides
 - **HTML** — standalone browser deck with keyboard/touch navigation, progress bar, fullscreen
-- **Word report (.docx)** — v2.0.5-demo: deck → Word report (outline + speaker notes, optional numbered slide index), minimal ECMA-376 package that opens without a repair prompt
+- **Word report (.docx)** — v2.0.5: deck → Word report (outline + speaker notes, optional numbered slide index, heading size follows the outline level), minimal ECMA-376 package that opens without a repair prompt; runs on the worker isolate with real cancel + per-slide progress
 - **Diagram blocks** — themed flowchart/mindmap inserts (Insert ribbon → Diagram) carried across all three export formats
+
+**Export experience (v2.0.5 beta):** image optimizer tallies real savings in the success snackbar (images only — the DOCX report has no images); the export dialog is locale-aware (formats/ratios/qualities in EN or VI) and hides options the selected format ignores; progress is announced to screen readers and always ends at 100%.
 
 ### 3. **Live Preview & Present Mode**
 - Live rendered preview beside the HTML editor (WebView2)
@@ -147,7 +149,40 @@ flutter run -d windows
 ### Running Tests
 ```bash
 flutter test
+# Rust module unit tests (pure Rust — no app needed)
+cd rust && cargo test
+# Real-DLL integration probe (needs the Windows build)
+flutter test integration_test/rust_engine_probe_test.dart -d windows
 ```
+
+### Engine & Fallback Architecture (dev)
+
+The app ships a Rust core (`ghita_core.dll`, via flutter_rust_bridge) for
+three components — zip, image processing and the HTML tokenizer. The DLL is
+**never required to run**: every component is a facade with the same Dart
+implementation underneath, and the engine choice is per-isolate:
+
+- `RustBridgeInit` (`lib/services/rust_bridge_init.dart`) — the **single
+  single-flight init** per isolate: zip/image/htmlparse/UI service all call
+  the same `ensureReady()`, so the FRB binding is never initialised twice
+  (that error used to make the second caller report a permanent fallback).
+- `RustEngineService` (`lib/services/rust_engine.dart`) — the UI-isolate owner
+  of the Settings choice; status ∈ `rustReady | dart | fallingBack` shows in
+  Settings with a user-facing hint on fallback.
+- `ImageEngineConfig` / `ZipEngineConfig` / `HtmlParseEngineConfig` — worker
+  isolates read the choice from the job message; the worker **awaits** the
+  readiness decision at job start so one export never mixes backends.
+- **Fallback contract:** a missing/broken/old DLL never throws out of
+  `ensure*ReadyOnce` — it resolves to "not usable" → the Dart path runs.
+  Debugging: `%APPDATA%\GhitaPPT\engine.log` (local, PII-free) records every
+  init/fallback transition.
+- **UI-isolate rule:** anything that renders frames (the slide-frame
+  renderer) uses `HtmlImageLoader.load(dartOnly: true)` — synchronous FRB
+  calls happen only in worker isolates.
+
+Engine work follows test-before-fix: unit tests fake the DLL with injected
+`rustInit`/`rustReadyProbe`, the genuine load is proven by the integration
+probe above.
 
 ### Building for Release
 ```bash

@@ -452,6 +452,58 @@ mod tests {
     }
 
     #[test]
+    fn jpeg_exif_orientation_6_stays_portrait_when_downscaled() {
+        // Phone portrait: raw JPEG 8×4 (landscape storage) with EXIF 6 so the
+        // displayed photo is 4×8. If the orientation is not applied (or
+        // applied twice on top of a decoder that already baked it), the
+        // downscaled output is 2×1 instead of 2×4.
+        let mut jpg = Vec::new();
+        {
+            let mut enc = JpegEncoder::new_with_quality(&mut jpg, 90);
+            enc.encode(&rgb(8, 4, 5), 8, 4, image::ExtendedColorType::Rgb8)
+                .unwrap();
+        }
+
+        // APP1 `Exif\0\0` + TIFF (little-endian II 42, one IFD0 entry 0x0112
+        // = 6), spliced right after the SOI (bytes 0..2).
+        let mut tiff = Vec::new();
+        tiff.extend(b"II*\x00");
+        tiff.extend(8u32.to_le_bytes());
+        tiff.extend(1u16.to_le_bytes());
+        tiff.extend(0x0112u16.to_le_bytes());
+        tiff.extend(3u16.to_le_bytes()); // SHORT
+        tiff.extend(1u32.to_le_bytes());
+        tiff.extend(6u16.to_le_bytes()); // orientation 6
+        tiff.extend([0, 0]);
+        tiff.extend(0u32.to_le_bytes()); // next IFD
+
+        let mut app1 = Vec::new();
+        app1.extend(b"Exif\x00\x00");
+        app1.extend(&tiff);
+        let mut segment = Vec::new();
+        segment.push(0xFF);
+        segment.push(0xE1); // APP1
+        segment.extend(((app1.len() + 2) as u16).to_be_bytes());
+        segment.extend(&app1);
+
+        let mut with_exif = Vec::new();
+        with_exif.extend(&jpg[..2]);
+        with_exif.extend(&segment);
+        with_exif.extend(&jpg[2..]);
+
+        let res = img_process(ImageJob {
+            bytes: with_exif,
+            ext: "jpg".into(),
+            max_width: 2,
+            allow_jpeg: false,
+            jpeg_quality: 80,
+        })
+        .unwrap();
+        assert_eq!(res.width, 2);
+        assert_eq!(res.height, 4);
+    }
+
+    #[test]
     fn corrupt_bytes_are_an_error_not_panic() {
         let res = img_process(ImageJob {
             bytes: vec![1, 2, 3, 4, 5],

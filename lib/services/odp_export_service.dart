@@ -94,7 +94,13 @@ class OdpExportService {
             }
           } else if (type == 'image') {
             final src = (block['src'] ?? '').toString();
-            final loaded = HtmlImageLoader.load(src, maxWidth: 1600);
+            // B17: photo PNGs embed as JPEG (3-6× smaller), like PPTX/PDF.
+            final loaded = HtmlImageLoader.load(
+              src,
+              maxWidth: 1600,
+              allowJpeg: true,
+              jpegQuality: PPTGenerator.jpegQualityForMaxWidth(1600),
+            );
             if (loaded != null) {
               final path = 'Pictures/${++imgCounter}.${loaded.ext}';
               imgs.add((path, Uint8List.fromList(loaded.bytes)));

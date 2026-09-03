@@ -2614,6 +2614,10 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get engineFallbackHint =>
+      'Ứng dụng vẫn chạy bình thường bằng engine Dart — export không bao giờ bị gián đoạn. Kiểm tra bản cài đặt hoàn chỉnh rồi khởi động lại để thử lại engine Rust.';
+
+  @override
   String get docxReportOptions => 'Tùy chọn báo cáo Word';
 
   @override
@@ -2627,8 +2631,128 @@ class AppLocalizationsVi extends AppLocalizations {
       'Chuyển ảnh PNG lớn không trong suốt sang JPEG khi xuất (PNG trong suốt giữ nguyên); hiện thống kê tiết kiệm sau mỗi lần xuất. Chất lượng ăn theo lựa chọn chất lượng xuất (150/300/600)';
 
   @override
-  String imageSavings(String summary, String count) {
-    return 'Tiết kiệm: $summary ($count ảnh)';
+  String get exportFormatLabelPptx => 'PowerPoint (.pptx)';
+
+  @override
+  String get exportFormatLabelHtml => 'Trình chiếu HTML (.html)';
+
+  @override
+  String get exportFormatLabelPdf => 'Tài liệu PDF (.pdf)';
+
+  @override
+  String get exportFormatLabelDocx => 'Báo cáo Word (.docx)';
+
+  @override
+  String get exportRatioWidescreen => '16:9 (Màn hình rộng)';
+
+  @override
+  String get exportRatioStandard => '4:3 (Tiêu chuẩn)';
+
+  @override
+  String get exportRatioSquare => '1:1 (Vuông)';
+
+  @override
+  String get exportRatioPortrait => '9:16 (Dọc / Điện thoại)';
+
+  @override
+  String get exportQualityLow => 'Thấp (ảnh 150 px)';
+
+  @override
+  String get exportQualityMedium => 'Trung bình (ảnh 300 px)';
+
+  @override
+  String get exportQualityHigh => 'Cao (ảnh 600 px)';
+
+  @override
+  String exportSlideCount(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n slide',
+      one: '1 slide',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get findReplaceTitle => 'Tìm & Thay thế';
+
+  @override
+  String get commandPaletteHint => 'Gõ lệnh hoặc từ khóa tìm kiếm (Ctrl+K)...';
+
+  @override
+  String get commandPaletteEmpty => 'Không tìm thấy lệnh tương ứng';
+
+  @override
+  String statusBarSlideProgress(int current, int total) {
+    return 'Slide $current / $total';
+  }
+
+  @override
+  String statusBarWords(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n từ',
+      one: '1 từ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get statusBarExporting => 'Đang xuất...';
+
+  @override
+  String get statusBarExported => 'Đã xuất';
+
+  @override
+  String get statusBarError => 'Lỗi';
+
+  @override
+  String get statusBarSaved => 'Đã lưu';
+
+  @override
+  String statusBarViewLabel(String view) {
+    return 'chế độ $view';
+  }
+
+  @override
+  String statusBarStatusLabel(int current, int total, int zoom, String auto) {
+    return 'Trạng thái trình chiếu: slide $current/$total, zoom $zoom%$auto';
+  }
+
+  @override
+  String get zoomDialogTitle => 'Thu phóng';
+
+  @override
+  String get goToSlideTitle => 'Đến slide';
+
+  @override
+  String goToSlideLabel(int total) {
+    return 'Số slide (1-$total)';
+  }
+
+  @override
+  String get goButton => 'Đi';
+
+  @override
+  String get viewModeNormal => 'Bình thường';
+
+  @override
+  String get viewModeSorter => 'Phân trang';
+
+  @override
+  String get viewModeReading => 'Đọc';
+
+  @override
+  String imageSavings(String summary, num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ảnh',
+      one: '1 ảnh',
+    );
+    return 'Tiết kiệm: $summary ($_temp0)';
   }
 
   @override
@@ -2892,4 +3016,39 @@ class AppLocalizationsVi extends AppLocalizations {
   String fontCaseAppliedNotice(String label) {
     return 'Đã áp dụng: $label';
   }
+
+  @override
+  String get templateNameBusiness => 'Kinh Doanh';
+
+  @override
+  String get templateDescriptionBusiness =>
+      'Thiết kế xanh chuyên nghiệp cho chủ đề doanh nghiệp và kinh doanh';
+
+  @override
+  String get templateNameCreative => 'Sáng Tạo';
+
+  @override
+  String get templateDescriptionCreative =>
+      'Thiết kế nhiều màu rực rỡ cho bài thuyết trình sáng tạo và thiết kế';
+
+  @override
+  String get templateNameAcademic => 'Học Thuật';
+
+  @override
+  String get templateDescriptionAcademic =>
+      'Bố cục học thuật gọn gàng cho bài thuyết trình nghiên cứu và học tập';
+
+  @override
+  String get templateNameMarketing => 'Tiếp Thị';
+
+  @override
+  String get templateDescriptionMarketing =>
+      'Bố cục táo bạo và tự tin cho bài thuyết trình marketing và bán hàng';
+
+  @override
+  String get templateNameMinimal => 'Tối Giản';
+
+  @override
+  String get templateDescriptionMinimal =>
+      'Thiết kế đơn sắc tối giản cho bài thuyết trình tối giản';
 }

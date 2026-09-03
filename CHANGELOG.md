@@ -1,5 +1,61 @@
 # Changelog
 
+## [2.0.5-beta.2] - 2026-09-02 — T16: Quality & Ship beta2
+
+- **Coverage 52,7%** (ex-generated l10n, ≥52.5% gate) — từ 52,1% baseline, nhờ ~25 test hồi quy mới (B1–B24, T14, T15).
+- **Toàn bộ danh sách xanh:** flutter test **1109/1109 ×3**, `cargo test` **11/11**, `flutter analyze` **0 issue**, `dart run tool/l10n_audit.dart` **CLEAN** (EN=VI key sets khớp).
+- **Privacy:** 0-TCP trên Release exe (probe 8 s) — không socket ngoài; log audit engine local.
+- **Version đúng 3 chỗ + grep ALL:** `pubspec.yaml 2.0.5-beta.2+6`, `BuildInfo.appVersion/coreVersion 2.0.5-beta.2` + buildNumber 6, `installer/ghita_ppt_installer.iss 2.0.5-beta.2+6` (grep ALL test/ không còn pin beta.1).
+- **Installer:** `GhitaPPT-Setup-2.0.5-beta.2.exe` — 15,59 MB, SHA-256 `2c1e1e0149157e2417e5b3e1a103132a0cde5f6d209b2faeb582a7cfe3cfaa22`, manifest `version 2.0.5-beta.2+6` (NotSigned — như beta1). Cài đè real beta1→beta2 chờ user test trên máy (mục T16.7).
+
+## [2.0.5-beta.2] - 2026-09-02 — T15: Hoàn thiện trải nghiệm N1/N2/N3
+
+- **i18n thật sự cho export dialog:** tên định dạng / tỷ lệ / chất lượng qua l10n (EN+VI); summary snackbar theo format (DOCX không còn liệt kê tùy chọn bị bỏ qua); đếm slide/anh có plural đúng ("1 slide/image" vs "N slides/images").
+- **DOCX UX:** các tùy chọn không áp dụng (tỷ lệ, chất lượng, fit-content, backgrounds) bị ẩn thay vì để người dùng đặt rồi âm thầm bỏ qua.
+- **N3:** status bar (Slide N/M, trạng thái Đang xuất/Đã xuất, từ khóa) theo locale — trước đây hiện tiếng Việt cả khi UI tiếng Anh; badge ngôn ngữ dùng tên locale thật.
+- **A11y:** progress export là live region (screen reader đọc cập nhật); cancel có tooltip (dùng key `exportCancelDescription` trước đây chết); Semantics status bar localized.
+- **Nhất quán phím tắt:** bỏ claim "(Ctrl+1)" và "(Ctrl+F)" không có binding thật; mojibake "ΓêÆ" ở nút trừ zoom → "−".
+- **Command palette:** hint + empty state localize (EN/VI).
+- Tests: status_bar_i18n_test (3), settings hint (T14), analyzer 0 issue.
+
+## [2.0.5-beta.2] - 2026-09-02 — T14: Fallback & độ bền engine
+
+- **Audit log engine** (`lib/services/engine_audit_log.dart`): mọi lần init/fallback ghi `%APPDATA%\GhitaPPT\engine.log` — local, không PII, không network, best-effort.
+- **Thông báo + hướng dẫn:** card Engine ở Settings thêm dòng gợi ý khi fallback (i18n EN/VI) — "ứng dụng vẫn chạy bằng Dart, kiểm tra cài đặt rồi khởi động lại".
+- **Wrong-version guard:** version rỗng từ crate (mọi đường init, kể cả fake) không bao giờ được nhận là ready.
+- **Docs:** mục "Engine & Fallback Architecture" trong README (hub single-flight, hợp đồng fallback, UI-isolate rule, cách test).
+- Tests: wrong-version + audit ready/fallback + Settings hint (widget).
+
+## [2.0.5-beta.2] - 2026-09-02 — T12: Bug sweep beta (24/24 bug xử lý)
+
+- **P1 ×1 · P2 ×10 · P3 ×13** — toàn bộ bảng bug T12.5 (3 sweep nội bộ N1/N3 · N2 image · Rust engine) đã sửa, mỗi bug có test hồi quy.
+- **Ảnh / EXIF:** xác minh `package:image` bake EXIF lúc decode (comment cũ sai → sửa); ma trận `applyExifOrientation` 2–8 khớp reference `bakeOrientation` (5/7 trước đây hoán đổi nhau — B3/B15); **hợp đồng "EXIF always baked"** chốt cả 2 backend (B16: JPEG có EXIF không bao giờ passthrough bytes thô); bomb guard đọc header PNG/JPEG/GIF trước decode (B19); SVG/WebP/BMP drop với warning đúng nguyên nhân (B21).
+- **Cache ảnh:** key = FNV-1a(content bytes) + options + **backend tag** (B18/B20) — ảnh sửa nội dung tự reprocess, remote fetch-first, eviction cap 600, sidecar sha256 nhỏ, ghi atomic (B22/B23); cache hit vẫn đếm savings (B24).
+- **Engine:** hub single-flight `RustBridgeInit` (B6c) — zip/image/htmlparse/UI service chung MỘT `RustLib.init()`; lỗi "initialize twice" = DLL đã load → `rustReady` không fallback vĩnh viễn (B2); worker chờ readiness đầu job — cả job 1 engine (B6b); renderer UI isolate luôn Dart (B6a); zip.rs: level 0 = Stored, hết ZIP64 vô điều kiện (B4/B5).
+- **N1/N3:** DOCX qua worker isolate với per-slide progress + cancel + heading theo outline level + title sạch control char (B10/B12/B11); generator viết `<out>.part` → rename atomic — cancel/timeout không bao giờ để file bán phần hay phá file cũ (B7/B8); progress HTML theo vòng build (B9); preparing/per-slide đếm thống nhất khi có slide hidden, dialog hết "N+1/N" (B13/B14).
+- **Suite:** 1104/1104 ×2, `cargo test` 11/11, integration probe (DLL thật) 5/5 với 0 log "falling back — twice"; `flutter analyze` 0 issue.
+
+## [2.0.5-beta.2] - 2026-09-02 — T13: ghita_htmlparse — Rust tokenizer một-lượt (GO theo số)
+
+- **Profile T13.1 xác nhận GO (gate ≥15%):** deck 100 slide parse chiếm **17,3%** (40 unique) / **16,0%** (100 unique) / **19,5%** (80 text + 20 ảnh) tổng thời gian export pptx (`tool/t13_parse_profile_test.dart`).
+- **Module `ghita_htmlparse`** (`rust/src/api/htmlparse.rs`, html5ever + markup5ever_rcdom 0.39 + serde_json): tokenizer một-lượt tái tạo **chính xác** `_extractBlocks` (Dart) — 4 artifact: blocks / blocksNoFirstH2 / notes / subtitle → JSON cho Dart decode.
+- **Facade `HtmlParseCodec`** (`lib/services/html_parse_codec.dart`): `HtmlParseEngineConfig` (engine chọn theo Settings, default Rust sau GO) + `parseToJson` trả null → **Dart fallback**; decode sâu tái tạo `Map<String, String>` cho runs/items/cells.
+- **Wire 1 điểm:** `HtmlParseCache._entryFor` (call site duy nhất PPTX/PDF/HTML); worker isolate seed từ `engineRustPreferred`; `RustEngineService` markRustReady cả 3 config.
+- **Parity test `test/htmlparse_parity_test.dart` PASS** — 8 template thật + 40 edge-case, deep-equal giữa 2 đường. Đã vá 3 divergence thật trong vòng đua (aside.notes strip trước extract · fallback blocks rỗng · whitespace collapse đúng `replaceAll(\s+, ' ')`).
+- **Kết quả đo (deck 100 slide, máy local):** total **261,2 ms → 135,8 ms** (100 unique, **-28,7%**); 40 unique **-15,6%**; deck 80/20 ảnh không đổi (bottleneck ảnh — đã tối ưu T06). parseMs = 0 trên đường Rust (đo riêng Dart parser).
+- **6b NO-GO có số:** zip stage chỉ **1,7%** tổng export (129 ms/7479 ms) trên deck 21 MB media → bỏ qua streaming file→file (không đạt ≥15%); T02.7 được xác nhận.
+- Suite full **1077/1077** · `flutter analyze` 0 · l10n audit CLEAN.
+
+## [2.0.5-beta.2] - 2026-09-02 — T17: Template refresh F3 (5 mẫu mới)
+
+- **15 mockup (5 bộ × 3 layout) tái thiết kế** tại `tool/template_mockups/` — bản template cũ (business/creative/academic/marketing/minimal) bị đánh giá yếu: chữ viền ngoài div nền, không inline color, không dùng được thực tế trên nền sáng (slide_preview stylesheet ép chữ sáng).
+- **5 bộ mới được duyệt qua mockup, chọn layout Content (B):** mỗi bộ 1 slide trực quan trong WebView preview — Business 3 KPI cell (+18% / 12 / 96%), Creative 3 trụ cột (01/02/03), Academic heading + 3 bullet dot, Marketing 3 kênh (Social 40% / KOL 35% / In-store 25%), Minimal (nền sáng #F7F9F4) 3 bullet dòng việc.
+- **Hợp đồng template áp cho cả 5:** mọi text element có `color` inline (ép chữ sáng của slide_preview không thể thắng được inline); `data-bg-color` giữ trên container; chỉ dùng tag parser hỗ trợ (h1–h6/p/ul/ol/li/table/tr/td/th/strong/b/em/i/span/br) + `aside.notes` (parser strip); font hệ thống, không asset ngoài → installer không phình.
+- **i18n:** 10 key mới EN=VI vào `.arb` (`templateName*` / `templateDescription*` cho 5 bộ), gen-l10n, Template Studio (=card grid + detail dialog + search) hiển thị tên/mô tả bằng locality; chuỗi hardcode `'Applied ... template!'` trong `applyTemplate` lên key `templateAppliedTemplateNotice`.
+- **Title extraction:** `_extractTitleFromHtml` fallback h1 → **h2** (template mới không dùng h1, trước đó title = "New Slide").
+- **Kiểm chứng bằng số:** pixel-check nền 5/5 PNG khớp hex gốc (System.Drawing) · preview render 125%/150% không tràn · `test/template_refresh_test.dart` **7/7 xanh** (5 template parse + inline color + 20 template cũ không regression + export PPTX/PDF/HTML cho cả 5 không lỗi, file >0 byte) · `flutter analyze` 0.
+- Ma trận template mới + ảnh mockup: `tool/template_mockups/T17_mockups.md`.
+
 ## [2.0.5-beta.1] - 2026-09-01 — T11: Sweep thông báo toàn app (F1 đóng 100%)
 
 - **Toàn bộ ~111 chỗ `showSnackBar` thô → `showAppSnackBar`** (mọi màn: AI Chat, Home, Settings, Theme, Provider, Shortcuts, Export dialogs (advanced/m6/m9), Animation pane, Sorter, Wizard, Collaboration, Presenter, Ribbon, Text layout…). Hiệu ứng: replace thật (`clearSnackBars`) + `persist:false` (tự tắt đúng duration) + không xếp hàng toàn app.

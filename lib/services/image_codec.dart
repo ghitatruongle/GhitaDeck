@@ -3,7 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 
 import '../src/rust/api/image.dart' as rust_api;
-import '../src/rust/frb_generated.dart' as rust_bridge;
+import 'engine_audit_log.dart';
+import 'rust_bridge_init.dart';
 
 /// Engine preference shared across isolates (T06).
 ///
@@ -42,13 +43,20 @@ class ImageEngineConfig {
   /// Test hook: replaces the real DLL load probe (unit tests have no exe dir).
   static Future<bool> Function()? rustReadyProbe;
 
+  /// Backend tag of a [process] call right now — the image loader folds it
+  /// into its processed-cache key (B20: Rust and Dart outputs are not
+  /// interchangeable).
+  static String get backendTag => (preferredRust && _rustReady) ? 'rust' : 'dart';
+
   /// Loads the real `ghita_core.dll` once per isolate. Never throws — a
   /// missing/broken DLL simply resolves to "not usable" → Dart backend.
   static Future<bool> ensureRustReadyOnce() async {
     if (_rustReady) return true;
     if (rustReadyProbe != null) return rustReadyProbe!();
     try {
-      await rust_bridge.RustLib.init();
+      // B6c: the per-isolate single-flight hub — concurrent init attempts
+      // from zip/htmlparse/worker must not initialise FRB twice.
+      await RustBridgeInit.ensureReady();
       _rustReady = true;
     } catch (e) {
       // "Should not initialize flutter_rust_bridge twice" means another
@@ -59,6 +67,7 @@ class ImageEngineConfig {
       if (!_rustReady) {
         debugPrint(
             'ImageEngineConfig: ghita_core.dll unavailable ($e); Dart image');
+        await EngineAuditLog.append('engine fallback', 'image: $e');
       }
     }
     return _rustReady;
@@ -165,10 +174,17 @@ class ImageCodec {
       throw const FormatException('undecodable image');
     }
 
-    // The Dart JPEG decoder already bakes EXIF on decode; PNG/GIF need the
-    // manual read + bake (mirrors what the Rust module does for every format).
+    // package:image's JPEG decoder bakes EXIF orientation during decode
+    // (verified empirically: EXIF-6 4×8 decodes to 8×4 with orientation
+    // already stripped), so JPEG must NOT be rotated again. PNG/GIF need the
+    // manual read + bake; the Rust module does the same for every format
+    // because the image crate does NOT bake on decode.
     final orientation = readExifOrientation(bytes);
     final needsRotation = ext != 'jpg' && orientation != 1;
+    // A JPEG that carried an orientation must still be re-encoded: raw EXIF
+    // bytes would be un-baked for the deck, and viewers render raw pixels
+    // (B16 — the Rust backend re-encodes here too, so both agree).
+    final mustBake = ext == 'jpg' && orientation != 1;
 
     final resized = maxWidth != null && maxWidth > 0 && decoded.width > maxWidth;
     var out = decoded;
@@ -217,7 +233,7 @@ class ImageCodec {
         resized: resized,
       );
     }
-    if (resized || needsRotation) {
+    if (resized || needsRotation || mustBake) {
       final outBytes = Uint8List.fromList(
           img.encodeJpg(out, quality: jpegQuality.clamp(60, 95)));
       return ImageCodecResult(
@@ -352,23 +368,19 @@ class ImageCodec {
   static img.Image applyExifOrientation(img.Image image, int orientation) {
     switch (orientation) {
       case 2:
-        return img.flip(image, direction: img.FlipDirection.horizontal);
+        return img.flipHorizontal(image);
       case 3:
-        return img.copyRotate(image, angle: 180);
+        return img.flip(image, direction: img.FlipDirection.both);
       case 4:
-        return img.flip(image, direction: img.FlipDirection.vertical);
+        return img.flipHorizontal(img.copyRotate(image, angle: 180));
       case 5:
-        return img.copyRotate(
-            img.flip(image, direction: img.FlipDirection.horizontal),
-            angle: 90);
+        return img.flipHorizontal(img.copyRotate(image, angle: 90));
       case 6:
         return img.copyRotate(image, angle: 90);
       case 7:
-        return img.copyRotate(
-            img.flip(image, direction: img.FlipDirection.vertical),
-            angle: 90);
+        return img.flipHorizontal(img.copyRotate(image, angle: -90));
       case 8:
-        return img.copyRotate(image, angle: 270);
+        return img.copyRotate(image, angle: -90);
       default:
         return image;
     }

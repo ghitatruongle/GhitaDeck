@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: file:; media-src data: file:; font-src data:; style-src 'unsafe-inline';">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #0F1F33;
+    color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .slide-canvas {
+    width: 100%;
+    height: 100%;
+    padding: 3.5vw 4.5vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    overflow: hidden;
+    position: relative;
+  }
+</style>
+</head><body>
+<div class="slide-canvas">
+<div data-bg-color="#0F1F33" class="slide" style="font-family:'Segoe UI',system-ui,sans-serif;padding:56px 72px;height:100%;box-sizing:border-box;">
+  <h2 style="color:#E8EDF7;font-size:28px;font-weight:700;margin:0 0 28px 0;">Department Performance</h2>
+  <table style="border-collapse:collapse;width:100%;">
+    <tr>
+      <td style="background:rgba(66,72,187,0.14);border:1px solid rgba(66,72,187,0.40);border-radius:10px;padding:24px;color:#C7D2E4;font-size:17px;vertical-align:top;">
+        <span style="color:#8E9BFF;font-size:32px;font-weight:700;">+18%</span><br>
+        Revenue growth versus previous quarter
+      </td>
+      <td style="background:rgba(66,72,187,0.14);border:1px solid rgba(66,72,187,0.40);border-radius:10px;padding:24px;color:#C7D2E4;font-size:17px;vertical-align:top;">
+        <span style="color:#8E9BFF;font-size:32px;font-weight:700;">12</span><br>
+        New customers won during the quarter
+      </td>
+      <td style="background:rgba(66,72,187,0.14);border:1px solid rgba(66,72,187,0.40);border-radius:10px;padding:24px;color:#C7D2E4;font-size:17px;vertical-align:top;">
+        <span style="color:#8E9BFF;font-size:32px;font-weight:700;">96%</span><br>
+        Contract renewal rate across the base
+      </td>
+    </tr>
+  </table>
+</div>
+
+</div>
+</body></html>

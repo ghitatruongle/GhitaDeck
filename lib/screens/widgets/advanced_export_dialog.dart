@@ -78,7 +78,7 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
                   spacing: 8,
                   children: PresentationExportFormat.values.map((format) {
                     return ChoiceChip(
-                      label: Text(format.label),
+                      label: Text(_formatLabel(context, format)),
                       selected: _format == format,
                       onSelected: (_) => setState(() => _format = format),
                     );
@@ -86,14 +86,16 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
                 ),
                 const SizedBox(height: 20),
 
-                // Aspect ratio
+                // Aspect ratio — DOCX ignores it (T15: hidden, not silently
+                // ignored by the exporter).
+                if (_format != PresentationExportFormat.docx) ...[
                 _buildSectionTitle(context, context.l10n.aspectRatio),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
                   children: ExportAspectRatio.values.map((ratio) {
                     return ChoiceChip(
-                      label: Text(ratio.label),
+                      label: Text(_ratioLabel(context, ratio)),
                       selected: _aspectRatio == ratio,
                       onSelected: (_) => setState(() => _aspectRatio = ratio),
                     );
@@ -108,13 +110,14 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
                   spacing: 8,
                   children: ExportQuality.values.map((q) {
                     return ChoiceChip(
-                      label: Text(q.label),
+                      label: Text(_qualityLabel(context, q)),
                       selected: _quality == q,
                       onSelected: (_) => setState(() => _quality = q),
                     );
                   }).toList(),
                 ),
                 const SizedBox(height: 20),
+                ],
 
                 // Options
                 _buildSectionTitle(context, context.l10n.exportOptions),
@@ -126,6 +129,7 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
                   onChanged: (v) => setState(() => _includeNotes = v ?? true),
                   contentPadding: EdgeInsets.zero,
                 ),
+                if (_format != PresentationExportFormat.docx)
                 CheckboxListTile(
                   dense: true,
                   title: Text(context.l10n.includeBackgrounds),
@@ -134,6 +138,7 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
                       setState(() => _includeBackgrounds = v ?? true),
                   contentPadding: EdgeInsets.zero,
                 ),
+                if (_format != PresentationExportFormat.docx)
                 CheckboxListTile(
                   dense: true,
                   title: Text(context.l10n.fitContent),
@@ -243,7 +248,14 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    LinearProgressIndicator(value: _progress),
+                    // T15 a11y: the progress is a live region so screen
+                    // readers announce each update instead of discovering it.
+                    Semantics(
+                      liveRegion: true,
+                      label: context.l10n.exportProgress(
+                          _progressDone, _progressTotal),
+                      child: LinearProgressIndicator(value: _progress),
+                    ),
                     const SizedBox(height: 6),
                     Row(
                       children: [
@@ -254,10 +266,13 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ),
-                        TextButton.icon(
-                          icon: const Icon(Icons.stop, size: 16),
-                          label: Text(context.l10n.exportCancel),
-                          onPressed: () => _cancelToken?.cancel(),
+                        Tooltip(
+                          message: context.l10n.exportCancelDescription,
+                          child: TextButton.icon(
+                            icon: const Icon(Icons.stop, size: 16),
+                            label: Text(context.l10n.exportCancel),
+                            onPressed: () => _cancelToken?.cancel(),
+                          ),
                         ),
                       ],
                     ),
@@ -451,8 +466,16 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
         allSlides: _allSlides,
         selectedSlideIndices: indices,
       );
-      final summary =
-          '${_format.label} | ${_aspectRatio.label} | ${_quality.label} | ${indices.length} slides';
+      // T15: per-format, localized summary — DOCX options that the exporter
+      // ignores must not be cited in the success message.
+      final summary = [
+        _formatLabel(context, _format),
+        if (_format != PresentationExportFormat.docx) ...[
+          _ratioLabel(context, _aspectRatio),
+          _qualityLabel(context, _quality),
+        ],
+        context.l10n.exportSlideCount(indices.length),
+      ].join(' | ');
       final fileName = 'presentation_${DateTime.now().millisecondsSinceEpoch}';
       // T07 P2: the selected export quality (150/300/600 px ceiling) drives
       // the optimizer's JPEG re-encode quality on the worker isolate too.
@@ -465,8 +488,11 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
           if (!mounted) return;
           setState(() {
             _progress = p.fraction;
-            _progressDone = p.slideIndex + 1;
-            _progressTotal = p.slideCount;
+            // B13: the host's synthetic 'done' carries slideIndex == total,
+            // so +1 used to draw "N+1/N"; clamp to the total instead.
+            final total = p.slideCount > 0 ? p.slideCount : 1;
+            _progressDone = (p.slideIndex + 1).clamp(1, total).toInt();
+            _progressTotal = total;
           });
         },
         cancelToken: cancelToken,
@@ -476,7 +502,7 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
       // numbers must be read AFTER the export completes (shown = this job).
       final savings = ImageOptimizationStats.displaySummary();
       final userFacingSummary = savings != null
-          ? '$summary — ${context.l10n.imageSavings(savings, ImageOptimizationStats.displayCount.toString())}'
+          ? '$summary — ${context.l10n.imageSavings(savings, ImageOptimizationStats.displayCount)}'
           : summary;
       ImageOptimizationStats.reset();
 
@@ -494,4 +520,27 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
       showAppSnackBar(context, context.l10n.exportFailed(e.toString()));
     }
   }
+
+  /// T15: localized enum labels — the enums keep English labels for internal
+  /// logs; the UI shows the locale-appropriate text.
+  String _formatLabel(BuildContext context, PresentationExportFormat f) =>
+      switch (f) {
+        PresentationExportFormat.pptx => context.l10n.exportFormatLabelPptx,
+        PresentationExportFormat.html => context.l10n.exportFormatLabelHtml,
+        PresentationExportFormat.pdf => context.l10n.exportFormatLabelPdf,
+        PresentationExportFormat.docx => context.l10n.exportFormatLabelDocx,
+      };
+
+  String _ratioLabel(BuildContext context, ExportAspectRatio r) => switch (r) {
+        ExportAspectRatio.widescreen16x9 => context.l10n.exportRatioWidescreen,
+        ExportAspectRatio.standard4x3 => context.l10n.exportRatioStandard,
+        ExportAspectRatio.square1x1 => context.l10n.exportRatioSquare,
+        ExportAspectRatio.portrait9x16 => context.l10n.exportRatioPortrait,
+      };
+
+  String _qualityLabel(BuildContext context, ExportQuality q) => switch (q) {
+        ExportQuality.low => context.l10n.exportQualityLow,
+        ExportQuality.medium => context.l10n.exportQualityMedium,
+        ExportQuality.high => context.l10n.exportQualityHigh,
+      };
 }

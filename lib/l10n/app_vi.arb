@@ -973,6 +973,7 @@
     }
   },
   "engineStatusFallback": "Không dùng được engine Rust ({reason}); đang chạy Dart",
+  "engineFallbackHint": "Ứng dụng vẫn chạy bình thường bằng engine Dart — export không bao giờ bị gián đoạn. Kiểm tra bản cài đặt hoàn chỉnh rồi khởi động lại để thử lại engine Rust.",
   "@engineStatusFallback": {
     "placeholders": {
       "reason": {
@@ -984,14 +985,80 @@
   "docxIncludeSlideList": "Kèm danh sách slide ở cuối báo cáo",
   "imageOptimizerBetaTitle": "Tối ưu ảnh",
   "imageOptimizerBetaSubtitle": "Chuyển ảnh PNG lớn không trong suốt sang JPEG khi xuất (PNG trong suốt giữ nguyên); hiện thống kê tiết kiệm sau mỗi lần xuất. Chất lượng ăn theo lựa chọn chất lượng xuất (150/300/600)",
-  "imageSavings": "Tiết kiệm: {summary} ({count} ảnh)",
+  "exportFormatLabelPptx": "PowerPoint (.pptx)",
+  "exportFormatLabelHtml": "Trình chiếu HTML (.html)",
+  "exportFormatLabelPdf": "Tài liệu PDF (.pdf)",
+  "exportFormatLabelDocx": "Báo cáo Word (.docx)",
+  "exportRatioWidescreen": "16:9 (Màn hình rộng)",
+  "exportRatioStandard": "4:3 (Tiêu chuẩn)",
+  "exportRatioSquare": "1:1 (Vuông)",
+  "exportRatioPortrait": "9:16 (Dọc / Điện thoại)",
+  "exportQualityLow": "Thấp (ảnh 150 px)",
+  "exportQualityMedium": "Trung bình (ảnh 300 px)",
+  "exportQualityHigh": "Cao (ảnh 600 px)",
+  "exportSlideCount": "{n, plural, =1{1 slide} other{{n} slide}}",
+  "@exportSlideCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "findReplaceTitle": "Tìm & Thay thế",
+  "commandPaletteHint": "Gõ lệnh hoặc từ khóa tìm kiếm (Ctrl+K)...",
+  "commandPaletteEmpty": "Không tìm thấy lệnh tương ứng",
+  "statusBarSlideProgress": "Slide {current} / {total}",
+  "@statusBarSlideProgress": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "statusBarWords": "{n, plural, =1{1 từ} other{{n} từ}}",
+  "@statusBarWords": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "statusBarExporting": "Đang xuất...",
+  "statusBarExported": "Đã xuất",
+  "statusBarError": "Lỗi",
+  "statusBarSaved": "Đã lưu",
+  "statusBarViewLabel": "chế độ {view}",
+  "@statusBarViewLabel": {
+    "placeholders": {
+      "view": {"type": "String"}
+    }
+  },
+  "statusBarStatusLabel": "Trạng thái trình chiếu: slide {current}/{total}, zoom {zoom}%{auto}",
+  "@statusBarStatusLabel": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"},
+      "zoom": {"type": "int"},
+      "auto": {"type": "String"}
+    }
+  },
+  "zoomDialogTitle": "Thu phóng",
+  "goToSlideTitle": "Đến slide",
+  "goToSlideLabel": "Số slide (1-{total})",
+  "@goToSlideLabel": {
+    "placeholders": {
+      "total": {"type": "int"}
+    }
+  },
+  "goButton": "Đi",
+  "viewModeNormal": "Bình thường",
+  "viewModeSorter": "Phân trang",
+  "viewModeReading": "Đọc",
+  "imageSavings": "Tiết kiệm: {summary} ({count, plural, =1{1 ảnh} other{{count} ảnh}})",
   "@imageSavings": {
     "placeholders": {
       "summary": {
         "type": "String"
       },
       "count": {
-        "type": "String"
+        "type": "num"
       }
     }
   },
@@ -1264,5 +1331,15 @@
         "type": "String"
       }
     }
-  }
+  },
+  "templateNameBusiness": "Kinh Doanh",
+  "templateDescriptionBusiness": "Thiết kế xanh chuyên nghiệp cho chủ đề doanh nghiệp và kinh doanh",
+  "templateNameCreative": "Sáng Tạo",
+  "templateDescriptionCreative": "Thiết kế nhiều màu rực rỡ cho bài thuyết trình sáng tạo và thiết kế",
+  "templateNameAcademic": "Học Thuật",
+  "templateDescriptionAcademic": "Bố cục học thuật gọn gàng cho bài thuyết trình nghiên cứu và học tập",
+  "templateNameMarketing": "Tiếp Thị",
+  "templateDescriptionMarketing": "Bố cục táo bạo và tự tin cho bài thuyết trình marketing và bán hàng",
+  "templateNameMinimal": "Tối Giản",
+  "templateDescriptionMinimal": "Thiết kế đơn sắc tối giản cho bài thuyết trình tối giản"
 }

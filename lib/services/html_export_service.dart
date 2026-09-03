@@ -243,7 +243,6 @@ class HtmlExportService {
     final slideTransitions = <String>[];
     final usedEffects = <SlideEffect>{};
     for (int i = 0; i < slides.length; i++) {
-      onProgress?.call(ExportProgressBudget.forSlide(i, slides.length));
       cancelToken?.throwIfCancelled();
       final slide = slides[i];
       final color = includeBackgrounds ? _extractSlideBgColor(slide) : null;
@@ -637,8 +636,11 @@ class HtmlExportService {
     // Track 13, P5: per-slide narration audio hoisted the same way.
     final lazyAudios = <String, String>{};
     for (int i = 0; i < slides.length; i++) {
-      // Cooperative cancellation between slides (Track 01).
+      // Cooperative cancellation between slides (Track 01). B9: the per-slide
+      // progress belongs HERE — the real build work (sanitize, images,
+      // processSlideHtml) happens in this loop, not the bg-colour scan.
       cancelToken?.throwIfCancelled();
+      onProgress?.call(ExportProgressBudget.forSlide(i, slides.length));
       final slide = slides[i];
       final title = slide['title'] ?? 'Slide ${i + 1}';
       final rawHtml = slide['htmlContent'] ?? '';
@@ -1254,9 +1256,13 @@ class HtmlExportService {
     }
     for (final image in body.querySelectorAll('img')) {
       final src = (image.attributes['src'] ?? '').trim();
+      // B17: photo payloads must be JPEG in the player (3-6× smaller than
+      // PNG) — same conversion options the PPTX/PDF emitters use.
       final loaded = HtmlImageLoader.load(
         src,
         maxWidth: imageMaxWidth,
+        allowJpeg: true,
+        jpegQuality: PPTGenerator.jpegQualityForMaxWidth(imageMaxWidth),
       );
       if (loaded != null) {
         // Track 07, P3: the payload moves into the JS image map; the <img>

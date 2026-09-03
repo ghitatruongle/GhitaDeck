@@ -1011,6 +1011,7 @@
     }
   },
   "engineStatusFallback": "Rust engine unavailable ({reason}); running on Dart",
+  "engineFallbackHint": "The app keeps working on the Dart engine — exports never break. Check that the install is complete, then restart the app to retry the Rust engine.",
   "@engineStatusFallback": {
     "placeholders": {
       "reason": {
@@ -1022,14 +1023,80 @@
   "docxIncludeSlideList": "Include an index of all slides at the end",
   "imageOptimizerBetaTitle": "Image optimizer",
   "imageOptimizerBetaSubtitle": "Convert large opaque PNGs to JPEG on export (transparent PNGs stay PNG); shows the savings after each export. Quality follows the export quality setting (150/300/600).",
-  "imageSavings": "Saved: {summary} ({count} images)",
+  "exportFormatLabelPptx": "PowerPoint (.pptx)",
+  "exportFormatLabelHtml": "HTML presentation (.html)",
+  "exportFormatLabelPdf": "PDF document (.pdf)",
+  "exportFormatLabelDocx": "Word report (.docx)",
+  "exportRatioWidescreen": "16:9 (Widescreen)",
+  "exportRatioStandard": "4:3 (Standard)",
+  "exportRatioSquare": "1:1 (Square)",
+  "exportRatioPortrait": "9:16 (Portrait/Mobile)",
+  "exportQualityLow": "Low (150 px images)",
+  "exportQualityMedium": "Medium (300 px images)",
+  "exportQualityHigh": "High (600 px images)",
+  "exportSlideCount": "{n, plural, =1{1 slide} other{{n} slides}}",
+  "@exportSlideCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "findReplaceTitle": "Find & Replace",
+  "commandPaletteHint": "Type a command or search keyword (Ctrl+K)...",
+  "commandPaletteEmpty": "No matching command",
+  "statusBarSlideProgress": "Slide {current} / {total}",
+  "@statusBarSlideProgress": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "statusBarWords": "{n, plural, =1{1 word} other{{n} words}}",
+  "@statusBarWords": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "statusBarExporting": "Exporting...",
+  "statusBarExported": "Exported",
+  "statusBarError": "Error",
+  "statusBarSaved": "Saved",
+  "statusBarViewLabel": "{view} view",
+  "@statusBarViewLabel": {
+    "placeholders": {
+      "view": {"type": "String"}
+    }
+  },
+  "statusBarStatusLabel": "Presentation status: slide {current} of {total}, zoom {zoom} percent{auto}",
+  "@statusBarStatusLabel": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"},
+      "zoom": {"type": "int"},
+      "auto": {"type": "String"}
+    }
+  },
+  "zoomDialogTitle": "Zoom",
+  "goToSlideTitle": "Go to slide",
+  "goToSlideLabel": "Slide number (1-{total})",
+  "@goToSlideLabel": {
+    "placeholders": {
+      "total": {"type": "int"}
+    }
+  },
+  "goButton": "Go",
+  "viewModeNormal": "Normal",
+  "viewModeSorter": "Sorter",
+  "viewModeReading": "Reading",
+  "imageSavings": "Saved: {summary} ({count, plural, =1{1 image} other{{count} images}})",
   "@imageSavings": {
     "placeholders": {
       "summary": {
         "type": "String"
       },
       "count": {
-        "type": "String"
+        "type": "num"
       }
     }
   },
@@ -1302,5 +1369,15 @@
         "type": "String"
       }
     }
-  }
+  },
+  "templateNameBusiness": "Business",
+  "templateDescriptionBusiness": "Professional blue presentation for corporate and business topics",
+  "templateNameCreative": "Creative",
+  "templateDescriptionCreative": "Vibrant colorful design for creative and design presentations",
+  "templateNameAcademic": "Academic",
+  "templateDescriptionAcademic": "Clean scholarly layout for academic and research presentations",
+  "templateNameMarketing": "Marketing",
+  "templateDescriptionMarketing": "Bold and confident layout for marketing and sales pitches",
+  "templateNameMinimal": "Minimal",
+  "templateDescriptionMinimal": "Ultra clean monochrome design for minimalist presentations"
 }

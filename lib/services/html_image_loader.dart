@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:crypto/crypto.dart' as crypto;
 import 'image_codec.dart';
 import 'image_optimizer_service.dart';
 
@@ -47,8 +48,8 @@ class ImageLoadWarning {
 /// EXIF orientation is baked in, oversized images are downscaled, and large
 /// opaque PNGs may be re-encoded as JPEG ([allowJpeg]) to shrink the deck.
 class HtmlImageLoader {
-  static final RegExp _dataUriRegExp =
-      RegExp(r'^data:image/(png|jpe?g|gif);base64,(.+)$', dotAll: true);
+  static final RegExp _dataUriRegExp = RegExp(r'^data:image/([a-z0-9+.-]+);base64,(.+)$',
+      caseSensitive: false, dotAll: true);
 
   static final RegExp _imgSrcRegExp =
       RegExp(r"""<img[^>]+src=["']([^"']+)["']""", caseSensitive: false);
@@ -93,6 +94,7 @@ class HtmlImageLoader {
   static void clearCaches() {
     _rawCache.clear();
     _processedCache.clear();
+    _talliedKeys.clear();
     warnings.clear();
   }
 
@@ -155,13 +157,17 @@ class HtmlImageLoader {
 
   static Future<void> _ensureRaw(String src) async {
     if (_rawCache.containsKey(src)) return;
-    final cached = await _readDiskCache(src);
-    if (cached != null) {
-      _rawCache[src] = cached;
-      return;
-    }
+    // B18: fetch first so a remote whose content changed on the server is
+    // re-fetched for each export; the disk cache is only the OFFLINE
+    // fallback when the fetch fails.
     final fetched = await _fetchRemote(src);
-    if (fetched == null) return; // warning already recorded
+    if (fetched == null) {
+      final cached = await _readDiskCache(src);
+      if (cached != null) {
+        _rawCache[src] = cached;
+      }
+      return; // warning already recorded
+    }
     _rawCache[src] = fetched;
     await _writeDiskCache(src, fetched);
   }
@@ -208,13 +214,10 @@ class HtmlImageLoader {
   static String? _extFromResponse(String src, String? mimeType, Uint8List bytes) {
     // An explicit non-image content-type wins over every fallback.
     if (mimeType != null && !mimeType.startsWith('image/')) return null;
-    switch (mimeType) {
-      case 'image/png':
-        return 'png';
-      case 'image/jpeg':
-        return 'jpg';
-      case 'image/gif':
-        return 'gif';
+    if (mimeType != null) {
+      final byMime = _extFromMime(mimeType);
+      if (byMime != null) return byMime;
+      // image/* but unrecognized — keep sniffing below (magic bytes win).
     }
     // Header missing or unhelpful: sniff the magic bytes.
     if (bytes.length >= 8 &&
@@ -234,11 +237,43 @@ class HtmlImageLoader {
         bytes[3] == 0x38) {
       return 'gif';
     }
+    // RIFF....WEBP (WebP), "BM" (BMP), "<svg"/"<?xml" (SVG).
+    if (bytes.length >= 12 &&
+        bytes[0] == 0x52 && bytes[1] == 0x49 &&
+        bytes[2] == 0x46 && bytes[3] == 0x46 &&
+        bytes[8] == 0x57 && bytes[9] == 0x45 &&
+        bytes[10] == 0x42 && bytes[11] == 0x50) {
+      return 'webp';
+    }
+    if (bytes.length >= 2 && bytes[0] == 0x42 && bytes[1] == 0x4D) {
+      return 'bmp';
+    }
+    if (bytes.length >= 4 &&
+        (bytes[0] == 0x3C && bytes[1] == 0x73 && bytes[2] == 0x76 && bytes[3] == 0x67)) {
+      return 'svg';
+    }
     // Last resort: trust the URL extension only when nothing says otherwise.
     final lower = src.toLowerCase();
     if (lower.endsWith('.png')) return 'png';
     if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'jpg';
     if (lower.endsWith('.gif')) return 'gif';
+    if (lower.endsWith('.webp')) return 'webp';
+    if (lower.endsWith('.bmp')) return 'bmp';
+    if (lower.endsWith('.svg')) return 'svg';
+    return null;
+  }
+
+  /// Maps a (lowercased) image MIME type to the loader extension; null for
+  /// unrecognized types. B21: webp/bmp/svg are recognized (but unsupported)
+  /// so warnings name the real reason.
+  static String? _extFromMime(String mime) {
+    final m = mime.toLowerCase().replaceFirst('image/', '');
+    if (m.startsWith('png')) return 'png';
+    if (m.startsWith('jpeg') || m.startsWith('jpg')) return 'jpg';
+    if (m.startsWith('gif')) return 'gif';
+    if (m.startsWith('webp')) return 'webp';
+    if (m.startsWith('bmp')) return 'bmp';
+    if (m.startsWith('svg')) return 'svg';
     return null;
   }
 
@@ -287,12 +322,15 @@ class HtmlImageLoader {
   ///
   /// [maxWidth] downscales wider images; [allowJpeg] re-encodes large opaque
   /// PNGs as JPEG at [jpegQuality] (keeps alpha images and GIFs as-is);
-  /// EXIF orientation is always baked before embedding.
+  /// EXIF orientation is always baked before embedding. [dartOnly] forces
+  /// the Dart implementation — the UI-isolate frame renderer (B6a) must never
+  /// take the synchronous FRB call that would freeze the UI.
   static LoadedImage? load(
     String src, {
     int? maxWidth,
     bool allowJpeg = false,
     int jpegQuality = 80,
+    bool dartOnly = false,
   }) {
     final trimmed = src.trim();
     if (trimmed.isEmpty) return null;
@@ -302,30 +340,62 @@ class HtmlImageLoader {
     final effectiveQuality =
         ImageOptimizerConfig.betaEnabled ? ImageOptimizerConfig.quality : jpegQuality;
 
+    // B18: content-addressed cache key — the raw BYTES (not the src string)
+    // decide identity, so an edited local file or a re-fetched remote always
+    // reprocesses; stale processed entries can never be served. Raw first, so
+    // the hit path below can also tally savings (B24). B20: the backend tag
+    // is part of the key — Rust and Dart outputs are not interchangeable.
+    final raw = _rawFor(trimmed);
+    if (raw == null) return null;
+    final backendTag = dartOnly ? 'dart' : ImageEngineConfig.backendTag;
     final optionsKey =
-        '$trimmed\u0000$maxWidth\u0000$allowJpeg\u0000$effectiveQuality'
-        '\u0000${ImageOptimizerConfig.betaEnabled ? 1 : 0}';
+        '${_fnv1aHex(raw.bytes)}\u0000$maxWidth\u0000$allowJpeg'
+        '\u0000$effectiveQuality\u0000${ImageOptimizerConfig.betaEnabled ? 1 : 0}'
+        '\u0000$backendTag';
     final cachedResult = _processedCache[optionsKey];
-    if (cachedResult != null) return cachedResult;
+    if (cachedResult != null) {
+      _recordHit(optionsKey, raw, cachedResult);
+      return cachedResult;
+    }
     // T07 P5: disk cache for processed images — the same image+options must
     // not be re-decoded and re-encoded on every export.
     final onDisk = _readProcessedDisk(optionsKey);
     if (onDisk != null) {
       _cacheProcessed(optionsKey, onDisk);
+      _recordHit(optionsKey, raw, onDisk);
       return onDisk;
     }
 
-    final raw = _rawFor(trimmed);
-    if (raw == null) return null;
-
     final result = _process(raw,
-        maxWidth: maxWidth, allowJpeg: allowJpeg, jpegQuality: effectiveQuality);
+        maxWidth: maxWidth,
+        allowJpeg: allowJpeg,
+        jpegQuality: effectiveQuality,
+        dartOnly: dartOnly);
     if (result != null) {
+      _talliedKeys.add(optionsKey);
       _cacheProcessed(optionsKey, result);
       _writeProcessedDisk(optionsKey, result);
     }
     return result;
   }
+
+  /// B24: a cached processed hit still saved the deck the same real bytes —
+  /// count it like a fresh conversion, otherwise every later export reports
+  /// "0 savings". [_talliedKeys] stops an in-session double count (the miss
+  /// that produced the entry already tallied it). Zero-cost for non-savings:
+  /// [ImageOptimizationStats.record] ignores after >= before.
+  static void _recordHit(String optionsKey, _RawImage raw, LoadedImage processed) {
+    if (!ImageOptimizerConfig.betaEnabled) return;
+    if (_talliedKeys.contains(optionsKey)) return;
+    if (processed.bytes.length < raw.bytes.length) {
+      ImageOptimizationStats.record(raw.bytes.length, processed.bytes.length);
+      _talliedKeys.add(optionsKey);
+    }
+  }
+
+  /// Per-session guard: which (content, options) pairs were already tallied
+  /// (either by [_process] on a miss or by [_recordHit] on a hit).
+  static final Set<String> _talliedKeys = {};
 
   // ---- Processed-image disk cache (T07 P5) --------------------------------
 
@@ -340,8 +410,12 @@ class HtmlImageLoader {
       if (!file.existsSync() || !meta.existsSync()) return null;
       final map = jsonDecode(meta.readAsStringSync()) as Map<String, dynamic>;
       if (map['opts'] != optionsKey) return null;
+      final bytes = file.readAsBytesSync();
+      // B22: validate the CONTENT (sha256 of the payload), not just the
+      // sidecar — a truncated/corrupt entry must reprocess, never embed.
+      if (map['sha'] != crypto.sha256.convert(bytes).toString()) return null;
       return LoadedImage(
-        bytes: file.readAsBytesSync(),
+        bytes: bytes,
         ext: map['ext'] as String,
         width: map['width'] as int,
         height: map['height'] as int,
@@ -354,20 +428,65 @@ class HtmlImageLoader {
   static void _writeProcessedDisk(String optionsKey, LoadedImage image) {
     try {
       final base = _processedDiskPath(optionsKey);
-      File(base).writeAsBytesSync(image.bytes, flush: true);
+      // B22: atomic replace (tmp + rename) so a crash mid-write cannot leave
+      // a truncated entry that the next export would embed.
+      File('$base.tmp')
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(image.bytes, flush: true);
+      final tmp = File('$base.tmp');
+      try {
+        File(base).deleteSync();
+      } catch (_) {}
+      tmp.renameSync(base);
+      // B23: the sidecar holds only a short content hash + dims — never the
+      // options blob (a base64 data URI used to grow this JSON to MBs).
       File('$base.json').writeAsStringSync(
         jsonEncode({
           'opts': optionsKey,
+          'sha': crypto.sha256.convert(image.bytes).toString(),
           'ext': image.ext,
           'width': image.width,
           'height': image.height,
         }),
         flush: true,
       );
+      _evictProcessedDisk();
     } catch (_) {
       // Best-effort disk cache — never fails an export.
     }
   }
+
+  /// B18: bound the processed disk cache — content-addressed keys mean an
+  /// edited image no longer overwrites its entry, so delete the oldest when
+  /// the count grows past the cap.
+  static void _evictProcessedDisk() {
+    try {
+      final dir = Directory(_cacheDir());
+      if (!dir.existsSync()) return;
+      final entries = dir
+          .listSync()
+          .whereType<File>()
+          .where((f) {
+            final name = f.uri.pathSegments.last;
+            return name.startsWith('proc_') && !name.endsWith('.json') &&
+                !name.endsWith('.tmp');
+          })
+          .toList()
+        ..sort((a, b) => a.lastModifiedSync().compareTo(b.lastModifiedSync()));
+      final excess = entries.length - _processedDiskMaxEntries;
+      if (excess <= 0) return;
+      for (final f in entries.take(excess)) {
+        try {
+          f.deleteSync();
+          File('${f.path}.json').deleteSync();
+        } catch (_) {}
+      }
+    } catch (_) {
+      // Best-effort eviction.
+    }
+  }
+
+  static const int _processedDiskMaxEntries = 600;
 
   /// Raw bytes for [src]: caches for remote/data-URI, fresh read for local
   /// files so on-disk edits are picked up.
@@ -378,7 +497,12 @@ class HtmlImageLoader {
       if (cached != null) return cached;
       try {
         final bytes = base64Decode(dataMatch.group(2)!.replaceAll(RegExp(r'\s'), ''));
-        final raw = _RawImage(bytes, _normalizeExt(dataMatch.group(1)!));
+        final ext = _extFromMime(dataMatch.group(1)!);
+        if (ext == null) {
+          _warn(src, 'unsupported image mime: ${dataMatch.group(1)}');
+          return null;
+        }
+        final raw = _RawImage(bytes, ext);
         if (_rawCache.length >= _memoryCacheCapacity) _rawCache.remove(_rawCache.keys.first);
         _rawCache[src] = raw;
         return raw;
@@ -433,16 +557,42 @@ class HtmlImageLoader {
     int? maxWidth,
     bool allowJpeg = false,
     int jpegQuality = 80,
+    bool dartOnly = false,
   }) {
+    // B21: WebP/BMP/SVG are recognized but cannot be embedded — drop them
+    // with an ACCURATE warning instead of "file not found" / "not an image".
+    if (!const ['png', 'jpg', 'gif'].contains(raw.ext)) {
+      _warn('image bytes (${raw.ext})',
+          'unsupported format ${raw.ext} — only PNG/JPEG/GIF can be embedded; '
+          'dropped');
+      return null;
+    }
+    // B19: reject decompression bombs by the HEADER dimensions — decoding a
+    // 40000×40000 PNG first would OOM the worker (~6 GB of RGBA).
+    final capCheck = _tooLargeForDecode(raw.bytes);
+    if (capCheck != null) {
+      _warn('image bytes (${raw.ext})',
+          'larger than the ${_maxImagePixels ~/ (1024 * 1024)}M-pixel cap '
+          '($capCheck) — skipped (decompression bomb)');
+      return null;
+    }
     ImageCodecResult processed;
     try {
-      processed = ImageCodec.process(
-        raw.bytes,
-        raw.ext,
-        maxWidth: maxWidth,
-        allowJpeg: allowJpeg,
-        jpegQuality: jpegQuality,
-      );
+      processed = dartOnly
+          ? ImageCodec.processDart(
+              raw.bytes,
+              raw.ext,
+              maxWidth: maxWidth,
+              allowJpeg: allowJpeg,
+              jpegQuality: jpegQuality,
+            )
+          : ImageCodec.process(
+              raw.bytes,
+              raw.ext,
+              maxWidth: maxWidth,
+              allowJpeg: allowJpeg,
+              jpegQuality: jpegQuality,
+            );
     } on FormatException {
       // Some decoders throw on corrupted payloads instead of returning null.
       _warn('image bytes', 'undecodable/dirty image');
@@ -483,6 +633,76 @@ class HtmlImageLoader {
       _processedCache.remove(_processedCache.keys.first);
     }
     _processedCache[key] = value;
+  }
+
+  /// B19: pixel cap for a single decoded image (~64 M px ≈ 8192×8192, a
+  /// 256 MB RGBA buffer — the same order as the 10 MB compressed fetch cap).
+  static const int _maxImagePixels = 64 * 1024 * 1024;
+
+  /// Reads width/height straight from the PNG IHDR / GIF header / JPEG SOF
+  /// segment — no allocation, no decode. Returns "WxH" when over the cap.
+  static String? _tooLargeForDecode(Uint8List bytes) {
+    if (bytes.length >= 24 &&
+        bytes[0] == 0x89 && bytes[1] == 0x50 &&
+        bytes[2] == 0x4E && bytes[3] == 0x47) {
+      final w = ByteData.sublistView(bytes).getUint32(16);
+      final h = ByteData.sublistView(bytes).getUint32(20);
+      return _overCap(w, h);
+    }
+    if (bytes.length >= 10 &&
+        bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46) {
+      final w = ByteData.sublistView(bytes).getUint16(6, Endian.little);
+      final h = ByteData.sublistView(bytes).getUint16(8, Endian.little);
+      return _overCap(w, h);
+    }
+    if (bytes.length >= 4 && bytes[0] == 0xFF && bytes[1] == 0xD8) {
+      var i = 2;
+      while (i + 9 < bytes.length) {
+        if (bytes[i] != 0xFF) {
+          i++;
+          continue;
+        }
+        final marker = bytes[i + 1];
+        if (marker == 0xD8 ||
+            marker == 0x01 ||
+            (marker >= 0xD0 && marker <= 0xD7)) {
+          i += 2; // SOI / TEM / RSTn — no length field
+          continue;
+        }
+        final length = (bytes[i + 2] << 8) | bytes[i + 3];
+        if (length < 2 || i + 2 + length > bytes.length) break;
+        // SOF markers: C0-C3, C5-C7, C9-CB, CD-CF (C4/C8/CC are tables).
+        if (marker >= 0xC0 &&
+            marker <= 0xCF &&
+            marker != 0xC4 &&
+            marker != 0xC8 &&
+            marker != 0xCC) {
+          final h = (bytes[i + 5] << 8) | bytes[i + 6];
+          final w = (bytes[i + 7] << 8) | bytes[i + 8];
+          return _overCap(w, h);
+        }
+        i += 2 + length;
+      }
+    }
+    return null;
+  }
+
+  static String? _overCap(num w, num h) =>
+      (w > 0 && h > 0 && w * h > _maxImagePixels) ? '$w×$h' : null;
+
+  /// FNV-1a 64 over bytes — content fingerprint for the processed-cache key
+  /// (B18). ~700 MB/s in Dart (a few ms per photo — far cheaper than the
+  /// decode it saves); collision-safety is cache-identity-level only, the
+  /// payload integrity on disk is checked separately with sha256 (B22).
+  static String _fnv1aHex(Uint8List bytes) {
+    const offset = 0xcbf29ce484222325;
+    const prime = 0x100000001b3;
+    var hash = offset;
+    for (final b in bytes) {
+      hash ^= b;
+      hash = (hash * prime) & 0xFFFFFFFFFFFFFFFF;
+    }
+    return hash.toRadixString(16);
   }
 
   static String _sha256Hex(String input) {

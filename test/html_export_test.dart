@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ghita_ppt_converter/models/export_options.dart';
 import 'package:ghita_ppt_converter/services/html_export_service.dart';
+import 'package:image/image.dart' as img;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -227,6 +228,34 @@ void main() {
       );
       expect(HtmlExportService.deckCacheMisses, 1);
       expect(HtmlExportService.deckCacheHits, 0);
+    });
+
+    test('B17: large opaque photo PNG embeds as JPEG, not PNG', () async {
+      // Photo payloads are 3–6× bigger as PNG; the HTML player must receive
+      // the re-encoded JPEG (allowJpeg: true) like PPTX/PDF do.
+      final image = img.Image(width: 600, height: 400);
+      for (var y = 0; y < 400; y++) {
+        for (var x = 0; x < 600; x++) {
+          image.setPixelRgb(x, y, (x * 2) % 256, (y * 3) % 256, 128);
+        }
+      }
+      final tmpDir = await Directory.systemTemp.createTemp('ghita_b17');
+      addTearDown(() => tmpDir.delete(recursive: true));
+      final imgPath = '${tmpDir.path}/photo.png';
+      File(imgPath).writeAsBytesSync(img.encodePng(image));
+
+      final html = service.buildPresentationHtml([
+        {
+          'title': 'Photo',
+          'htmlContent': '<div><img src="$imgPath"></div>',
+        },
+      ]);
+
+      expect(
+        html,
+        contains('data:image/jpg;base64,'),
+        reason: 'opaque photo PNG must be re-encoded as JPEG for the player',
+      );
     });
   });
 }

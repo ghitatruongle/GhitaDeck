@@ -40,7 +40,6 @@ import '../services/smart_draft_manager.dart';
 import '../services/time_machine_history_service.dart';
 import '../services/project_bundle_service.dart';
 import '../services/header_footer_service.dart';
-import '../services/docx_report_service.dart';
 import 'config_service.dart';
 
 // SlideEffect moved to models/slide.dart in 0.3.0; re-export so existing
@@ -1056,9 +1055,18 @@ class PresentationState with ChangeNotifier {
     exportStatus = 'exporting';
     notifyListeners();
     try {
-      onProgress?.call(ExportProgressBudget.preparing(
-          options.selectSlides(_slideMaps()).length));
       final selectedSlides = options.selectSlides(_slideMaps());
+      // B14: PDF's per-slide count counts the VISIBLE slides (hidden ones are
+      // skipped unless includeHiddenSlides) — preparing must agree, or the
+      // dialog's "x/N" total jumps mid-export.
+      final exportSlides = options.format == PresentationExportFormat.pdf &&
+              !options.includeHiddenSlides
+          ? selectedSlides
+              .where((s) => s['hidden'] != true)
+              .toList(growable: false)
+          : selectedSlides;
+      onProgress?.call(
+          ExportProgressBudget.preparing(exportSlides.length));
       final targetDir = await getApplicationDocumentsDirectory();
       final safeName =
           fileName.replaceAll(RegExp(r'[^\w\.-]'), '_').replaceFirst(
@@ -1102,7 +1110,7 @@ class PresentationState with ChangeNotifier {
           break;
         case PresentationExportFormat.pdf:
           path = await runPdfExportInIsolate(
-            selectedSlides,
+            exportSlides,
             outputPath,
             aspectRatio: options.aspectRatio,
             includeNotes: options.includeNotes,
@@ -1119,13 +1127,16 @@ class PresentationState with ChangeNotifier {
           );
           break;
         case PresentationExportFormat.docx:
-          onProgress?.call(ExportProgressBudget.finalizing(
-              selectedSlides.length));
-          path = await DocxReportService.exportReport(
+          // B10: DOCX used to build on the UI isolate — cancel was a no-op
+          // and progress never reached 100% on large decks. The worker
+          // reports per-slide progress and honors the cancel token.
+          path = await runDocxExportInIsolate(
             selectedSlides,
             outputPath,
             includeNotes: options.includeNotes,
             includeSlideList: options.docxIncludeSlideList,
+            onProgress: onProgress,
+            cancelToken: cancelToken,
           );
           break;
       }

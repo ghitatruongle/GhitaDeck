@@ -12,6 +12,9 @@ zip = { version = "8.6.0", default-features = false, features = ["deflate", "tim
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif"] }
 rayon = "1.10"
 sha2 = "0.10"
+html5ever = "0.39.0"
+markup5ever_rcdom = "0.39.0"
+serde_json = "1.0.151"
 
 [profile.release]
 lto = true

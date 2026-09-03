@@ -26,11 +26,13 @@ pub struct ZipEntry {
 pub fn zip_archive(entries: Vec<ZipEntry>, level: i64) -> Result<Vec<u8>, String> {
     let mut cursor = Cursor::new(Vec::new());
     {
-        let mut writer = ZipWriter::new(&mut cursor);
+        let mut writer = ZipWriter::new(&mut cursor).set_auto_large_file();
         // zip 8.x rejects a compression level on Stored members and maps
         // levels >= 10 to zopfli (very slow); keep text deflate inside the
         // flate2 (zlib-rs) range 1..=9 and never pass a level for stored.
-        let deflate_level = level.clamp(1, 9);
+        // B4: level <= 0 means STORE (the Dart path stores too) — clamping it
+        // to 1 would silently deflate the member and break the contract.
+        let deflate_level = if level <= 0 { 0 } else { level.clamp(1, 9) };
         for entry in entries {
             let stored = entry.stored || deflate_level <= 0;
             let mut options = SimpleFileOptions::default()
@@ -39,7 +41,11 @@ pub fn zip_archive(entries: Vec<ZipEntry>, level: i64) -> Result<Vec<u8>, String
                 } else {
                     CompressionMethod::Deflated
                 })
-                .large_file(true);
+                // B5: no unconditional ZIP64 — small members keep plain
+                // 32-bit headers (the Dart emitter does the same), which old
+                // readers accept; set_auto_large_file promotes automatically
+                // only when a member actually exceeds 4 GB.
+                .large_file(false);
             if !stored {
                 options = options.compression_level(Some(deflate_level));
             }
@@ -92,5 +98,50 @@ mod tests {
         let out = zip_archive(vec![], 9).unwrap();
         let reader = ZipArchive::new(Cursor::new(out)).unwrap();
         assert_eq!(reader.len(), 0);
+    }
+
+    /// B4: level 0 means STORE (same contract as the Dart emitter) — the old
+    /// `clamp(1,9)` silently deflated these members.
+    #[test]
+    fn level_zero_stores_instead_of_deflating() {
+        let out = zip_archive(
+            vec![ZipEntry {
+                name: "raw.bin".into(),
+                data: b"compress me compress me compress me compress me".to_vec(),
+                stored: false,
+            }],
+            0,
+        )
+        .unwrap();
+        let mut reader = ZipArchive::new(Cursor::new(out)).unwrap();
+        let entry = reader.by_name("raw.bin").unwrap();
+        assert!(
+            entry.compression() == CompressionMethod::Stored,
+            "level 0 must not deflate"
+        );
+    }
+
+    /// B5: small members are plain 32-bit entries — no ZIP64 record.
+    #[test]
+    fn small_archive_has_no_zip64() {
+        let out = zip_archive(
+            vec![ZipEntry {
+                name: "small.txt".into(),
+                data: b"tiny".to_vec(),
+                stored: true,
+            }],
+            9,
+        )
+        .unwrap();
+        let mut i = 0;
+        while i + 4 <= out.len() {
+            if out[i..i + 4] == [0x50, 0x4B, 0x06, 0x06] {
+                panic!("unexpected ZIP64 EOCD62 record in a small archive");
+            }
+            i += 1;
+        }
+        let mut reader = ZipArchive::new(Cursor::new(out)).unwrap();
+        let entry = reader.by_name("small.txt").unwrap();
+        assert_eq!(entry.compression(), CompressionMethod::Stored);
     }
 }

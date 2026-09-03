@@ -589,7 +589,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 OfficeSidebarItem(
                   icon: Icons.edit_note,
                   label: context.l10n.editorTitle,
-                  tooltip: '${context.l10n.editorTitle} (Ctrl+1)',
+                  tooltip: context.l10n.editorTitle,
                   isSelected: appProvider.currentIndex == 0,
                   onTap: () => appProvider.updateIndex(0),
                   isDark: isDark,
@@ -899,7 +899,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Zoom'),
+          title: Text(context.l10n.zoomDialogTitle),
           content: SizedBox(
             width: 320,
             child: Column(
@@ -922,7 +922,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     TextButton(
                       onPressed: () => _editorState.zoomOut(),
-                      child: const Text('ΓêÆ'),
+                      child: const Text('−'),
                     ),
                     TextButton(
                       onPressed: () => _editorState.setZoom(1.0),
@@ -981,13 +981,13 @@ class _HomeScreenState extends State<HomeScreen> {
     final result = await showDialog<int>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Go to slide'),
+        title: Text(context.l10n.goToSlideTitle),
         content: TextField(
           controller: controller,
           autofocus: true,
           keyboardType: TextInputType.number,
           decoration: InputDecoration(
-            labelText: 'Slide number (1-${ps.slides.length})',
+            labelText: context.l10n.goToSlideLabel(ps.slides.length),
             isDense: true,
           ),
           onSubmitted: (value) {
@@ -1009,7 +1009,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pop(context, n);
               }
             },
-            child: const Text('Go'),
+            child: Text(context.l10n.goButton),
           ),
         ],
       ),

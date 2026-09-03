@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/l10n.dart';
+
 class CommandPaletteItem {
   final String title;
   final String category;
@@ -52,7 +54,7 @@ class _CommandPaletteDialogState extends State<CommandPaletteDialog> {
               controller: _searchController,
               autofocus: true,
               decoration: InputDecoration(
-                hintText: 'Gõ lệnh hoặc từ khóa tìm kiếm (Ctrl+K)...',
+                hintText: context.l10n.commandPaletteHint,
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -63,7 +65,7 @@ class _CommandPaletteDialogState extends State<CommandPaletteDialog> {
             const SizedBox(height: 12),
             Expanded(
               child: filtered.isEmpty
-                  ? const Center(child: Text('Không tìm thấy lệnh tương ứng'))
+                  ? Center(child: Text(context.l10n.commandPaletteEmpty))
                   : ListView.builder(
                       itemCount: filtered.length,
                       itemBuilder: (ctx, idx) {

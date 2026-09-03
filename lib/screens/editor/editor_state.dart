@@ -409,10 +409,10 @@ class EditorState with ChangeNotifier {
 
     if (context.mounted) {
       showAppSnackBar(
-  context,
-  'Applied "${template.name}" template!',
-  duration: const Duration(seconds: 3)
-);
+        context,
+        context.l10n.templateAppliedTemplateNotice(template.name),
+        duration: const Duration(seconds: 3)
+      );
     }
     notifyListeners();
   }
@@ -420,9 +420,19 @@ class EditorState with ChangeNotifier {
   String _extractTitleFromHtml(String html) {
     try {
       final doc = html_parser.parse(html);
+      final body = doc.body;
+      if (body == null || body.nodes.isEmpty) {
+        return 'New Slide';
+      }
       final h1 = doc.querySelector('h1');
       if (h1 != null && h1.text.trim().isNotEmpty) {
         return h1.text.trim();
+      }
+      // Templates such as the T17 refresh use an h2 as the slide heading;
+      // keep the slide title meaningful instead of falling back to 'New Slide'.
+      final h2 = doc.querySelector('h2');
+      if (h2 != null && h2.text.trim().isNotEmpty) {
+        return h2.text.trim();
       }
     } catch (_) {}
     return 'New Slide';

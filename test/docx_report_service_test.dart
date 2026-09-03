@@ -157,4 +157,46 @@ void main() {
     file.writeAsBytesSync(bytes);
     expect(file.existsSync(), isTrue);
   });
+
+  test('B11: core.xml title strips XML-forbidden control characters', () {
+    final bytes = DocxReportService.buildDocx([
+      slide('Tiêu đề \u0001bad', '<p>X</p>'),
+    ], includeSlideList: false);
+    final decoded = ZipDecoder().decodeBytes(bytes);
+    final core = decoded.files.firstWhere((f) => f.name == 'docProps/core.xml');
+    final xml = utf8.decode(core.content as List<int>);
+    expect(xml, isNot(contains('\u0001')),
+        reason: 'B11: control chars in the title make Word claim '
+            '"unreadable content"');
+    expect(xml, contains('Tiêu đề bad'));
+  });
+
+  test('B12: heading size follows the outline level (1 > 2 > 3)', () {
+    int headingSize(XmlDocument xml, String titleText) {
+      for (final p in xml.findAllElements('w:p')) {
+        final text =
+            p.findAllElements('w:t').map((t) => t.innerText.trim()).join();
+        if (text == titleText) {
+          final sz = p.findAllElements('w:sz').firstOrNull;
+          return int.parse(sz!.getAttribute('w:val')!);
+        }
+      }
+      throw StateError('heading not found: $titleText');
+    }
+
+    final bytes = DocxReportService.buildDocx([
+      slide('Level 1', '<p>A</p>', outlineLevel: 1),
+      slide('Level 2', '<p>B</p>', outlineLevel: 2),
+      slide('Level 3', '<p>C</p>', outlineLevel: 3),
+    ], includeSlideList: false);
+    final decoded = ZipDecoder().decodeBytes(bytes);
+    final doc = decoded.files.firstWhere((f) => f.name == 'word/document.xml');
+    final xml = XmlDocument.parse(utf8.decode(doc.content as List<int>));
+
+    final s1 = headingSize(xml, 'Level 1');
+    final s2 = headingSize(xml, 'Level 2');
+    final s3 = headingSize(xml, 'Level 3');
+    expect(s1, greaterThan(s2), reason: 'B12: outline level 1 must be largest');
+    expect(s2, greaterThan(s3), reason: 'B12: outline level 3 must be smallest');
+  });
 }

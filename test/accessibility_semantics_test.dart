@@ -18,7 +18,9 @@ void main() {
       find.bySemanticsLabel(RegExp(r'GhitaPPT presentation workspace')),
       findsOneWidget,
     );
-    final editor = find.bySemanticsLabel('Editor (Ctrl+1)');
+    // T15: the sidebar tooltip no longer claims a Ctrl+1 binding that does
+    // not exist — the semantics label is the localized section name.
+    final editor = find.bySemanticsLabel(RegExp(r'^Editor$'));
     expect(editor, findsOneWidget);
     final editorNode = tester.getSemantics(editor);
     expect(editorNode.getSemanticsData().flagsCollection.isButton, isTrue);

@@ -2,7 +2,8 @@ import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
 
 import '../src/rust/api/zip.dart' as rust_api;
-import '../src/rust/frb_generated.dart' as rust_bridge;
+import 'engine_audit_log.dart';
+import 'rust_bridge_init.dart';
 
 /// Engine preference shared across isolates (T02).
 ///
@@ -37,7 +38,8 @@ class ZipEngineConfig {
     if (_rustReady) return true;
     if (rustReadyProbe != null) return rustReadyProbe!();
     try {
-      await rust_bridge.RustLib.init();
+      // B6c: per-isolate single-flight hub (zip/image/htmlparse share it).
+      await RustBridgeInit.ensureReady();
       _rustReady = true;
     } catch (e) {
       // "Should not initialize flutter_rust_bridge twice" means another
@@ -48,6 +50,7 @@ class ZipEngineConfig {
       if (!_rustReady) {
         debugPrint(
             'ZipEngineConfig: ghita_core.dll unavailable ($e); Dart zip');
+        await EngineAuditLog.append('engine fallback', 'zip: $e');
       }
     }
     return _rustReady;

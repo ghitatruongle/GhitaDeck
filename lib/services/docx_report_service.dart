@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:xml/xml.dart';
 
+import 'export_primitives.dart';
 import 'outline_export_service.dart';
 
 /// DOCX report export (N1, Track 03 v2.0.5) — a Word report built from the
@@ -24,11 +25,15 @@ class DocxReportService {
   /// Build the in-memory DOCX package bytes for [slides].
   ///
   /// [slides] are `Slide.toMap()` maps (title/htmlContent/notes/outlineLevel).
+  /// [onProgress] receives per-slide fractions and [cancelToken] interrupts
+  /// between slides — DOCX export runs on the worker isolate (B10).
   static Uint8List buildDocx(
     List<Map<String, dynamic>> slides, {
     bool includeNotes = true,
     bool includeSlideList = true,
     String? documentTitle,
+    ExportProgressCallback? onProgress,
+    ExportCancelToken? cancelToken,
   }) {
     if (slides.isEmpty) {
       throw ArgumentError.value(slides, 'slides', 'No slides to report');
@@ -45,9 +50,17 @@ class DocxReportService {
         _paragraph(docBody, title, bold: true, size: 36, center: true);
         _spacer(docBody);
         for (var i = 0; i < outline.length; i++) {
+          cancelToken?.throwIfCancelled();
+          onProgress?.call(ExportProgressBudget.forSlide(i, outline.length));
           final entry = outline[i];
-          // Slide heading — level comes from the deck outline level.
-          _paragraph(docBody, entry.title, bold: true, size: 30);
+          // Slide heading — size follows the deck outline level (B12:
+          // level 1 is the largest, deeper levels smaller).
+          final headingSize = switch (entry.level) {
+            1 => 30,
+            2 => 28,
+            _ => 26,
+          };
+          _paragraph(docBody, entry.title, bold: true, size: headingSize);
           for (final line in entry.body) {
             _paragraph(docBody, line, size: 22);
           }
@@ -85,7 +98,10 @@ class DocxReportService {
           'http://schemas.openxmlformats.org/package/2006/metadata/core-properties');
       coreXml.attribute('xmlns:dc', 'http://purl.org/dc/elements/1.1/');
       coreXml.element('dc:title', nest: () {
-        coreXml.text(title);
+        // B11: the title must pass the same control-char strip as every
+        // other run text — a control char here makes Word claim the whole
+        // document is "unreadable content".
+        coreXml.text(_cleanText(title));
       });
       coreXml.element('dc:creator', nest: () {
         coreXml.text('Ghita PPT Converter');
@@ -113,13 +129,20 @@ class DocxReportService {
     bool includeNotes = true,
     bool includeSlideList = true,
     String? documentTitle,
+    ExportProgressCallback? onProgress,
+    ExportCancelToken? cancelToken,
   }) async {
+    cancelToken?.throwIfCancelled();
     final bytes = buildDocx(
       slides,
       includeNotes: includeNotes,
       includeSlideList: includeSlideList,
       documentTitle: documentTitle,
+      onProgress: onProgress,
+      cancelToken: cancelToken,
     );
+    cancelToken?.throwIfCancelled();
+    onProgress?.call(ExportProgressBudget.finalizing(slides.length));
     final file = File(outputPath);
     await file.parent.create(recursive: true);
     await file.writeAsBytes(bytes, flush: true);

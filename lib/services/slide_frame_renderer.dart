@@ -137,7 +137,10 @@ class SlideFrameRenderer {
           y += (h * 0.02).round();
         case 'image':
           final src = (block['src'] ?? '').toString();
-          final loaded = HtmlImageLoader.load(src, maxWidth: w);
+          // B6a: the frame renderer runs on the UI isolate — it must never
+          // take the synchronous Rust FRB call (would freeze the UI), so the
+          // Dart image path is forced here.
+          final loaded = HtmlImageLoader.load(src, maxWidth: w, dartOnly: true);
           if (loaded != null) {
             final iw = loaded.width, ih = loaded.height;
             if (iw > 0 && ih > 0) {

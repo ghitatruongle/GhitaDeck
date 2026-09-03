@@ -86,7 +86,7 @@ class _FindReplaceDialogState extends State<FindReplaceDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Find & Replace (Ctrl+F)',
+              Text(context.l10n.findReplaceTitle,
                   style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 12),
               TextField(

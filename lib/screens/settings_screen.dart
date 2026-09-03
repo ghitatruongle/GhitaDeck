@@ -279,6 +279,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ],
                       ),
+                      if (engine.status == EngineStatus.fallingBack)
+                        // T14: one-line guidance — the user must know the
+                        // fallback is safe AND how to get Rust back.
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            l10n.engineFallbackHint,
+                            style: theme.textTheme.bodySmall
+                                ?.copyWith(color: Colors.orange.shade700),
+                          ),
+                        ),
                       const Divider(height: 24),
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,

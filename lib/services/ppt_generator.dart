@@ -23,6 +23,7 @@ import 'equation_service.dart';
 import 'export_primitives.dart';
 import 'header_footer_service.dart';
 import 'html_image_loader.dart';
+import 'html_parse_codec.dart';
 import 'icon_library_service.dart';
 import 'model3d_service.dart';
 import 'ole_service.dart';
@@ -281,12 +282,32 @@ class HtmlParseCache {
     }
 
     misses++;
+    // T13.4: Rust tokenizer when the engine is ready, Dart otherwise — the
+    // two paths are parity-tested (test/htmlparse_parity_test.dart).
+    final rust = HtmlParseCodec.parseToJson(html);
+    final notes = rust?.notes ?? '';
+    final subtitle =
+        rust != null ? (rust.subtitle.isEmpty ? null : rust.subtitle) : null;
+    if (rust != null) {
+      final entry = _ParsedHtmlEntry(
+        html,
+        notes: notes,
+        subtitle: subtitle,
+        blocks: rust.blocks,
+        blocksNoFirstH2: rust.blocksNoFirstH2,
+      );
+      _entries[key] = entry;
+      if (_entries.length > _capacity) {
+        _entries.remove(_entries.keys.first);
+      }
+      return entry;
+    }
     final watch = Stopwatch()..start();
     final doc = html_parser.parse(html);
     parseMs += watch.elapsedMicroseconds / 1000;
-    final notes = doc.querySelector('aside.notes')?.text.trim() ?? '';
+    final dartNotes = doc.querySelector('aside.notes')?.text.trim() ?? '';
     final h2 = doc.querySelector('h2');
-    final subtitle =
+    final dartSubtitle =
         (h2 != null && h2.text.trim().isNotEmpty) ? h2.text.trim() : null;
     final blocks = PPTGenerator.parseHtmlContentFullFromDoc(doc, fallbackText: html);
     // First h2 is the dedicated subtitle and must not be emitted again as a
@@ -297,8 +318,8 @@ class HtmlParseCache {
 
     final entry = _ParsedHtmlEntry(
       html,
-      notes: notes,
-      subtitle: subtitle,
+      notes: dartNotes,
+      subtitle: dartSubtitle,
       blocks: blocks,
       blocksNoFirstH2: blocksNoFirstH2,
     );

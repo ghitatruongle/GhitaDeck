@@ -7,10 +7,12 @@ import '../models/slide.dart';
 import 'export_primitives.dart';
 import 'html_export_service.dart';
 import 'html_image_loader.dart';
+import 'html_parse_codec.dart';
 import 'image_codec.dart';
 import 'image_optimizer_service.dart';
 import 'pdf_export_service.dart';
 import 'ppt_generator.dart';
+import 'docx_report_service.dart';
 import 'zip_codec.dart';
 
 // Background-isolate entry points for the heavy export pipeline.
@@ -79,6 +81,30 @@ Future<String> runPptExportInIsolate(
     return result['path'] as String;
   }
   throw Exception(result['error'] ?? 'PPT export failed');
+}
+
+/// Export slides to DOCX on the background worker isolate (B10 — the report
+/// used to build on the UI isolate where cancel was a no-op and the progress
+/// bar never reached 100%).
+Future<String> runDocxExportInIsolate(
+  List<Map<String, dynamic>> slides,
+  String outputPath, {
+  bool includeNotes = true,
+  bool includeSlideList = true,
+  ExportProgressCallback? onProgress,
+  ExportCancelToken? cancelToken,
+}) async {
+  final result = await ExportIsolateService.instance._runJob(<String, dynamic>{
+    'type': 'docx',
+    'slides': slides,
+    'outputPath': outputPath,
+    'includeNotes': includeNotes,
+    'includeSlideList': includeSlideList,
+  }, onProgress: onProgress, cancelToken: cancelToken);
+  if (result['ok'] == true) {
+    return result['path'] as String;
+  }
+  throw Exception(result['error'] ?? 'DOCX export failed');
 }
 
 /// Export slides to PDF on the background worker isolate.
@@ -174,6 +200,10 @@ Future<String> runHtmlExportInIsolate(
 class ExportIsolateService {
   ExportIsolateService._();
 
+  /// Timeout for the worker reply — a dead/hung worker must not hold the
+  /// export forever. Overridable in tests (B7) to make the deadline cheap.
+  static Duration replyTimeout = const Duration(minutes: 2);
+
   static final ExportIsolateService instance = ExportIsolateService._();
 
   Isolate? _isolate;
@@ -243,9 +273,6 @@ class ExportIsolateService {
       final reply = ReceivePort();
       final progressPort = ReceivePort();
       final outputPath = (job['outputPath'] as String?) ?? '';
-      // Remember pre-existing output so a cancelled job never leaves a
-      // partial file behind in its place.
-      final existedBefore = outputPath.isNotEmpty && File(outputPath).existsSync();
 
       // Ask the worker to stop the moment the host token is cancelled. The
       // worker cannot poll its message port while synchronously building, so
@@ -276,6 +303,14 @@ class ExportIsolateService {
           'progressPort': onProgress != null ? progressPort.sendPort : null,
         });
 
+        // Immediate preparing event from the host: the worker awaits the
+        // engine-readiness decision before its first per-slide report, so the
+        // UI gets 0% instantly (T08.7 gate) instead of after that wait.
+        if (onProgress != null) {
+          final total = (job['slides'] as List?)?.length ?? 0;
+          onProgress(ExportProgressBudget.preparing(total));
+        }
+
         progressSub = progressPort.listen((dynamic msg) {
           if (onProgress == null) return;
           final m = Map<String, dynamic>.from(msg as Map);
@@ -291,28 +326,24 @@ class ExportIsolateService {
 
         Map<String, dynamic> result;
         if (cancelWatch == null) {
-          final message = await reply.first.timeout(const Duration(minutes: 2));
+          final message =
+              await reply.first.timeout(ExportIsolateService.replyTimeout);
           result = Map<String, dynamic>.from(message as Map);
         } else {
           // Whoever resolves first decides: an early cancellation wins over
           // the (possibly slow) export reply.
           final cancelled = cancelWatch.then((_) => true);
           final answered = reply.first
-              .timeout(const Duration(minutes: 2))
+              .timeout(ExportIsolateService.replyTimeout)
               .then((m) => <Object?>[false, m]);
           final winner = await Future.any<Object?>([answered, cancelled]);
           if (winner == true) {
             // Cancellation lands while the worker is (still) running:
-            // terminate it immediately and remove any output the job may
-            // have started writing, so cancellation never leaves a partial
-            // file where there was none before.
+            // terminate it immediately and remove the job's scratch file.
+            // The real output path is only ever touched by the final atomic
+            // rename, so a pre-existing file is never corrupted (B8).
             _disposeWorker();
-            if (!existedBefore) {
-              try {
-                final f = File(outputPath);
-                if (f.existsSync()) await f.delete();
-              } catch (_) {}
-            }
+            await _discardScratch(outputPath);
             throw const ExportCancelledException();
           }
           result =
@@ -320,6 +351,7 @@ class ExportIsolateService {
         }
 
         if (result['cancelled'] == true) {
+          await _discardScratch(outputPath);
           throw const ExportCancelledException();
         }
         // The worker reports per-slide progress only; synthesize the final
@@ -329,9 +361,11 @@ class ExportIsolateService {
         }
         return result;
       } on TimeoutException {
-        // The worker likely died mid-job — drop it and let the next call
-        // spawn a fresh one.
+        // The worker likely died mid-job — drop it and clear the scratch
+        // file so no half-written output survives (B7); the previous file at
+        // the target path is still untouched.
         _disposeWorker();
+        await _discardScratch(outputPath);
         rethrow;
       } finally {
         await progressSub?.cancel();
@@ -339,6 +373,16 @@ class ExportIsolateService {
         progressPort.close();
       }
     });
+  }
+
+  /// Deletes the worker's scratch (`.part`) file for [outputPath], if any.
+  /// Never touches the target path itself.
+  static Future<void> _discardScratch(String outputPath) async {
+    if (outputPath.isEmpty) return;
+    try {
+      final f = File('$outputPath.part');
+      if (f.existsSync()) await f.delete();
+    } catch (_) {}
   }
 }
 
@@ -447,12 +491,16 @@ Future<String> _doExport(
     // T02: engine preference comes from the host isolate via the job message.
     ZipEngineConfig.setPreferredRust(
         job['engineRustPreferred'] as bool? ?? true);
-    // T06: images run on the same engine choice. The sync loader path needs
-    // a ready DLL, so kick the async init now (prefetch + generation give it
-    // time); until it lands the Dart implementation is used — fallback-first.
+    // T06/T13: images/parse run on the same engine choice. AWAIT the ready
+    // decision instead of racing it (B6b/B20): if the DLL loads halfway
+    // through the job the whole job would silently mix Rust and Dart
+    // backends — one await makes the choice uniform for every slide.
     ImageEngineConfig.setPreferredRust(
         job['engineRustPreferred'] as bool? ?? true);
-    unawaited(ImageEngineConfig.ensureRustReadyOnce());
+    await ImageEngineConfig.ensureRustReadyOnce();
+    HtmlParseEngineConfig.setPreferredRust(
+        job['engineRustPreferred'] as bool? ?? true);
+    await HtmlParseEngineConfig.ensureRustReadyOnce();
     // T04: N2 beta flag (image optimizer) — same cross-isolate snapshot.
     ImageOptimizerConfig.betaEnabled = job['optimizeImages'] as bool? ?? false;
     // T07 P2: JPEG re-encode quality mapped from the host's ExportQuality.
@@ -465,11 +513,17 @@ Future<String> _doExport(
   await HtmlImageLoader.prefetchSlides(slides);
   cancelToken?.throwIfCancelled();
 
+  // B7/B8: the generators write to a `.part` scratch; only the final atomic
+  // rename touches the real output path. A timeout/cancel/failure therefore
+  // never leaves a partial file and never corrupts a pre-existing one.
+  final finalPath = outputPath;
+  final partPath = '$outputPath.part';
+  File(partPath).parent.createSync(recursive: true);
   try {
-    final path = switch (type) {
+    final _ = switch (type) {
       'ppt' => (await PPTGenerator.generatePPT(
                 slides,
-                outputPath,
+                partPath,
                 effect: effect,
                 widescreen: widescreen,
                 aspectRatio: aspectRatio,
@@ -490,7 +544,7 @@ Future<String> _doExport(
       'pdf' => await PdfExportService()
           .exportToPdf(
             slides,
-            outputPath,
+            partPath,
             widescreen: widescreen,
             aspectRatio: aspectRatio,
             includeNotes: includeNotes,
@@ -510,7 +564,7 @@ Future<String> _doExport(
           ),
       'html' => await HtmlExportService().exportToHtmlPath(
             slides,
-            outputPath,
+            partPath,
             aspectRatio: aspectRatio ?? ExportAspectRatio.widescreen16x9,
             includeNotes: includeNotes,
             includeBackgrounds: includeBackgrounds,
@@ -519,11 +573,45 @@ Future<String> _doExport(
             cancelToken: cancelToken,
             onProgress: onProgress,
           ),
+      // B10: DOCX must never build on the UI isolate — same worker,
+      // same cooperative cancel/per-slide progress as PPTX/PDF/HTML.
+      'docx' => await DocxReportService.exportReport(
+            slides,
+            partPath,
+            includeNotes: includeNotes,
+            includeSlideList: job['includeSlideList'] as bool? ?? true,
+            cancelToken: cancelToken,
+            onProgress: onProgress,
+          ),
       _ => throw Exception('Unknown export type: $type'),
     };
     // Dropped/failed images land in <output>.warnings.log (Track 03, P7).
-    await HtmlImageLoader.writeWarningsLog(path);
-    return path;
+    // The warnings log keeps the REAL output name (it is written next to the
+    // final file, not the scratch).
+    await HtmlImageLoader.writeWarningsLog(finalPath);
+
+    // Promote the scratch: replace the target only when the job fully
+    // succeeded (a pre-existing file survives every failure/cancel).
+    try {
+      final target = File(finalPath);
+      if (target.existsSync()) await target.delete();
+      await File(partPath).rename(finalPath);
+    } catch (e) {
+      try {
+        final f = File(partPath);
+        if (f.existsSync()) await f.delete();
+      } catch (_) {}
+      rethrow;
+    }
+    return finalPath;
+  } catch (_) {
+    // Any generation failure (including the worker's own cancel): the
+    // scratch must not survive — the host clears it again as a safety net.
+    try {
+      final f = File(partPath);
+      if (f.existsSync()) await f.delete();
+    } catch (_) {}
+    rethrow;
   } finally {
     HtmlImageLoader.clearWarnings();
   }

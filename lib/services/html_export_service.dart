@@ -26,7 +26,7 @@ import 'cameo_service.dart';
 import 'effect_preview_service.dart';
 import 'export_primitives.dart';
 import 'html_image_loader.dart';
-import 'ppt_generator.dart';
+import '../core/html/html_parser.dart';
 import 'ai_html_guard.dart';
 
 class HtmlExportService {
@@ -1071,14 +1071,16 @@ class HtmlExportService {
     final out = StringBuffer();
     var inString = false;
     var quote = '';
-    var lastWasSpace = false;
+    var lastCodeUnit = -1;
     var i = 0;
     while (i < input.length) {
       final c = input[i];
       if (inString) {
         out.write(c);
+        lastCodeUnit = c.codeUnitAt(0);
         if (c == '\\' && i + 1 < input.length) {
           out.write(input[i + 1]);
+          lastCodeUnit = input[i + 1].codeUnitAt(0);
           i += 2;
           continue;
         }
@@ -1093,6 +1095,7 @@ class HtmlExportService {
         inString = true;
         quote = c;
         out.write(c);
+        lastCodeUnit = c.codeUnitAt(0);
         i++;
         continue;
       }
@@ -1111,15 +1114,20 @@ class HtmlExportService {
         i += 2;
         continue;
       }
-      if (c == ' ' || c == '\n' || c == '\r' || c == '\t') {
-        lastWasSpace = out.isNotEmpty && !_isSpace(out.toString().codeUnitAt(out.length - 1));
-        if (lastWasSpace) {
+      if (c == ' ' ||
+          c == '\n' ||
+          c == '\r' ||
+          c == '\t') {
+        final collapse = lastCodeUnit >= 0 && !_isSpace(lastCodeUnit);
+        if (collapse) {
           out.write(' ');
+          lastCodeUnit = 0x20;
         }
         i++;
         continue;
       }
       out.write(c);
+      lastCodeUnit = c.codeUnitAt(0);
       i++;
     }
     return out.toString();
@@ -1129,8 +1137,6 @@ class HtmlExportService {
       codeUnit == 0x20 || codeUnit == 0x09 || codeUnit == 0x0A || codeUnit == 0x0D;
 
   // Compiled once — these run per slide on every deck build.
-  static final RegExp _bgColorAttrRe =
-      RegExp(r"""data-bg-color=["']([^"']+)["']""", caseSensitive: false);
   static final RegExp _bgColorDqRe =
       RegExp(r'data-bg-color="[^"]*"', caseSensitive: false);
   static final RegExp _bgColorSqRe =
@@ -1142,17 +1148,17 @@ class HtmlExportService {
 
   String? _extractSlideBgColor(Map<String, dynamic> slide) {
     final typed =
-        PPTGenerator.cssColorToHex((slide['bgColor'] ?? '').toString());
+        HtmlParseCore.cssColorToHex((slide['bgColor'] ?? '').toString());
     if (typed != null) return typed;
     final html = (slide['htmlContent'] ?? '').toString();
-    final match = _bgColorAttrRe.firstMatch(html);
-    return match == null ? null : PPTGenerator.cssColorToHex(match.group(1)!);
+    final match = HtmlAttrScan.bgColorAttrRe.firstMatch(html);
+    return match == null ? null : HtmlParseCore.cssColorToHex(match.group(1)!);
   }
 
   String _speakerNotes(Map<String, dynamic> slide) {
     final explicit = (slide['notes'] ?? '').toString().trim();
     if (explicit.isNotEmpty) return explicit;
-    return PPTGenerator.extractNotes((slide['htmlContent'] ?? '').toString());
+    return HtmlParseCore.extractNotes((slide['htmlContent'] ?? '').toString());
   }
 
   String _processSlideHtml(
@@ -1262,7 +1268,7 @@ class HtmlExportService {
         src,
         maxWidth: imageMaxWidth,
         allowJpeg: true,
-        jpegQuality: PPTGenerator.jpegQualityForMaxWidth(imageMaxWidth),
+        jpegQuality: HtmlParseCore.jpegQualityForMaxWidth(imageMaxWidth),
       );
       if (loaded != null) {
         // Track 07, P3: the payload moves into the JS image map; the <img>

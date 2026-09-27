@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'bench_common.dart';
 import 'package:ghita_ppt_converter/services/html_export_service.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:image/image.dart' as img;
@@ -47,9 +48,8 @@ void main() {
       return {
         'title': 'Slide $i',
         'effect': effects[i % effects.length],
-        'htmlContent':
-            '<h2>Phụ đề $i</h2><p>Nội dung tiếng Việt có dấu $i.</p>'
-                '<img src="data:image/png;base64,$image">',
+        'htmlContent': '<h2>Phụ đề $i</h2><p>Nội dung tiếng Việt có dấu $i.</p>'
+            '<img src="data:image/png;base64,$image">',
       };
     });
 
@@ -58,9 +58,16 @@ void main() {
     try {
       HtmlExportService.clearDeckCache();
       final service = HtmlExportService();
-      final watch = Stopwatch()..start();
-      final path = await service.exportToHtmlPath(slides, out);
-      watch.stop();
+      final runTimes = <double>[];
+      var path = out;
+      for (var run = 0; run < 3; run++) {
+        final watch = Stopwatch()..start();
+        path = await service.exportToHtmlPath(slides, out);
+        watch.stop();
+        runTimes.add(watch.elapsedMicroseconds / 1000);
+      }
+      runTimes.sort();
+      final buildMs = runTimes[1];
       final bytes = File(path).readAsStringSync();
       final byteLength = utf8.encode(bytes).length;
 
@@ -70,21 +77,30 @@ void main() {
 
       final cssStart = bytes.indexOf('@keyframes');
       final cssEnd = bytes.indexOf('</style>');
-      final cssBytes = utf8
-          .encode(bytes.substring(cssStart, cssEnd))
-          .length;
-      final imgCount = RegExp('data:image/png;base64,').allMatches(bytes).length;
+      final cssBytes = utf8.encode(bytes.substring(cssStart, cssEnd)).length;
+      final imgCount =
+          RegExp('data:image/png;base64,').allMatches(bytes).length;
 
+      final env = BenchEnvironment.current();
       final lines = <String>[
         '| Deck chuẩn 10 slide / 10 ảnh | Giá trị |',
         '|---|---|',
+        env.header,
         '| Tổng dung lượng (UTF-8 bytes) | $byteLength B |',
-        '| Thời gian build + ghi file | ${watch.elapsedMicroseconds / 1000} ms |',
+        '| Thời gian build + ghi file (median 3 lần) | $buildMs ms |',
         '| Thời gian parse HTML (proxy tải slide đầu) | '
             '${parseWatch.elapsedMicroseconds / 1000} ms |',
         '| CSS keyframes (bytes) | $cssBytes B |',
         '| Ảnh base64 nhúng (số lần) | $imgCount |',
       ];
+
+      PerfGateReport(
+        suite: 'html_deck',
+        environment: env,
+        metrics: [
+          BenchMetric('htmlDeckBuildMs', buildMs, 240),
+        ],
+      ).writeCurrentJson('tool/perf_current.json');
 
       final label = Platform.environment['GHITA_BENCH_LABEL'];
       if (label != null) {

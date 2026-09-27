@@ -23,7 +23,15 @@ enum ActionButtonKind {
   custom,
 }
 
-enum ActionType { slideNext, slidePrev, slideFirst, slideLast, url, file, program }
+enum ActionType {
+  slideNext,
+  slidePrev,
+  slideFirst,
+  slideLast,
+  url,
+  file,
+  program
+}
 
 class ActionButton {
   const ActionButton({
@@ -48,34 +56,56 @@ class ActionButton {
   /// Built-in label for the button kind (i18n applied by the caller).
   String get defaultLabel {
     switch (kind) {
-      case ActionButtonKind.home: return 'Home';
-      case ActionButtonKind.next: return 'Next';
-      case ActionButtonKind.back: return 'Back';
-      case ActionButtonKind.end: return 'End';
-      case ActionButtonKind.info: return 'Info';
-      case ActionButtonKind.help: return 'Help';
-      case ActionButtonKind.movie: return 'Movie';
-      case ActionButtonKind.sound: return 'Sound';
-      case ActionButtonKind.document: return 'Document';
-      case ActionButtonKind.begin: return 'Begin';
-      case ActionButtonKind.custom: return 'Custom';
+      case ActionButtonKind.home:
+        return 'Home';
+      case ActionButtonKind.next:
+        return 'Next';
+      case ActionButtonKind.back:
+        return 'Back';
+      case ActionButtonKind.end:
+        return 'End';
+      case ActionButtonKind.info:
+        return 'Info';
+      case ActionButtonKind.help:
+        return 'Help';
+      case ActionButtonKind.movie:
+        return 'Movie';
+      case ActionButtonKind.sound:
+        return 'Sound';
+      case ActionButtonKind.document:
+        return 'Document';
+      case ActionButtonKind.begin:
+        return 'Begin';
+      case ActionButtonKind.custom:
+        return 'Custom';
     }
   }
 
   /// The shape preset geometry name for the button kind (OOXML prstGeom).
   String get presetGeom {
     switch (kind) {
-      case ActionButtonKind.home: return 'homePlate';
-      case ActionButtonKind.next: return 'chevron';
-      case ActionButtonKind.back: return 'chevron';
-      case ActionButtonKind.end: return 'chevron';
-      case ActionButtonKind.info: return 'info';
-      case ActionButtonKind.help: return 'question';
-      case ActionButtonKind.movie: return 'movie';
-      case ActionButtonKind.sound: return 'speaker';
-      case ActionButtonKind.document: return 'folder';
-      case ActionButtonKind.begin: return 'actionButtonBlank';
-      case ActionButtonKind.custom: return 'rect';
+      case ActionButtonKind.home:
+        return 'homePlate';
+      case ActionButtonKind.next:
+        return 'chevron';
+      case ActionButtonKind.back:
+        return 'chevron';
+      case ActionButtonKind.end:
+        return 'chevron';
+      case ActionButtonKind.info:
+        return 'info';
+      case ActionButtonKind.help:
+        return 'question';
+      case ActionButtonKind.movie:
+        return 'movie';
+      case ActionButtonKind.sound:
+        return 'speaker';
+      case ActionButtonKind.document:
+        return 'folder';
+      case ActionButtonKind.begin:
+        return 'actionButtonBlank';
+      case ActionButtonKind.custom:
+        return 'rect';
     }
   }
 
@@ -161,7 +191,8 @@ class ActionButtonService {
   static String actionMarkup(ActionButton button) =>
       '<div data-action=\'${escapeAttribute(button)}\'></div>';
 
-  static int actionCount(String html) => _dataActionRegExp.allMatches(html).length;
+  static int actionCount(String html) =>
+      _dataActionRegExp.allMatches(html).length;
 
   /// Replace the [index]-th action block in [html].
   static String replaceActionAt(String html, int index, ActionButton button) {
@@ -197,7 +228,7 @@ class ActionButtonService {
     final b = StringBuffer();
     b.write('<p:sp>\n');
     b.write(
-        '  <p:nvSpPr><p:cNvPr id="$shapeId" name="ActionButton ${button.kind.name}"/><p:cNvSpPr/><p:nvPr/>'
+        '  <p:nvSpPr><p:cNvPr id="$shapeId" name="ActionButton ${button.kind.name}"/><p:cNvSpPr/>'
         '<p:nvPr>${actionXml.isEmpty ? '' : '<a:hlinkClick $actionXml/>'}'
         '<p:extLst><p:ext uri="{FF2B5EF4-FFF2-40B4-BE49-F238E27FC236}">'
         '<a16:creationId xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main" id="{$shapeId-0000-0000-0000-000000000000}"/>'
@@ -208,8 +239,7 @@ class ActionButtonService {
         '<a:solidFill><a:srgbClr val="$colorHex"/></a:solidFill>'
         '<a:ln><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:prstDash val="solid"/></a:ln>'
         '</p:spPr>\n');
-    b.write(
-        '  <p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/>'
+    b.write('  <p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr algn="ctr"/>'
         '<a:r><a:rPr lang="en-US" sz="1200" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill></a:rPr>'
         '<a:t>${_xml(label)}</a:t></a:r></a:p></p:txBody>\n');
     b.write('</p:sp>\n');
@@ -239,11 +269,16 @@ class ActionButtonService {
   /// The `p:action` slide-jump target string for a button (used in tests).
   static String slideJumpFor(ActionButton button) {
     switch (button.action) {
-      case ActionType.slideNext: return 'nextslide';
-      case ActionType.slidePrev: return 'previousslide';
-      case ActionType.slideFirst: return 'firstslide';
-      case ActionType.slideLast: return 'lastslide';
-      default: return '';
+      case ActionType.slideNext:
+        return 'nextslide';
+      case ActionType.slidePrev:
+        return 'previousslide';
+      case ActionType.slideFirst:
+        return 'firstslide';
+      case ActionType.slideLast:
+        return 'lastslide';
+      default:
+        return '';
     }
   }
 

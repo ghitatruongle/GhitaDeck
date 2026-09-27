@@ -7,6 +7,8 @@ import 'zip_codec.dart';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:html/parser.dart' as html_parser;
 import 'package:html/dom.dart' as dom;
+import '../core/document/slide_document.dart';
+import '../core/html/html_parser.dart';
 import '../models/export_options.dart';
 import '../models/custom_show.dart';
 import '../models/chart_data.dart';
@@ -23,7 +25,6 @@ import 'equation_service.dart';
 import 'export_primitives.dart';
 import 'header_footer_service.dart';
 import 'html_image_loader.dart';
-import 'html_parse_codec.dart';
 import 'icon_library_service.dart';
 import 'model3d_service.dart';
 import 'ole_service.dart';
@@ -55,79 +56,95 @@ class _SlideRels {
     final id = 'rId$_next';
     _next++;
     final mode = external ? ' TargetMode="External"' : '';
-    _entries
-        .add('  <Relationship Id="$id" Type="$type" Target="$target"$mode/>');
+    _entries.add(
+      '  <Relationship Id="$id" Type="$type" Target="$target"$mode/>',
+    );
     return id;
   }
 
   String addImage(String target) => _add(
-      'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image',
-      target);
+        'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image',
+        target,
+      );
 
   /// Track 18, P6: the `oleObject` relationship carrying the embedded file.
   String addOleObject(String target) => _add(
-      'http://schemas.openxmlformats.org/officeDocument/2006/relationships/oleObject',
-      target);
+        'http://schemas.openxmlformats.org/officeDocument/2006/relationships/oleObject',
+        target,
+      );
 
   /// Track 11, P2: the `video` relationship carrying the mp4 (embedded part
   /// or an external URL for online videos).
   String addVideoFile(String target, {bool external = false}) => _add(
-      'http://schemas.openxmlformats.org/officeDocument/2006/relationships/video',
-      target,
-      external: external);
+        'http://schemas.openxmlformats.org/officeDocument/2006/relationships/video',
+        target,
+        external: external,
+      );
 
   /// Track 11, P2: the legacy `media` relationship PowerPoint writes
   /// alongside `video` (referenced by the p14:media extension in the shape).
   String addMedia(String target) => _add(
-      'http://schemas.microsoft.com/office/2007/relationships/media',
-      target);
+        'http://schemas.microsoft.com/office/2007/relationships/media',
+        target,
+      );
 
   /// Track 13, P4: the `audio` relationship carrying the narration mp3/m4a.
   String addAudioFile(String target) => _add(
-      'http://schemas.openxmlformats.org/officeDocument/2006/relationships/audio',
-      target);
+        'http://schemas.openxmlformats.org/officeDocument/2006/relationships/audio',
+        target,
+      );
 
   /// Track 14, P3: the 2017 model3d relationship carrying the GLB.
   String addModel3d(String target) => _add(
-      'http://schemas.microsoft.com/office/2017/06/relationships/model3d',
-      target);
+        'http://schemas.microsoft.com/office/2017/06/relationships/model3d',
+        target,
+      );
 
   String addHyperlink(String url) => _add(
-      'http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink',
-      url,
-      external: true);
+        'http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink',
+        url,
+        external: true,
+      );
 
   String addNotesSlide(String target) => _add(
-      'http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide',
-      target);
+        'http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide',
+        target,
+      );
 
   String addChart(String target) => _add(
-      'http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart',
-      target);
+        'http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart',
+        target,
+      );
 
   String addDiagramData(String target) => _add(
-      'http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramData',
-      target);
+        'http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramData',
+        target,
+      );
 
   String addDiagramLayout(String target) => _add(
-      'http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramLayout',
-      target);
+        'http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramLayout',
+        target,
+      );
 
   String addDiagramQuickStyle(String target) => _add(
-      'http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramQuickStyle',
-      target);
+        'http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramQuickStyle',
+        target,
+      );
 
   String addDiagramColors(String target) => _add(
-      'http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramColors',
-      target);
+        'http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramColors',
+        target,
+      );
 
   String toXml() {
     final b = StringBuffer();
     b.write('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n');
     b.write(
-        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">\n');
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">\n',
+    );
     b.write(
-        '  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="$layoutTarget"/>\n');
+      '  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="$layoutTarget"/>\n',
+    );
     for (final e in _entries) {
       b.write('$e\n');
     }
@@ -163,8 +180,8 @@ class _ChartRegistry {
     return entry.name;
   }
 
-  List<_ChartEntry> get entries => _byJson.values.toList()
-    ..sort((a, b) => a.index.compareTo(b.index));
+  List<_ChartEntry> get entries =>
+      _byJson.values.toList()..sort((a, b) => a.index.compareTo(b.index));
 }
 
 class _ChartEntry {
@@ -190,9 +207,8 @@ class _SmartArtRegistry {
     return _byJson.putIfAbsent(json, () => _next++);
   }
 
-  List<SmartArtGraph> get graphs => _byJson.entries
-      .map((e) => SmartArtGraph.fromJson(e.key)!)
-      .toList();
+  List<SmartArtGraph> get graphs =>
+      _byJson.entries.map((e) => SmartArtGraph.fromJson(e.key)!).toList();
 }
 
 /// Per-export slide geometry derived from the selected aspect ratio.
@@ -216,163 +232,6 @@ class _PptGeometry {
   int get contentTopWithSubtitle => (height * 0.2833333333).round();
 }
 
-/// Session-lifetime cache for parsed slide HTML (Track 01, phase 3).
-///
-/// Tokenizing HTML is the single most expensive step of the export pipeline.
-/// Within one session the same slide content is often parsed repeatedly:
-/// duplicated slides inside a deck, speaker-notes extraction re-parsing the
-/// content, or the same deck exported as both PPTX and PDF. This cache keeps
-/// one tokenization per unique content and derives every consumer artifact
-/// from it:
-///
-///  * [notesFor] — speaker notes (aside.notes text),
-///  * [subtitleFor] — first h2 text (the dedicated subtitle),
-///  * [blocksFor] — the shared block tree, with or without the first h2
-///    dropped (PPTX wants it dropped so the subtitle is not emitted again as
-///    a body paragraph; PDF/HTML keep it).
-///
-/// Entries are dropped oldest-first once [capacity] is exceeded. Lookups are
-/// content-addressed (FNV-1a 64) with a full-string equality check, so a hash
-/// collision can never serve the wrong payload.
-class HtmlParseCache {
-  HtmlParseCache({int capacity = 128}) : _capacity = capacity;
-
-  /// Long-lived cache shared by every export in the worker isolate.
-  static final HtmlParseCache shared = HtmlParseCache();
-
-  final int _capacity;
-
-  /// Insertion-ordered so the oldest entry can be evicted easily.
-  final Map<String, _ParsedHtmlEntry> _entries = {};
-
-  /// Cache metrics — useful for tests and benchmarks.
-  int hits = 0;
-  int misses = 0;
-
-  /// Accumulated tokenizer time (ms) for every independent parse performed.
-  double parseMs = 0;
-
-  static String _fnv1a64(String input) {
-    // FNV-1a 64-bit — good avalanche, no external dependency.
-    const offset = 0xcbf29ce484222325;
-    const prime = 0x100000001b3;
-    var hash = offset;
-    for (final unit in input.codeUnits) {
-      hash ^= unit;
-      hash = (hash * prime) & 0xFFFFFFFFFFFFFFFF;
-    }
-    return hash.toRadixString(16).padLeft(16, '0');
-  }
-
-  String _keyFor(String html) => _fnv1a64(html);
-
-  void _touch(String key) {
-    final entry = _entries.remove(key);
-    if (entry != null) _entries[key] = entry;
-  }
-
-  /// Parse (or reuse) [html] once and return the derived artifacts.
-  _ParsedHtmlEntry _entryFor(String html) {
-    final key = _keyFor(html);
-    final cached = _entries[key];
-    if (cached != null && cached.html == html) {
-      hits++;
-      _touch(key);
-      return cached;
-    }
-
-    misses++;
-    // T13.4: Rust tokenizer when the engine is ready, Dart otherwise — the
-    // two paths are parity-tested (test/htmlparse_parity_test.dart).
-    final rust = HtmlParseCodec.parseToJson(html);
-    final notes = rust?.notes ?? '';
-    final subtitle =
-        rust != null ? (rust.subtitle.isEmpty ? null : rust.subtitle) : null;
-    if (rust != null) {
-      final entry = _ParsedHtmlEntry(
-        html,
-        notes: notes,
-        subtitle: subtitle,
-        blocks: rust.blocks,
-        blocksNoFirstH2: rust.blocksNoFirstH2,
-      );
-      _entries[key] = entry;
-      if (_entries.length > _capacity) {
-        _entries.remove(_entries.keys.first);
-      }
-      return entry;
-    }
-    final watch = Stopwatch()..start();
-    final doc = html_parser.parse(html);
-    parseMs += watch.elapsedMicroseconds / 1000;
-    final dartNotes = doc.querySelector('aside.notes')?.text.trim() ?? '';
-    final h2 = doc.querySelector('h2');
-    final dartSubtitle =
-        (h2 != null && h2.text.trim().isNotEmpty) ? h2.text.trim() : null;
-    final blocks = PPTGenerator.parseHtmlContentFullFromDoc(doc, fallbackText: html);
-    // First h2 is the dedicated subtitle and must not be emitted again as a
-    // body paragraph (mirrors _buildSlideXml's historical behavior).
-    final h2Again = doc.querySelector('h2');
-    if (h2Again != null) h2Again.remove();
-    final blocksNoFirstH2 = PPTGenerator.parseHtmlContentFullFromDoc(doc, fallbackText: html);
-
-    final entry = _ParsedHtmlEntry(
-      html,
-      notes: dartNotes,
-      subtitle: dartSubtitle,
-      blocks: blocks,
-      blocksNoFirstH2: blocksNoFirstH2,
-    );
-    _entries[key] = entry;
-    if (_entries.length > _capacity) {
-      _entries.remove(_entries.keys.first);
-    }
-    return entry;
-  }
-
-  /// Speaker notes of [html] (empty when absent) — no re-tokenization.
-  String notesFor(String html) => _entryFor(html).notes;
-
-  /// First h2 text of [html], or null when there is no non-empty h2.
-  String? subtitleFor(String html) => _entryFor(html).subtitle;
-
-  /// The shared block tree of [html].
-  ///
-  /// Use [dropFirstH2] for PPTX: the first h2 (subtitle) is removed from the
-  /// tree so it is only emitted as the subtitle shape, exactly as
-  /// [_buildSlideXml] did with a per-slide DOM parse.
-  List<Map<String, dynamic>> blocksFor(String html,
-      {bool dropFirstH2 = false}) {
-    final entry = _entryFor(html);
-    return dropFirstH2 ? entry.blocksNoFirstH2 : entry.blocks;
-  }
-
-  /// Drop every cached entry (session reset, tests).
-  void clear() {
-    _entries.clear();
-    hits = 0;
-    misses = 0;
-    parseMs = 0;
-  }
-}
-
-/// One cache entry: every consumer artifact of a single tokenization.
-class _ParsedHtmlEntry {
-  _ParsedHtmlEntry(
-    this.html, {
-    required this.notes,
-    required this.subtitle,
-    required this.blocks,
-    required this.blocksNoFirstH2,
-  });
-
-  final String html;
-  final String notes;
-  final String? subtitle;
-  final List<Map<String, dynamic>> blocks;
-  final List<Map<String, dynamic>> blocksNoFirstH2;
-}
-
 class PPTGenerator {
   /// Track 32: warnings collected while exporting animations (effects that
   /// could not be mapped to OOXML were skipped). Read after generatePPT.
@@ -392,18 +251,8 @@ class PPTGenerator {
   /// embeds one media part per occurrence (the v1.6.3 behavior).
   static bool debugDisableMediaDedupe = false;
 
-  /// Map an image-max-width ceiling (ExportQuality 150/300/600 px) to the
-  /// JPEG quality used when re-encoding large opaque PNGs (Track 03, P5).
-  static int jpegQualityForMaxWidth(int? imageMaxWidth) {
-    switch (imageMaxWidth) {
-      case 150:
-        return 70;
-      case 600:
-        return 90;
-      default:
-        return 80;
-    }
-  }
+  static int jpegQualityForMaxWidth(int? imageMaxWidth) =>
+      HtmlParseCore.jpegQualityForMaxWidth(imageMaxWidth);
 
   /// Add an XML/text part using the actual UTF-8 byte length.
   ///
@@ -448,23 +297,25 @@ class PPTGenerator {
           'Cannot export an empty presentation',
         );
       }
-      final pptxBytes = await _createPPTXArchive(slides,
-          effect: effect,
-          widescreen: widescreen,
-          aspectRatio: aspectRatio,
-          includeNotes: includeNotes,
-          includeBackgrounds: includeBackgrounds,
-          imageMaxWidth: imageMaxWidth,
-          autoAdvance: autoAdvance,
-          parseCache: parseCache,
-          cancelToken: cancelToken,
-          onProgress: onProgress,
-          timings: timings,
-          fitContent: fitContent,
-          theme: theme,
-          deckMeta: deckMeta,
-          customShow: customShow,
-          useEngineZip: useEngineZip);
+      final pptxBytes = await _createPPTXArchive(
+        slides,
+        effect: effect,
+        widescreen: widescreen,
+        aspectRatio: aspectRatio,
+        includeNotes: includeNotes,
+        includeBackgrounds: includeBackgrounds,
+        imageMaxWidth: imageMaxWidth,
+        autoAdvance: autoAdvance,
+        parseCache: parseCache,
+        cancelToken: cancelToken,
+        onProgress: onProgress,
+        timings: timings,
+        fitContent: fitContent,
+        theme: theme,
+        deckMeta: deckMeta,
+        customShow: customShow,
+        useEngineZip: useEngineZip,
+      );
       final outputFile = File(outputPath);
       await outputFile.create(recursive: true);
       await outputFile.writeAsBytes(pptxBytes);
@@ -578,23 +429,31 @@ class PPTGenerator {
       // Speaker notes: explicit 'notes' field wins, then <aside class="notes">.
       var notes = (slide['notes'] ?? '').toString().trim();
       if (notes.isEmpty) {
-        notes = extractNotes((slide['htmlContent'] ?? '').toString(),
-            parseCache: parseCache);
+        notes = extractNotes(
+          (slide['htmlContent'] ?? '').toString(),
+          parseCache: parseCache,
+        );
       }
       if (includeNotes && notes.isNotEmpty) {
         notesSlideNums.add(slideNum);
         rels.addNotesSlide('../notesSlides/notesSlide$slideNum.xml');
         final notesXml = _buildNotesSlideXml(notes);
         _addTextFile(
-            archive, 'ppt/notesSlides/notesSlide$slideNum.xml', notesXml);
+          archive,
+          'ppt/notesSlides/notesSlide$slideNum.xml',
+          notesXml,
+        );
         final notesRelsXml =
             '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="../slides/slide$slideNum.xml"/>
   <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster" Target="../notesMasters/notesMaster1.xml"/>
 </Relationships>''';
-        _addTextFile(archive,
-            'ppt/notesSlides/_rels/notesSlide$slideNum.xml.rels', notesRelsXml);
+        _addTextFile(
+          archive,
+          'ppt/notesSlides/_rels/notesSlide$slideNum.xml.rels',
+          notesRelsXml,
+        );
       }
 
       slideXmls.add(slideXml);
@@ -653,7 +512,10 @@ class PPTGenerator {
       hasNotesMaster: notesSlideNums.isNotEmpty,
     );
     _addTextFile(
-        archive, 'ppt/_rels/presentation.xml.rels', presentationRelsXml);
+      archive,
+      'ppt/_rels/presentation.xml.rels',
+      presentationRelsXml,
+    );
 
     // 6. ppt/slideMasters/slideMaster1.xml + rels — one master carrying all
     // nine registered layouts (Track 05): PowerPoint allows a single master
@@ -662,7 +524,8 @@ class PPTGenerator {
       for (var i = 0; i < pptLayouts.length; i++)
         '<p:sldLayoutId id="${2147483649 + i}" r:id="rId${i + 1}"/>',
     ].join();
-    final slideMasterXml = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    final slideMasterXml =
+        '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sldMaster xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
   <p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>$footerShapesXml</p:spTree></p:cSld>
   <p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>
@@ -670,17 +533,23 @@ class PPTGenerator {
 </p:sldMaster>''';
     _addTextFile(archive, 'ppt/slideMasters/slideMaster1.xml', slideMasterXml);
     final slideMasterRels = StringBuffer(
-        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
-        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">\n');
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">\n',
+    );
     for (var i = 0; i < pptLayouts.length; i++) {
       slideMasterRels.write(
-          '  <Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout${i + 1}.xml"/>\n');
+        '  <Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout${i + 1}.xml"/>\n',
+      );
     }
     slideMasterRels.write(
-        '  <Relationship Id="rId${pptLayouts.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme1.xml"/>\n');
+      '  <Relationship Id="rId${pptLayouts.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme1.xml"/>\n',
+    );
     slideMasterRels.write('</Relationships>');
-    _addTextFile(archive, 'ppt/slideMasters/_rels/slideMaster1.xml.rels',
-        slideMasterRels.toString());
+    _addTextFile(
+      archive,
+      'ppt/slideMasters/_rels/slideMaster1.xml.rels',
+      slideMasterRels.toString(),
+    );
 
     // 7. ppt/slideLayouts/slideLayoutN.xml + rels (master). Nine layouts
     // with real PowerPoint placeholders (title/body/pic/…); blank is the
@@ -688,16 +557,21 @@ class PPTGenerator {
     // flow through the master's clrMap + theme1.xml (Track 04, P6).
     for (var i = 0; i < pptLayouts.length; i++) {
       final layoutNum = i + 1;
-      _addTextFile(archive, 'ppt/slideLayouts/slideLayout$layoutNum.xml',
-          _buildSlideLayoutXml(pptLayouts[i]));
+      _addTextFile(
+        archive,
+        'ppt/slideLayouts/slideLayout$layoutNum.xml',
+        _buildSlideLayoutXml(pptLayouts[i]),
+      );
       const slideLayoutRelsXml =
           '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../slideMasters/slideMaster1.xml"/>
 </Relationships>''';
-      _addTextFile(archive,
-          'ppt/slideLayouts/_rels/slideLayout$layoutNum.xml.rels',
-          slideLayoutRelsXml);
+      _addTextFile(
+        archive,
+        'ppt/slideLayouts/_rels/slideLayout$layoutNum.xml.rels',
+        slideLayoutRelsXml,
+      );
     }
 
     // 8. ppt/notesMasters/notesMaster1.xml + rels (theme)
@@ -718,14 +592,20 @@ class PPTGenerator {
   <p:notesStyle><a:lvl1pPr marL="0" algn="l"><a:defRPr sz="1200"><a:solidFill><a:schemeClr val="tx1"/></a:solidFill><a:latin typeface="+mn-lt"/></a:defRPr></a:lvl1pPr></p:notesStyle>
 </p:notesMaster>''';
       _addTextFile(
-          archive, 'ppt/notesMasters/notesMaster1.xml', notesMasterXml);
+        archive,
+        'ppt/notesMasters/notesMaster1.xml',
+        notesMasterXml,
+      );
       const notesMasterRelsXml =
           '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme2.xml"/>
 </Relationships>''';
-      _addTextFile(archive, 'ppt/notesMasters/_rels/notesMaster1.xml.rels',
-          notesMasterRelsXml);
+      _addTextFile(
+        archive,
+        'ppt/notesMasters/_rels/notesMaster1.xml.rels',
+        notesMasterRelsXml,
+      );
     }
 
     // 9. ppt/theme/theme1.xml (+ theme2.xml for the notes master) — user
@@ -740,16 +620,21 @@ class PPTGenerator {
     for (int i = 0; i < slideXmls.length; i++) {
       final slideNum = i + 1;
       _addTextFile(archive, 'ppt/slides/slide$slideNum.xml', slideXmls[i]);
-      _addTextFile(archive, 'ppt/slides/_rels/slide$slideNum.xml.rels',
-          slideRelsXmls[i]);
+      _addTextFile(
+        archive,
+        'ppt/slides/_rels/slide$slideNum.xml.rels',
+        slideRelsXmls[i],
+      );
     }
     for (final m in mediaFiles) {
       // Media (JPEG/PNG/GIF) arrives already compressed — storing it as-is
       // avoids a wasteful second deflate pass and shrinks export time while
       // keeping the byte-identical payload PowerPoint expects.
-      final mediaFile =
-          ArchiveFile('ppt/media/${m.name}', m.bytes.length, m.bytes)
-            ..compress = !debugStoreCompressedMedia;
+      final mediaFile = ArchiveFile(
+        'ppt/media/${m.name}',
+        m.bytes.length,
+        m.bytes,
+      )..compress = !debugStoreCompressedMedia;
       archive.addFile(mediaFile);
     }
 
@@ -773,13 +658,18 @@ class PPTGenerator {
     for (final entry in chartRegistry.entries) {
       final pkg = PptChartWriter.build(entry.chart, index: entry.index);
       _addTextFile(archive, 'ppt/charts/${pkg.chartName}', pkg.chartXml);
-      _addTextFile(archive, 'ppt/charts/_rels/${pkg.chartName}.rels',
-          pkg.relsXml);
-      archive.addFile(ArchiveFile(
-        'ppt/embeddings/${entry.sheetName}',
-        pkg.xlsxBytes.length,
-        pkg.xlsxBytes,
-      ));
+      _addTextFile(
+        archive,
+        'ppt/charts/_rels/${pkg.chartName}.rels',
+        pkg.relsXml,
+      );
+      archive.addFile(
+        ArchiveFile(
+          'ppt/embeddings/${entry.sheetName}',
+          pkg.xlsxBytes.length,
+          pkg.xlsxBytes,
+        ),
+      );
     }
 
     cancelToken?.throwIfCancelled();
@@ -790,16 +680,18 @@ class PPTGenerator {
     // Dart fallback inside ZipCodec.
     final encodeWatch = Stopwatch()..start();
     final bytes = useEngineZip
-        ? await ZipCodec.encode(ZipCodec.fromArchive(archive),
-            level: debugZipLevel)
+        ? await ZipCodec.encode(
+            ZipCodec.fromArchive(archive),
+            level: debugZipLevel,
+          )
         : Uint8List.fromList(
-            ZipEncoder().encode(archive, level: debugZipLevel) ?? []);
+            ZipEncoder().encode(archive, level: debugZipLevel) ?? [],
+          );
     encodeWatch.stop();
     timingsWatch.stop();
     if (timings != null) {
-      final parseAccumulatedMs = parseCache == null
-          ? 0.0
-          : parseCache.parseMs - parseMsBefore;
+      final parseAccumulatedMs =
+          parseCache == null ? 0.0 : parseCache.parseMs - parseMsBefore;
       final zipMs = encodeWatch.elapsedMicroseconds / 1000;
       timings
         ..zipMs = zipMs
@@ -826,11 +718,14 @@ class PPTGenerator {
     final buffer = StringBuffer();
     buffer.write('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n');
     buffer.write(
-        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">\n');
+      '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">\n',
+    );
     buffer.write(
-        '  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>\n');
-    buffer
-        .write('  <Default Extension="xml" ContentType="application/xml"/>\n');
+      '  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>\n',
+    );
+    buffer.write(
+      '  <Default Extension="xml" ContentType="application/xml"/>\n',
+    );
     if (mediaExtensions.contains('png')) {
       buffer.write('  <Default Extension="png" ContentType="image/png"/>\n');
     }
@@ -844,23 +739,21 @@ class PPTGenerator {
       // Track 11, P1: embedded mp4 — kept with the other Defaults so every
       // <Default> still precedes the first <Override> (PowerPoint rejects
       // Defaults that come after Overrides).
-      buffer.write(
-          '  <Default Extension="mp4" ContentType="video/mp4"/>\n');
+      buffer.write('  <Default Extension="mp4" ContentType="video/mp4"/>\n');
     }
     if (mediaExtensions.contains('m4a')) {
       // Track 13, P4: narration audio (AAC in the m4a container).
-      buffer.write(
-          '  <Default Extension="m4a" ContentType="audio/mp4"/>\n');
+      buffer.write('  <Default Extension="m4a" ContentType="audio/mp4"/>\n');
     }
     if (mediaExtensions.contains('wav')) {
       // Track 13, P4: narration fallback when FFmpeg is unavailable.
-      buffer.write(
-          '  <Default Extension="wav" ContentType="audio/x-wav"/>\n');
+      buffer.write('  <Default Extension="wav" ContentType="audio/x-wav"/>\n');
     }
     if (mediaExtensions.contains('glb')) {
       // Track 14, P3: binary glTF 3D models (Office 2017 model3d parts).
       buffer.write(
-          '  <Default Extension="glb" ContentType="model/gltf-binary"/>\n');
+        '  <Default Extension="glb" ContentType="model/gltf-binary"/>\n',
+      );
     }
     // Track 09: embedded workbooks — OOXML requires every Default BEFORE
     // the first Override (PowerPoint rejects Defaults written after
@@ -868,56 +761,72 @@ class PPTGenerator {
     // PowerPoint confirmed).
     if (chartCount > 0) {
       buffer.write(
-          '  <Default Extension="xlsx" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"/>\n');
+        '  <Default Extension="xlsx" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"/>\n',
+      );
     }
     buffer.write(
-        '  <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>\n');
+      '  <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>\n',
+    );
     buffer.write(
-        '  <Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>\n');
+      '  <Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>\n',
+    );
     for (var i = 1; i <= pptLayouts.length; i++) {
       buffer.write(
-          '  <Override PartName="/ppt/slideLayouts/slideLayout$i.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>\n');
+        '  <Override PartName="/ppt/slideLayouts/slideLayout$i.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>\n',
+      );
     }
     if (chartCount > 0) {
       for (var i = 1; i <= chartCount; i++) {
         buffer.write(
-            '  <Override PartName="/ppt/charts/chart$i.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>\n');
+          '  <Override PartName="/ppt/charts/chart$i.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>\n',
+        );
       }
     }
     if (diagramCount > 0) {
       for (var i = 1; i <= diagramCount; i++) {
         buffer.write(
-            '  <Override PartName="/ppt/diagrams/data$i.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramData+xml"/>\n');
+          '  <Override PartName="/ppt/diagrams/data$i.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramData+xml"/>\n',
+        );
       }
       buffer.write(
-          '  <Override PartName="/ppt/diagrams/layout1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramLayout+xml"/>\n');
+        '  <Override PartName="/ppt/diagrams/layout1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramLayout+xml"/>\n',
+      );
       buffer.write(
-          '  <Override PartName="/ppt/diagrams/quickStyle1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramQuickStyle+xml"/>\n');
+        '  <Override PartName="/ppt/diagrams/quickStyle1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramQuickStyle+xml"/>\n',
+      );
       buffer.write(
-          '  <Override PartName="/ppt/diagrams/colors1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramColors+xml"/>\n');
+        '  <Override PartName="/ppt/diagrams/colors1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.diagramColors+xml"/>\n',
+      );
     }
     if (hasNotesMaster) {
       buffer.write(
-          '  <Override PartName="/ppt/notesMasters/notesMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesMaster+xml"/>\n');
+        '  <Override PartName="/ppt/notesMasters/notesMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesMaster+xml"/>\n',
+      );
     }
     buffer.write(
-        '  <Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>\n');
+      '  <Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>\n',
+    );
     if (hasNotesMaster) {
       buffer.write(
-          '  <Override PartName="/ppt/theme/theme2.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>\n');
+        '  <Override PartName="/ppt/theme/theme2.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>\n',
+      );
     }
     buffer.write(
-        '  <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>\n');
+      '  <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>\n',
+    );
     buffer.write(
-        '  <Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>\n');
+      '  <Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>\n',
+    );
 
     for (int i = 1; i <= count; i++) {
       buffer.write(
-          '  <Override PartName="/ppt/slides/slide$i.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>\n');
+        '  <Override PartName="/ppt/slides/slide$i.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>\n',
+      );
     }
     for (final n in notesSlideNums) {
       buffer.write(
-          '  <Override PartName="/ppt/notesSlides/notesSlide$n.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml"/>\n');
+        '  <Override PartName="/ppt/notesSlides/notesSlide$n.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml"/>\n',
+      );
     }
     buffer.write('</Types>');
     return buffer.toString();
@@ -933,7 +842,8 @@ class PPTGenerator {
     final buffer = StringBuffer();
     buffer.write('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n');
     buffer.write(
-        '<p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">\n');
+      '<p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">\n',
+    );
     buffer.write('  <p:sldMasterIdLst>\n');
     buffer.write('    <p:sldMasterId id="2147483648" r:id="rId1"/>\n');
     buffer.write('  </p:sldMasterIdLst>\n');
@@ -953,7 +863,8 @@ class PPTGenerator {
     final preset = geometry.aspectRatio.pptxPreset;
     final type = preset == null ? '' : ' type="$preset"';
     buffer.write(
-        '  <p:sldSz cx="${geometry.width}" cy="${geometry.height}"$type/>\n');
+      '  <p:sldSz cx="${geometry.width}" cy="${geometry.height}"$type/>\n',
+    );
     buffer.write('  <p:notesSz cx="6858000" cy="9144000"/>\n');
     if (customShow != null && customShow.slideIndices.isNotEmpty) {
       // Track 36, P7: p:custShowLst — PowerPoint shows this named set in the
@@ -986,17 +897,21 @@ class PPTGenerator {
     final buffer = StringBuffer();
     buffer.write('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n');
     buffer.write(
-        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">\n');
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">\n',
+    );
     buffer.write(
-        '  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/>\n');
+      '  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/>\n',
+    );
     for (int i = 1; i <= count; i++) {
       final rId = i + 1;
       buffer.write(
-          '  <Relationship Id="rId$rId" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide$i.xml"/>\n');
+        '  <Relationship Id="rId$rId" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide$i.xml"/>\n',
+      );
     }
     if (hasNotesMaster) {
       buffer.write(
-          '  <Relationship Id="rId${count + 2}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster" Target="notesMasters/notesMaster1.xml"/>\n');
+        '  <Relationship Id="rId${count + 2}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster" Target="notesMasters/notesMaster1.xml"/>\n',
+      );
     }
     buffer.write('</Relationships>');
     return buffer.toString();
@@ -1006,20 +921,24 @@ class PPTGenerator {
     final b = StringBuffer();
     b.write('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n');
     b.write(
-        '<p:notes xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">\n');
+      '<p:notes xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">\n',
+    );
     b.write('  <p:cSld>\n');
     b.write('    <p:spTree>\n');
     b.write(
-        '      <p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>\n');
+      '      <p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>\n',
+    );
     b.write('      <p:grpSpPr/>\n');
     b.write('      <p:sp>\n');
     b.write(
-        '        <p:nvSpPr><p:cNvPr id="2" name="Notes Placeholder"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="body" idx="1"/></p:nvPr></p:nvSpPr>\n');
+      '        <p:nvSpPr><p:cNvPr id="2" name="Notes Placeholder"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="body" idx="1"/></p:nvPr></p:nvSpPr>\n',
+    );
     b.write('        <p:spPr/>\n');
     b.write('        <p:txBody><a:bodyPr/><a:lstStyle/>\n');
     for (final line in notes.split('\n')) {
       b.write(
-          '          <a:p><a:r><a:rPr/><a:t>${_xmlEscape(line)}</a:t></a:r></a:p>\n');
+        '          <a:p><a:r><a:rPr/><a:t>${_xmlEscape(line)}</a:t></a:r></a:p>\n',
+      );
     }
     b.write('        </p:txBody>\n');
     b.write('      </p:sp>\n');
@@ -1044,8 +963,7 @@ class PPTGenerator {
     const ln =
         '<a:ln w="9525" cap="flat" cmpd="sng" algn="ctr"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:prstDash val="solid"/></a:ln>';
 
-    String srgb(String value) =>
-        '<a:srgbClr val="${_safeThemeHex(value)}"/>';
+    String srgb(String value) => '<a:srgbClr val="${_safeThemeHex(value)}"/>';
     String font(String name) {
       final trimmed = name.trim().replaceAll(RegExp(r'[\x00-\x1F\x7F]'), '');
       final safe = trimmed.isEmpty ? 'Calibri' : trimmed;
@@ -1131,16 +1049,19 @@ class PPTGenerator {
         subtitleText = h2.text.trim();
         h2.remove();
       }
-      parsed =
-          parseHtmlContentFullFromDoc(parsedDoc, fallbackText: rawHtml);
+      parsed = parseHtmlContentFullFromDoc(parsedDoc, fallbackText: rawHtml);
     }
     final contentW = geometry.contentWidth;
+    final attrs = SlideDocument.attributesFromBlocks(
+      parsed,
+      bgColor: HtmlAttrScan.bgColorAttrRe.firstMatch(rawHtml)?.group(1),
+    );
 
     // Typed Slide.bgColor wins over the legacy HTML data attribute. Normalize
     // values so srgbClr only ever receives six hexadecimal digits.
     String? bgColor = cssColorToHex((slide['bgColor'] ?? '').toString());
     if (bgColor == null) {
-      final bgMatch = _bgColorAttrRe.firstMatch(rawHtml);
+      final bgMatch = HtmlAttrScan.bgColorAttrRe.firstMatch(rawHtml);
       if (bgMatch != null) {
         bgColor = cssColorToHex(bgMatch.group(1)!);
       }
@@ -1152,13 +1073,14 @@ class PPTGenerator {
     // namespaces on the ROOT — exactly what PowerPoint itself writes
     // (verified against a Microsoft-generated golden deck; inline
     // declarations alone make PowerPoint reject the file).
-    final hasModel3d = rawHtml.contains('data-model3d');
-    final hasEquation = rawHtml.contains('data-equation');
+    final hasModel3d = attrs.model3d.isNotEmpty;
+    final hasEquation = attrs.equation.isNotEmpty;
     b.write(
-        '<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"'
-        '${hasEquation ? ' xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"' : ''}'
-        '${hasModel3d ? ' xmlns:am3d="http://schemas.microsoft.com/office/drawing/2017/model3d" xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main" xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" xmlns:a3danim="http://schemas.microsoft.com/office/drawing/2018/animation/model3d"' : ''}'
-        '>\n');
+      '<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"'
+      '${hasEquation ? ' xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"' : ''}'
+      '${hasModel3d ? ' xmlns:am3d="http://schemas.microsoft.com/office/drawing/2017/model3d" xmlns:a16="http://schemas.microsoft.com/office/drawing/2014/main" xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" xmlns:a3danim="http://schemas.microsoft.com/office/drawing/2018/animation/model3d"' : ''}'
+      '>\n',
+    );
 
     // CT_Slide requires cSld before transition, so the element is written
     // after the common slide data below.
@@ -1178,7 +1100,9 @@ class PPTGenerator {
       );
     }
 
-    b.write('  <p:cSld${(deckMeta?.excludeFirst ?? false) && slideNum == 1 ? ' showMasterSp="0"' : ''}>\n');
+    b.write(
+      '  <p:cSld${(deckMeta?.excludeFirst ?? false) && slideNum == 1 ? ' showMasterSp="0"' : ''}>\n',
+    );
 
     // Background fill (if bgColor is specified)
     if (includeBackgrounds && bgColor != null) {
@@ -1194,18 +1118,22 @@ class PPTGenerator {
 
     b.write('    <p:spTree>\n');
     b.write(
-        '      <p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>\n');
+      '      <p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>\n',
+    );
     b.write('      <p:grpSpPr/>\n');
 
     // --- Title shape ---
     b.write('      <p:sp>\n');
     b.write(
-        '        <p:nvSpPr><p:cNvPr id="2" name="Title 1"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr>\n');
+      '        <p:nvSpPr><p:cNvPr id="2" name="Title 1"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr>\n',
+    );
     b.write(
-        '        <p:spPr><a:xfrm><a:off x="${geometry.contentX}" y="${geometry.titleY}"/><a:ext cx="$contentW" cy="${geometry.titleHeight}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>\n');
+      '        <p:spPr><a:xfrm><a:off x="${geometry.contentX}" y="${geometry.titleY}"/><a:ext cx="$contentW" cy="${geometry.titleHeight}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>\n',
+    );
     b.write('        <p:txBody><a:bodyPr/><a:lstStyle/>\n');
     b.write(
-        '          <a:p><a:r><a:rPr lang="en-US" sz="3600" b="1"/><a:t>$cleanTitle</a:t></a:r></a:p>\n');
+      '          <a:p><a:r><a:rPr lang="en-US" sz="3600" b="1"/><a:t>$cleanTitle</a:t></a:r></a:p>\n',
+    );
     b.write('        </p:txBody>\n');
     b.write('      </p:sp>\n');
 
@@ -1214,12 +1142,15 @@ class PPTGenerator {
       final cleanSubtitle = _xmlEscape(subtitleText);
       b.write('      <p:sp>\n');
       b.write(
-          '        <p:nvSpPr><p:cNvPr id="7" name="Subtitle 1"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr/></p:nvSpPr>\n');
+        '        <p:nvSpPr><p:cNvPr id="7" name="Subtitle 1"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr/></p:nvSpPr>\n',
+      );
       b.write(
-          '        <p:spPr><a:xfrm><a:off x="${geometry.contentX}" y="${geometry.subtitleY}"/><a:ext cx="$contentW" cy="${geometry.subtitleHeight}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>\n');
+        '        <p:spPr><a:xfrm><a:off x="${geometry.contentX}" y="${geometry.subtitleY}"/><a:ext cx="$contentW" cy="${geometry.subtitleHeight}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>\n',
+      );
       b.write('        <p:txBody><a:bodyPr/><a:lstStyle/>\n');
       b.write(
-          '          <a:p><a:pPr><a:buNone/></a:pPr><a:r><a:rPr lang="en-US" sz="2400" i="1"/><a:t>$cleanSubtitle</a:t></a:r></a:p>\n');
+        '          <a:p><a:pPr><a:buNone/></a:pPr><a:r><a:rPr lang="en-US" sz="2400" i="1"/><a:t>$cleanSubtitle</a:t></a:r></a:p>\n',
+      );
       b.write('        </p:txBody>\n');
       b.write('      </p:sp>\n');
     }
@@ -1235,8 +1166,12 @@ class PPTGenerator {
     final spidMap = <String, int>{};
 
     int estimatedHeight(Map<String, dynamic> block, {double scale = 1.0}) {
-      return estimateBlockHeight(block,
-          contentWidthEmu: contentW, scale: scale, imageMaxWidth: imageMaxWidth);
+      return estimateBlockHeight(
+        block,
+        contentWidthEmu: contentW,
+        scale: scale,
+        imageMaxWidth: imageMaxWidth,
+      );
     }
 
     final layoutBlocks = parsed.where((block) {
@@ -1278,10 +1213,10 @@ class PPTGenerator {
       }
     }
 
-    final estimates =
-        layoutBlocks.map((block) => estimatedHeight(block, scale: sizeScale)).toList();
-    final desiredHeight =
-        estimates.fold<int>(0, (sum, value) => sum + value);
+    final estimates = layoutBlocks
+        .map((block) => estimatedHeight(block, scale: sizeScale))
+        .toList();
+    final desiredHeight = estimates.fold<int>(0, (sum, value) => sum + value);
     final targetHeight =
         desiredHeight < usableHeight ? desiredHeight : usableHeight;
     var allocatedHeight = 0;
@@ -1300,94 +1235,114 @@ class PPTGenerator {
       allocatedHeight += blockHeight;
 
       if (type == 'text') {
-        _buildTextContentShape(b, block,
-            shapeId: shapeId++,
-            x: geometry.contentX,
-            y: blockY,
-            h: blockHeight,
-            w: contentW,
-            rels: rels,
-            sizeScale: sizeScale);
+        _buildTextContentShape(
+          b,
+          block,
+          shapeId: shapeId++,
+          x: geometry.contentX,
+          y: blockY,
+          h: blockHeight,
+          w: contentW,
+          rels: rels,
+          sizeScale: sizeScale,
+        );
       } else if (type == 'list') {
-        _buildListContentShape(b, block,
-            shapeId: shapeId++,
-            x: geometry.contentX,
-            y: blockY,
-            h: blockHeight,
-            w: contentW,
-            rels: rels,
-            sizeScale: sizeScale);
+        _buildListContentShape(
+          b,
+          block,
+          shapeId: shapeId++,
+          x: geometry.contentX,
+          y: blockY,
+          h: blockHeight,
+          w: contentW,
+          rels: rels,
+          sizeScale: sizeScale,
+        );
       } else if (type == 'table') {
-        _buildTableShape(b, block,
-            shapeId: shapeId++,
-            x: geometry.contentX,
-            y: blockY,
-            h: blockHeight,
-            w: contentW,
-            sizeScale: sizeScale);
+        _buildTableShape(
+          b,
+          block,
+          shapeId: shapeId++,
+          x: geometry.contentX,
+          y: blockY,
+          h: blockHeight,
+          w: contentW,
+          sizeScale: sizeScale,
+        );
       } else if (type == 'image' &&
           rels != null &&
           media != null &&
           nextMediaIndex != null) {
-        _buildImageShape(b, block,
-            shapeId: shapeId++,
-            x: geometry.contentX,
-            y: blockY,
-            h: blockHeight,
-            w: contentW,
-            imageMaxWidth: imageMaxWidth,
-            rels: rels,
-            media: media,
-            nextMediaIndex: nextMediaIndex,
-            mediaByContentKey: mediaByContentKey,
-            jpegQuality: jpegQualityForMaxWidth(imageMaxWidth));
+        _buildImageShape(
+          b,
+          block,
+          shapeId: shapeId++,
+          x: geometry.contentX,
+          y: blockY,
+          h: blockHeight,
+          w: contentW,
+          imageMaxWidth: imageMaxWidth,
+          rels: rels,
+          media: media,
+          nextMediaIndex: nextMediaIndex,
+          mediaByContentKey: mediaByContentKey,
+          jpegQuality: jpegQualityForMaxWidth(imageMaxWidth),
+        );
       } else if (type == 'icon' &&
           rels != null &&
           media != null &&
           nextMediaIndex != null) {
-        _buildIconShape(b, block,
-            shapeId: shapeId++,
-            x: geometry.contentX,
-            y: blockY,
-            h: blockHeight,
-            w: contentW,
-            rels: rels,
-            media: media,
-            nextMediaIndex: nextMediaIndex,
-            mediaByContentKey: mediaByContentKey);
+        _buildIconShape(
+          b,
+          block,
+          shapeId: shapeId++,
+          x: geometry.contentX,
+          y: blockY,
+          h: blockHeight,
+          w: contentW,
+          rels: rels,
+          media: media,
+          nextMediaIndex: nextMediaIndex,
+          mediaByContentKey: mediaByContentKey,
+        );
       }
     }
 
     // 13. SmartArt shapes (Track 10, P3): `<div data-smartart='…'>` blocks
     // become <dgm:diagram> graphicFrames; the layout/quickStyle/colors
     // parts are shared, the data part is unique per diagram definition.
-    if (smartArtRegistry != null && rawHtml.contains('data-smartart')) {
+    if (smartArtRegistry != null && attrs.smartart.isNotEmpty) {
       final diagramY = geometry.contentTopWithoutSubtitle;
       const diagramHeight = 2743200; // ~40% of a 7.5" slide
       var offset = 0;
-      for (final match in _diagramPatternRe.allMatches(rawHtml)) {
-        final graph = SmartArtGraph.fromJson(match.group(2)!);
+      for (final payload in attrs.smartart) {
+        final graph = SmartArtGraph.fromJson(payload);
         // Track 10, P10: empty diagrams are skipped (no repair-prone part).
         if (graph == null || graph.nodes.isEmpty) continue;
         final index = smartArtRegistry.partIndexFor(graph);
         final dataRid = rels?.addDiagramData('../diagrams/data$index.xml');
         final layoutRid = rels?.addDiagramLayout('../diagrams/layout1.xml');
-        final styleRid =
-            rels?.addDiagramQuickStyle('../diagrams/quickStyle1.xml');
+        final styleRid = rels?.addDiagramQuickStyle(
+          '../diagrams/quickStyle1.xml',
+        );
         final colorRid = rels?.addDiagramColors('../diagrams/colors1.xml');
         b.write('      <p:graphicFrame>\n');
         b.write(
-            '        <p:nvGraphicFramePr><p:cNvPr id="${shapeId++}" name="SmartArt ${graph.layout.name}"/><p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr><p:nvPr/></p:nvGraphicFramePr>\n');
+          '        <p:nvGraphicFramePr><p:cNvPr id="${shapeId++}" name="SmartArt ${graph.layout.name}"/><p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr><p:nvPr/></p:nvGraphicFramePr>\n',
+        );
         b.write(
-            '        <p:xfrm><a:off x="${geometry.contentX}" y="${diagramY + offset}"/><a:ext cx="$contentW" cy="$diagramHeight"/></p:xfrm>\n');
+          '        <p:xfrm><a:off x="${geometry.contentX}" y="${diagramY + offset}"/><a:ext cx="$contentW" cy="$diagramHeight"/></p:xfrm>\n',
+        );
         b.write(
-            '        <a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/diagram">\n');
+          '        <a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/diagram">\n',
+        );
         // Track 10, P8 (verified against real PowerPoint): the modern
         // <dgm:relIds r:dm/r:lo/r:qs/r:cs> binding form is required — the
         // legacy <dgm:diagram dgm:dataId=…/> attribute form makes PowerPoint
         // reject the whole deck (0x80070570) when the diagram is referenced.
         b.write(
-            '          <dgm:relIds xmlns:dgm="http://schemas.openxmlformats.org/drawingml/2006/diagram" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:dm="$dataRid" r:lo="$layoutRid" r:qs="$styleRid" r:cs="$colorRid"/>\n');
+          '          <dgm:relIds xmlns:dgm="http://schemas.openxmlformats.org/drawingml/2006/diagram" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:dm="$dataRid" r:lo="$layoutRid" r:qs="$styleRid" r:cs="$colorRid"/>\n',
+        );
         b.write('        </a:graphicData></a:graphic>\n');
         b.write('      </p:graphicFrame>\n');
         offset += diagramHeight + 91440;
@@ -1397,12 +1352,12 @@ class PPTGenerator {
     // 12. Chart shapes (Track 08, P4): every `<div data-chart='…'>` in the
     // slide HTML becomes a graphicFrame bound to its (deduplicated) chart
     // part; the embedded workbook keeps the data editable in PowerPoint.
-    if (chartRegistry != null && rawHtml.contains('data-chart')) {
+    if (chartRegistry != null && attrs.chart.isNotEmpty) {
       final chartY = geometry.contentTopWithoutSubtitle;
       const chartHeight = 2286000; // ~1/3 of a 7.5" slide
       var offset = 0;
-      for (final match in _chartPatternRe.allMatches(rawHtml)) {
-        final chart = ChartData.fromJson(match.group(1)!);
+      for (final payload in attrs.chart) {
+        final chart = ChartData.fromJson(payload);
         // Track 09, P10: charts without data are skipped instead of emitting
         // an empty (repair-prone) <c:chart> part.
         if (chart == null ||
@@ -1413,13 +1368,17 @@ class PPTGenerator {
         final partName = chartRegistry.partFor(chart);
         b.write('      <p:graphicFrame>\n');
         b.write(
-            '        <p:nvGraphicFramePr><p:cNvPr id="${shapeId++}" name="Chart ${chart.type.name}"/><p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr><p:nvPr/></p:nvGraphicFramePr>\n');
+          '        <p:nvGraphicFramePr><p:cNvPr id="${shapeId++}" name="Chart ${chart.type.name}"/><p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr><p:nvPr/></p:nvGraphicFramePr>\n',
+        );
         b.write(
-            '        <p:xfrm><a:off x="${geometry.contentX}" y="${chartY + offset}"/><a:ext cx="$contentW" cy="$chartHeight"/></p:xfrm>\n');
+          '        <p:xfrm><a:off x="${geometry.contentX}" y="${chartY + offset}"/><a:ext cx="$contentW" cy="$chartHeight"/></p:xfrm>\n',
+        );
         b.write(
-            '        <a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart">\n');
+          '        <a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart">\n',
+        );
         b.write(
-            '          <c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="${rels?.addChart('../charts/$partName')}"/>\n');
+          '          <c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="${rels?.addChart('../charts/$partName')}"/>\n',
+        );
         b.write('        </a:graphicData></a:graphic>\n');
         b.write('      </p:graphicFrame>\n');
         offset += chartHeight + 91440;
@@ -1434,21 +1393,24 @@ class PPTGenerator {
     // dedupe as images; autoplay/loop are expressed through p:timing.
     final mediaSpecs = <MediaTimingSpec>[];
     var audioCounter = 0;
-    if (rawHtml.contains('data-video')) {
+    final videoBlocks = attrs.video.isEmpty
+        ? const <Map<String, dynamic>>[]
+        : parsed.where((b) => b['type'] == 'video').toList();
+    if (videoBlocks.isNotEmpty) {
       final videoY = geometry.contentTopWithoutSubtitle;
       var offset = 0;
       var localVideoCounter = 0;
-      for (final match in _videoPatternRe.allMatches(rawHtml)) {
-        final tagText = match.group(0)!;
-        var video = VideoData.fromJson(match.group(2)!);
+      for (final videoBlock in videoBlocks) {
+        var video =
+            VideoData.fromJson(videoBlock['data-video'] as String? ?? '');
         // Tolerate tags where the payload lives only in the attributes:
         // merge the src/poster attributes into the JSON payload when the
         // JSON itself does not carry them.
         if (video.src.isEmpty) {
-          video = video.copyWith(src: _tagAttr(tagText, 'src') ?? '');
+          video = video.copyWith(src: videoBlock['src'] as String? ?? '');
         }
         if (video.poster.isEmpty) {
-          video = video.copyWith(poster: _tagAttr(tagText, 'poster') ?? '');
+          video = video.copyWith(poster: videoBlock['poster'] as String? ?? '');
         }
         // Track 11, P10: videos without a payload (no src, not online) are
         // skipped instead of emitting a broken <p:pic>.
@@ -1498,23 +1460,17 @@ class PPTGenerator {
           media?.add(_MediaFile(posterName, posterBytes));
         }
         final posterRid = rels?.addImage('../media/$posterName') ?? '';
-        b.write('      ${VideoEmbedService.videoPicXml(
-          shapeId: spid,
-          name: video.isOnline ? 'Video online' : 'Video',
-          videoRid: videoRid,
-          mediaRid: mediaRid,
-          posterRid: posterRid,
-          offX: offX,
-          offY: offY,
-          extCx: contentW,
-          extCy: videoHeight,
-        )}\n');
-        mediaSpecs.add(MediaTimingSpec(
-          spid: spid,
-          autoplay: video.autoplay,
-          loop: video.loop,
-          durationMs: video.durationMs > 0 ? video.durationMs : 60000,
-        ));
+        b.write(
+          '      ${VideoEmbedService.videoPicXml(shapeId: spid, name: video.isOnline ? 'Video online' : 'Video', videoRid: videoRid, mediaRid: mediaRid, posterRid: posterRid, offX: offX, offY: offY, extCx: contentW, extCy: videoHeight)}\n',
+        );
+        mediaSpecs.add(
+          MediaTimingSpec(
+            spid: spid,
+            autoplay: video.autoplay,
+            loop: video.loop,
+            durationMs: video.durationMs > 0 ? video.durationMs : 60000,
+          ),
+        );
         offset += videoHeight + 91440;
       }
     }
@@ -1552,8 +1508,7 @@ class PPTGenerator {
         final audioRid = rels?.addAudioFile('../media/$name') ?? '';
         final mediaRid = rels?.addMedia('../media/$name');
         // The speaker icon travels as a normal image part (deduped).
-        final iconBytes =
-            base64Decode(kSpeakerIconPngBase64);
+        final iconBytes = base64Decode(kSpeakerIconPngBase64);
         final iconKey = crypto.sha256.convert(iconBytes).toString();
         final existingIcon = mediaByContentKey?[iconKey];
         final iconName = existingIcon ??
@@ -1564,21 +1519,19 @@ class PPTGenerator {
         }
         final iconRid = rels?.addImage('../media/$iconName') ?? '';
         final spid = shapeId++;
-        b.write('      ${VideoEmbedService.audioPicXml(
-          shapeId: spid,
-          name: 'Narration',
-          audioRid: audioRid,
-          mediaRid: mediaRid,
-          posterRid: iconRid,
-        )}\n');
-        mediaSpecs.add(MediaTimingSpec(
-          spid: spid,
-          autoplay: audioAutoplay,
-          loop: audioLoop,
-          durationMs: durationMs > 0 ? durationMs : 60000,
-          kind: MediaTimingKind.audio,
-          acrossSlides: acrossSlides,
-        ));
+        b.write(
+          '      ${VideoEmbedService.audioPicXml(shapeId: spid, name: 'Narration', audioRid: audioRid, mediaRid: mediaRid, posterRid: iconRid)}\n',
+        );
+        mediaSpecs.add(
+          MediaTimingSpec(
+            spid: spid,
+            autoplay: audioAutoplay,
+            loop: audioLoop,
+            durationMs: durationMs > 0 ? durationMs : 60000,
+            kind: MediaTimingKind.audio,
+            acrossSlides: acrossSlides,
+          ),
+        );
       }
     }
 
@@ -1590,12 +1543,12 @@ class PPTGenerator {
     // extension + a timeline fragment that plays the model's first embedded
     // animation indefinitely.
     final extraTimingPars = <String>[];
-    if (rawHtml.contains('data-model3d')) {
+    if (attrs.model3d.isNotEmpty) {
       final modelY = geometry.contentTopWithoutSubtitle;
       var offset = 0;
       var modelCounter = 0;
-      for (final match in _model3dPatternRe.allMatches(rawHtml)) {
-        final model = Model3DData.fromJson(match.group(2)!);
+      for (final payload in attrs.model3d) {
+        final model = Model3DData.fromJson(payload);
         // Track 14, P10: models without a payload are skipped.
         if (model.src.isEmpty) continue;
         final glbBytes = _dataUriBytes(model.src);
@@ -1624,24 +1577,27 @@ class PPTGenerator {
         final modelHeight = (contentW * 9 / 16).round();
         final spid = shapeId++;
         final fallbackId = shapeId++;
-        b.write('      ${Model3DService.renderPptxModel3dXml(
-          shapeId: spid,
-          fallbackShapeId: fallbackId,
-          name: model.name.isEmpty ? '3D Model' : model.name,
-          glbRid: glbRid,
-          posterRid: posterRid,
-          offX: geometry.contentX,
-          offY: modelY + offset,
-          extCx: contentW,
-          extCy: modelHeight,
-          rotate: model.rotate,
-          // RFC-4122 v4 GUID — PowerPoint's a16:creationId parser rejects
-          // counter-style id strings (bisected against COM).
-          creationId: _randomGuidV4(),
-        )}\n');
+        b.write(
+          '      ${Model3DService.renderPptxModel3dXml(
+            shapeId: spid,
+            fallbackShapeId: fallbackId,
+            name: model.name.isEmpty ? '3D Model' : model.name,
+            glbRid: glbRid,
+            posterRid: posterRid,
+            offX: geometry.contentX,
+            offY: modelY + offset,
+            extCx: contentW,
+            extCy: modelHeight,
+            rotate: model.rotate,
+            // RFC-4122 v4 GUID — PowerPoint's a16:creationId parser rejects
+            // counter-style id strings (bisected against COM).
+            creationId: _randomGuidV4(),
+          )}\n',
+        );
         if (model.rotate) {
-          extraTimingPars
-              .add(Model3DService.model3dTimingParXml(spid, rotate: true));
+          extraTimingPars.add(
+            Model3DService.model3dTimingParXml(spid, rotate: true),
+          );
         }
         offset += modelHeight + 91440;
       }
@@ -1656,9 +1612,13 @@ class PPTGenerator {
     final rawVisual = slide['visualElements'];
     if (rawVisual is Map && rawVisual['freeTexts'] is List) {
       final freeTexts = (rawVisual['freeTexts'] as List)
-          .map((e) => e is Map<String, dynamic>
-              ? FreeTextShape.fromMap(e)
-              : (e is Map ? FreeTextShape.fromMap(Map<String, dynamic>.from(e)) : null))
+          .map(
+            (e) => e is Map<String, dynamic>
+                ? FreeTextShape.fromMap(e)
+                : (e is Map
+                    ? FreeTextShape.fromMap(Map<String, dynamic>.from(e))
+                    : null),
+          )
           .whereType<FreeTextShape>()
           .toList()
         ..sort((a, b) => a.zOrder.compareTo(b.zOrder));
@@ -1669,9 +1629,8 @@ class PPTGenerator {
         final offY = (ft.y / 100 * slideH).round();
         final extW = (ft.w / 100 * slideW).round();
         final extH = (ft.h / 100 * slideH).round();
-        final rot = ft.rotation != 0
-            ? ' rot="${(ft.rotation * 60000).round()}"'
-            : '';
+        final rot =
+            ft.rotation != 0 ? ' rot="${(ft.rotation * 60000).round()}"' : '';
         // Background fill
         String fillXml;
         final wa = ft.wordArtStyle;
@@ -1690,7 +1649,9 @@ class PPTGenerator {
             : '';
         // WordArt effects
         final effectXml = wa > 0 ? WordArtService.pptxEffectLst(wa) : '';
-        final textColor = ft.color.isEmpty ? '000000' : _safeThemeHex(ft.color.replaceAll('#', ''));
+        final textColor = ft.color.isEmpty
+            ? '000000'
+            : _safeThemeHex(ft.color.replaceAll('#', ''));
         final sz = (ft.fontSize * 100).round();
         final bold = ft.fontWeight == 'bold' ? ' b="1"' : '';
         final italic = ft.fontStyle == 'italic' ? ' i="1"' : '';
@@ -1698,17 +1659,20 @@ class PPTGenerator {
         spidMap['ft_${ft.id}'] = spid;
         b.write('      <p:sp>\n');
         b.write(
-            '        <p:nvSpPr><p:cNvPr id="$spid" name="FreeText ${ft.id}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>\n');
+          '        <p:nvSpPr><p:cNvPr id="$spid" name="FreeText ${ft.id}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>\n',
+        );
         b.write(
-            '        <p:spPr><a:xfrm$rot><a:off x="$offX" y="$offY"/><a:ext cx="$extW" cy="$extH"/></a:xfrm>'
-            '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>$fillXml$lnXml</p:spPr>\n');
+          '        <p:spPr><a:xfrm$rot><a:off x="$offX" y="$offY"/><a:ext cx="$extW" cy="$extH"/></a:xfrm>'
+          '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>$fillXml$lnXml</p:spPr>\n',
+        );
         b.write(
-            '        <p:txBody><a:bodyPr wrap="none"><a:normAutofit/></a:bodyPr><a:lstStyle/><a:p>'
-            '<a:pPr algn="ctr"/><a:r><a:rPr lang="en-US" sz="$sz"$bold$italic '
-            '${ft.fontFamily.isEmpty ? '' : 'typeface="${_xmlEscape(ft.fontFamily)}"'}>'
-            '<a:solidFill><a:srgbClr val="$textColor"/></a:solidFill>'
-            '${effectXml.replaceAll('<a:effectLst>', '').replaceAll('</a:effectLst>', '')}'
-            '</a:rPr><a:t>${_xmlEscape(ft.text)}</a:t></a:r></a:p></p:txBody>\n');
+          '        <p:txBody><a:bodyPr wrap="none"><a:normAutofit/></a:bodyPr><a:lstStyle/><a:p>'
+          '<a:pPr algn="ctr"/><a:r><a:rPr lang="en-US" sz="$sz"$bold$italic '
+          '${ft.fontFamily.isEmpty ? '' : 'typeface="${_xmlEscape(ft.fontFamily)}"'}>'
+          '<a:solidFill><a:srgbClr val="$textColor"/></a:solidFill>'
+          '${effectXml.replaceAll('<a:effectLst>', '').replaceAll('</a:effectLst>', '')}'
+          '</a:rPr><a:t>${_xmlEscape(ft.text)}</a:t></a:r></a:p></p:txBody>\n',
+        );
         b.write('      </p:sp>\n');
       }
     }
@@ -1718,9 +1682,9 @@ class PPTGenerator {
     // URL action (PowerPoint's Action Button behaviour).
     const slideWEmu = 9144000;
     const slideHEmu = 6858000;
-    if (rawHtml.contains('data-action')) {
-      for (final match in _actionPatternRe.allMatches(rawHtml)) {
-        final button = ActionButton.fromJson(match.group(2)!);
+    if (attrs.action.isNotEmpty) {
+      for (final payload in attrs.action) {
+        final button = ActionButton.fromJson(payload);
         final offX = (button.x / 100 * slideWEmu).round();
         final offY = (button.y / 100 * slideHEmu).round();
         final extW = (button.w / 100 * slideWEmu).round();
@@ -1743,52 +1707,51 @@ class PPTGenerator {
               actionXml = '';
             }
           case ActionType.slideNext:
+            actionXml = 'action="ppaction://hlinkshowjump?jump=nextslide"';
           case ActionType.slidePrev:
+            actionXml = 'action="ppaction://hlinkshowjump?jump=previousslide"';
           case ActionType.slideFirst:
+            actionXml = 'action="ppaction://hlinkshowjump?jump=firstslide"';
           case ActionType.slideLast:
-            actionXml =
-                'action="ppaction://hlinksldjump" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
+            actionXml = 'action="ppaction://hlinkshowjump?jump=lastslide"';
         }
         final spid = shapeId++;
         b.write(
-            '      ${ActionButtonService.renderPptxActionShape(
-          shapeId: spid,
-          button: button,
-          actionXml: actionXml,
-          offX: offX,
-          offY: offY,
-          extCx: extW,
-          extCy: extH,
-        )}');
+          '      ${ActionButtonService.renderPptxActionShape(shapeId: spid, button: button, actionXml: actionXml, offX: offX, offY: offY, extCx: extW, extCy: extH)}',
+        );
       }
     }
 
     // 19. Equations (Track 18, P3–P4): `<div data-equation='...'>` blocks
     // become `<p:sp>` text shapes whose body carries the OOXML `<a:math>`
     // markup (converted from the stored MathML).
-    if (rawHtml.contains('data-equation')) {
+    if (attrs.equation.isNotEmpty) {
       var eqOffset = 0;
-      for (final match in _equationPatternRe.allMatches(rawHtml)) {
-        final equation = EquationData.fromJson(match.group(2)!);
+      for (final payload in attrs.equation) {
+        final equation = EquationData.fromJson(payload);
         final mathInner = EquationService.mathmlToOoxml(equation.mathml);
         final spid = shapeId++;
         const eqH = 685800; // ~0.75in
         b.write('      <p:sp>\n');
         b.write(
-            '        <p:nvSpPr><p:cNvPr id="$spid" name="Equation $spid"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>\n');
+          '        <p:nvSpPr><p:cNvPr id="$spid" name="Equation $spid"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>\n',
+        );
         b.write(
-            '        <p:spPr><a:xfrm><a:off x="${geometry.contentX}" y="${geometry.contentTopWithoutSubtitle + eqOffset}"/><a:ext cx="$contentW" cy="$eqH"/></a:xfrm>'
-            '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr>\n');
+          '        <p:spPr><a:xfrm><a:off x="${geometry.contentX}" y="${geometry.contentTopWithoutSubtitle + eqOffset}"/><a:ext cx="$contentW" cy="$eqH"/></a:xfrm>'
+          '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr>\n',
+        );
         b.write('        <p:txBody><a:bodyPr/><a:lstStyle/>');
         if (mathInner != null) {
           b.write(
-              '<a:p><a:pPr algn="ctr"/><a:mathPr><a:mathFont val="Cambria Math"/></a:mathPr>'
-              '<m:oMath xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">'
-              '$mathInner</m:oMath></a:p>');
+            '<a:p><a:pPr algn="ctr"/><a:mathPr><a:mathFont val="Cambria Math"/></a:mathPr>'
+            '<m:oMath xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math">'
+            '$mathInner</m:oMath></a:p>',
+          );
         } else {
           b.write(
-              '<a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="en-US" sz="1800" i="1"/>'
-              '<a:t>${_xmlEscape(equation.latex.isEmpty ? equation.mathml : equation.latex)}</a:t></a:r></a:p>');
+            '<a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="en-US" sz="1800" i="1"/>'
+            '<a:t>${_xmlEscape(equation.latex.isEmpty ? equation.mathml : equation.latex)}</a:t></a:r></a:p>',
+          );
         }
         b.write('</p:txBody>\n');
         b.write('      </p:sp>\n');
@@ -1799,11 +1762,11 @@ class PPTGenerator {
     // 20. OLE objects (Track 18, P6): `<div data-ole='...'>` blocks embed the
     // file as `ppt/embeddings/oleObject{n}.bin` + an icon PNG, and render a
     // `<p:oleObj>` shape with a double-click hlink (opens the embedded file).
-    if (rawHtml.contains('data-ole')) {
+    if (attrs.ole.isNotEmpty) {
       var oleCounter = 0;
       var oleOffset = 0;
-      for (final match in _olePatternRe.allMatches(rawHtml)) {
-        final ole = OleData.fromJson(match.group(2)!);
+      for (final payload in attrs.ole) {
+        final ole = OleData.fromJson(payload);
         if (ole.fileName.isEmpty || ole.fileBytes.isEmpty) continue;
         // Embed the file bytes as oleObject{n}.bin
         final oleName =
@@ -1829,61 +1792,49 @@ class PPTGenerator {
         final offY = geometry.contentTopWithoutSubtitle + oleOffset;
         final spid = shapeId++;
         b.write(
-            '      ${OleService.renderPptxOleShape(
-          shapeId: spid,
-          ole: ole,
-          oleRid: oleRid,
-          iconRid: iconRid,
-          offX: offX,
-          offY: offY,
-          extCx: oleW,
-          extCy: oleH,
-        )}');
+          '      ${OleService.renderPptxOleShape(shapeId: spid, ole: ole, oleRid: oleRid, iconRid: iconRid, offX: offX, offY: offY, extCx: oleW, extCy: oleH)}',
+        );
         oleOffset += oleH + 91440;
       }
     }
 
     // 21. Slide Zoom (Track 20, P5): `<div data-zoom='...'>` blocks become
     // clickable shapes that jump to the target slide.
-    if (rawHtml.contains('data-zoom')) {
+    if (attrs.zoom.isNotEmpty) {
       var zoomOffset = 0;
-      for (final match in _zoomPatternRe.allMatches(rawHtml)) {
-        final zoom = ZoomItem.fromJson(match.group(2)!);
+      for (final payload in attrs.zoom) {
+        final zoom = ZoomItem.fromJson(payload);
         final offX = (zoom.x / 100 * slideWEmu).round();
         final offY = (zoom.y / 100 * slideHEmu).round() + zoomOffset;
         final extW = (zoom.w / 100 * slideWEmu).round();
         final extH = (zoom.h / 100 * slideHEmu).round();
-        b.write('      ${ZoomFeatureService.renderPptxZoomXml(
-          shapeId: shapeId++,
-          zoom: zoom,
-          description: 'Slide Zoom',
-          offX: offX,
-          offY: offY,
-          extCx: extW,
-          extCy: extH,
-        )}');
+        b.write(
+          '      ${ZoomFeatureService.renderPptxZoomXml(shapeId: shapeId++, zoom: zoom, description: 'Slide Zoom', offX: offX, offY: offY, extCx: extW, extCy: extH)}',
+        );
         zoomOffset += extH + 91440;
       }
     }
 
     // 21b. Section/Summary Zoom (Track 20, P6): `<div data-sectionzoom='...'>`
     // becomes a grid of slide-jump shapes.
-    if (rawHtml.contains('data-sectionzoom')) {
+    if (attrs.sectionZoom.isNotEmpty) {
       var szOffset = 0;
-      for (final match in _sectionZoomPatternRe.allMatches(rawHtml)) {
-        final sz = SectionZoomData.fromJson(match.group(2)!);
+      for (final payload in attrs.sectionZoom) {
+        final sz = SectionZoomData.fromJson(payload);
         final offX = (sz.x / 100 * slideWEmu).round();
         final offY = (sz.y / 100 * slideHEmu).round() + szOffset;
         final extW = (sz.w / 100 * slideWEmu).round();
         final extH = (sz.h / 100 * slideHEmu).round();
-        b.write(SectionZoomService.renderPptxSectionZoomXml(
-          shapeId: shapeId,
-          zoom: sz,
-          offX: offX,
-          offY: offY,
-          extCx: extW,
-          extCy: extH,
-        ));
+        b.write(
+          SectionZoomService.renderPptxSectionZoomXml(
+            shapeId: shapeId,
+            zoom: sz,
+            offX: offX,
+            offY: offY,
+            extCx: extW,
+            extCy: extH,
+          ),
+        );
         shapeId += (sz.entries.isEmpty ? 1 : sz.entries.length);
         szOffset += extH + 91440;
       }
@@ -1891,35 +1842,32 @@ class PPTGenerator {
 
     // 22. Cameo (Track 20, P8): `<div data-cameo='...'>` blocks become
     // camera placeholder shapes.
-    if (rawHtml.contains('data-cameo')) {
+    if (attrs.cameo.isNotEmpty) {
       var cameoOffset = 0;
-      for (final match in _cameoPatternRe.allMatches(rawHtml)) {
-        final cameo = CameoData.fromJson(match.group(2)!);
+      for (final payload in attrs.cameo) {
+        final cameo = CameoData.fromJson(payload);
         final offX = (cameo.x / 100 * slideWEmu).round();
         final offY = (cameo.y / 100 * slideHEmu).round() + cameoOffset;
         final extW = (cameo.w / 100 * slideWEmu).round();
         final extH = (cameo.h / 100 * slideHEmu).round();
-        b.write('      ${CameoService.renderPptxCameoXml(
-          shapeId: shapeId++,
-          cameo: cameo,
-          offX: offX,
-          offY: offY,
-          extCx: extW,
-          extCy: extH,
-        )}');
+        b.write(
+          '      ${CameoService.renderPptxCameoXml(shapeId: shapeId++, cameo: cameo, offX: offX, offY: offY, extCx: extW, extCy: extH)}',
+        );
         cameoOffset += extH + 91440;
       }
-    }    // 23. Drawn shapes (Track 21, P2/P3): shapes stored in
+    } // 23. Drawn shapes (Track 21, P2/P3): shapes stored in
     // `visualElements['shapes']` as a list of maps.
     // Track 26, P5: shapes belonging to a group are emitted inside a
     // `<p:grpSp>`; the group box comes from `visualElements['groups']`.
     if (rawVisual is Map && rawVisual['shapes'] is List) {
       final shapes = (rawVisual['shapes'] as List)
-          .map((e) => e is Map<String, dynamic>
-              ? DrawnShape.fromMap(e)
-              : (e is Map
-                  ? DrawnShape.fromMap(Map<String, dynamic>.from(e))
-                  : null))
+          .map(
+            (e) => e is Map<String, dynamic>
+                ? DrawnShape.fromMap(e)
+                : (e is Map
+                    ? DrawnShape.fromMap(Map<String, dynamic>.from(e))
+                    : null),
+          )
           .whereType<DrawnShape>()
           .toList()
         ..sort((a, b) => a.zOrder.compareTo(b.zOrder));
@@ -1937,18 +1885,18 @@ class PPTGenerator {
           groups.add(ShapeGroup.fromMap(m));
         }
       }
-      final groupedIds = {
-        for (final g in groups) ...g.memberIds,
-      };
+      final groupedIds = {for (final g in groups) ...g.memberIds};
       for (final group in groups) {
         final members =
             shapes.where((s) => group.memberIds.contains(s.id)).toList();
         if (members.length >= 2) {
-          b.write(GroupService.renderPptxGroupXml(
-            groupShapeId: shapeId++,
-            group: group,
-            members: members,
-          ));
+          b.write(
+            GroupService.renderPptxGroupXml(
+              groupShapeId: shapeId++,
+              group: group,
+              members: members,
+            ),
+          );
         }
       }
       for (final shape in shapes) {
@@ -1959,14 +1907,9 @@ class PPTGenerator {
         final offY = (shape.y / 100 * slideHEmu).round();
         final extW = (shape.w / 100 * slideWEmu).round();
         final extH = (shape.h / 100 * slideHEmu).round();
-        b.write('      ${ShapeEngine.renderPptxShape(
-            shapeId: spid,
-            shape: shape,
-            offX: offX,
-            offY: offY,
-            extCx: extW,
-            extCy: extH,
-          )}');
+        b.write(
+          '      ${ShapeEngine.renderPptxShape(shapeId: spid, shape: shape, offX: offX, offY: offY, extCx: extW, extCy: extH)}',
+        );
       }
     }
 
@@ -1978,11 +1921,13 @@ class PPTGenerator {
     String animTimingInner = '';
     if (rawVisualTiming is List && rawVisualTiming.isNotEmpty) {
       final anims = rawVisualTiming
-          .map((e) => e is Map<String, dynamic>
-              ? ObjectAnimation.fromMap(e)
-              : (e is Map
-                  ? ObjectAnimation.fromMap(Map<String, dynamic>.from(e))
-                  : null))
+          .map(
+            (e) => e is Map<String, dynamic>
+                ? ObjectAnimation.fromMap(e)
+                : (e is Map
+                    ? ObjectAnimation.fromMap(Map<String, dynamic>.from(e))
+                    : null),
+          )
           .whereType<ObjectAnimation>()
           .toList();
       final result = AnimationOoxml.buildTimingXml(anims, spidMap: spidMap);
@@ -1993,16 +1938,19 @@ class PPTGenerator {
       final full = result.xml;
       if (full.isNotEmpty) {
         // Strip the outer <p:timing> wrapper; re-emit merged below.
-        final inner =
-            _timingInnerRe.firstMatch(full)?.group(1);
+        final inner = _timingInnerRe.firstMatch(full)?.group(1);
         if (inner != null && inner.trim().isNotEmpty) {
           animTimingInner = '\n$inner';
         }
       }
     }
-    if (mediaInner.isNotEmpty || extraTimingPars.isNotEmpty || animTimingInner.isNotEmpty) {
-      b.write('  <p:timing><p:tnLst>$mediaInner'
-          '${extraTimingPars.join()}$animTimingInner</p:tnLst></p:timing>\n');
+    if (mediaInner.isNotEmpty ||
+        extraTimingPars.isNotEmpty ||
+        animTimingInner.isNotEmpty) {
+      b.write(
+        '  <p:timing><p:tnLst>$mediaInner'
+        '${extraTimingPars.join()}$animTimingInner</p:tnLst></p:timing>\n',
+      );
     }
     if (transitionXml.isNotEmpty) {
       b.write('  $transitionXml\n');
@@ -2056,109 +2004,109 @@ class PPTGenerator {
   /// Value of an attribute inside a tag string, or null when absent.
   /// (Built by concatenation — `$name` is not interpolated inside Dart raw
   /// strings, so the pattern cannot use r"""…$name…""" form.)
-  static String? _tagAttr(String tag, String name) {
-    final match = RegExp(
-      '\\b$name' r"""\s*=\s*(['"])(.*?)\1""",
-      caseSensitive: false,
-      dotAll: true,
-    ).firstMatch(tag);
-    return match?.group(2);
-  }
 
   /// Estimate the height (EMU) a content block needs inside a box
-/// [contentWidthEmu] wide — the single estimation point for the vertical
-/// flow layout (Track 02).
-///
-/// Text and lists use real font metrics: runs are summed by advance width,
-/// wrapped to the box, and multiplied by the true line height. Tables use
-/// per-cell wrapped text heights plus PowerPoint's default vertical cell
-/// insets. Images keep their aspect-scaled height.
-static int estimateBlockHeight(
-  Map<String, dynamic> block, {
-  required int contentWidthEmu,
-  double scale = 1.0,
-  int? imageMaxWidth,
-}) {
-  final type = block['type'] as String;
-  if (type == 'text') {
-    // Real-font metrics (Track 02): wrapped lines × true line height,
-    // plus the trailing gap that mirrors the 91440 block spacing.
-    final runs = (block['paragraphs'] as List).cast<Map<String, String>>();
-    var height = 0;
-    for (final group in _groupRuns(runs, 'paragraphStart')) {
-      height += TextMetricsService.paragraphHeightEmu(group,
-          widthEmu: contentWidthEmu, scale: scale);
+  /// [contentWidthEmu] wide — the single estimation point for the vertical
+  /// flow layout (Track 02).
+  ///
+  /// Text and lists use real font metrics: runs are summed by advance width,
+  /// wrapped to the box, and multiplied by the true line height. Tables use
+  /// per-cell wrapped text heights plus PowerPoint's default vertical cell
+  /// insets. Images keep their aspect-scaled height.
+  static int estimateBlockHeight(
+    Map<String, dynamic> block, {
+    required int contentWidthEmu,
+    double scale = 1.0,
+    int? imageMaxWidth,
+  }) {
+    final type = block['type'] as String;
+    if (type == 'text') {
+      // Real-font metrics (Track 02): wrapped lines × true line height,
+      // plus the trailing gap that mirrors the 91440 block spacing.
+      final runs = (block['paragraphs'] as List).cast<Map<String, String>>();
+      var height = 0;
+      for (final group in _groupRuns(runs, 'paragraphStart')) {
+        height += TextMetricsService.paragraphHeightEmu(
+          group,
+          widthEmu: contentWidthEmu,
+          scale: scale,
+        );
+      }
+      return height + 91440;
     }
-    return height + 91440;
-  }
-  if (type == 'list') {
-    final runs = (block['items'] as List).cast<Map<String, String>>();
-    var height = 0;
-    for (final group in _groupRuns(runs, 'itemStart')) {
-      height += TextMetricsService.paragraphHeightEmu(group,
-          widthEmu: contentWidthEmu, scale: scale);
+    if (type == 'list') {
+      final runs = (block['items'] as List).cast<Map<String, String>>();
+      var height = 0;
+      for (final group in _groupRuns(runs, 'itemStart')) {
+        height += TextMetricsService.paragraphHeightEmu(
+          group,
+          widthEmu: contentWidthEmu,
+          scale: scale,
+        );
+      }
+      return height + 91440;
     }
-    return height + 91440;
-  }
-  if (type == 'table') {
-    // Real per-cell text heights + the default vertical cell insets
-    // (replaces the flat 400000 EMU per row).
-    final rowsDynamic = block['rows'] as List? ?? [];
-    if (rowsDynamic.isEmpty) return 0;
-    final cols = rowsDynamic.fold<int>(
-        0, (m, row) => (row as List).length > m ? row.length : m);
-    if (cols == 0) return 0;
-    final cellWidth = ((contentWidthEmu / cols) - 2 * 91440)
-        .clamp(45720, contentWidthEmu)
-        .toInt();
-    var height = 0;
-    for (int r = 0; r < rowsDynamic.length; r++) {
-      final cells = (rowsDynamic[r] as List)
-          .map((c) => Map<String, String>.from(c as Map))
-          .toList();
-      height += TextMetricsService.tableRowHeightEmu(
-        cells,
-        cellWidthEmu: cellWidth,
-        scale: scale,
-        header: block['headerRow'] == true && r == 0,
+    if (type == 'table') {
+      // Real per-cell text heights + the default vertical cell insets
+      // (replaces the flat 400000 EMU per row).
+      final rowsDynamic = block['rows'] as List? ?? [];
+      if (rowsDynamic.isEmpty) return 0;
+      final cols = rowsDynamic.fold<int>(
+        0,
+        (m, row) => (row as List).length > m ? row.length : m,
       );
+      if (cols == 0) return 0;
+      final cellWidth = ((contentWidthEmu / cols) - 2 * 91440)
+          .clamp(45720, contentWidthEmu)
+          .toInt();
+      var height = 0;
+      for (int r = 0; r < rowsDynamic.length; r++) {
+        final cells = (rowsDynamic[r] as List)
+            .map((c) => Map<String, String>.from(c as Map))
+            .toList();
+        height += TextMetricsService.tableRowHeightEmu(
+          cells,
+          cellWidthEmu: cellWidth,
+          scale: scale,
+          header: block['headerRow'] == true && r == 0,
+        );
+      }
+      return height;
     }
-    return height;
-  }
-  if (type == 'image') {
-    // Same load options as _buildImageShape so the processed-image cache
-    // serves both the estimate and the embed in one decode.
-    final loaded = HtmlImageLoader.load(
-      (block['src'] ?? '').toString(),
-      maxWidth: imageMaxWidth,
-      allowJpeg: true,
-      jpegQuality: jpegQualityForMaxWidth(imageMaxWidth),
-    );
-    if (loaded != null && loaded.width > 0) {
-      final scaledHeight = loaded.height * contentWidthEmu / loaded.width;
-      return scaledHeight.round().clamp(360000, 3657600).toInt();
+    if (type == 'image') {
+      // Same load options as _buildImageShape so the processed-image cache
+      // serves both the estimate and the embed in one decode.
+      final loaded = HtmlImageLoader.load(
+        (block['src'] ?? '').toString(),
+        maxWidth: imageMaxWidth,
+        allowJpeg: true,
+        jpegQuality: jpegQualityForMaxWidth(imageMaxWidth),
+      );
+      if (loaded != null && loaded.width > 0) {
+        final scaledHeight = loaded.height * contentWidthEmu / loaded.width;
+        return scaledHeight.round().clamp(360000, 3657600).toInt();
+      }
     }
+    if (type == 'video') {
+      // Track 11, P1: fixed 16:9 box scaled to the content width — the same
+      // geometry the <p:pic> video shape gets in the PPTX pass.
+      return (contentWidthEmu * 9 / 16).round();
+    }
+    if (type == 'model3d') {
+      // Track 14: 16:9 box matching the am3d graphicFrame geometry.
+      return (contentWidthEmu * 9 / 16).round();
+    }
+    if (type == 'icon') {
+      // Track 15: square box sized from the icon's pixel size, scaled to the
+      // content width (icons are 24-unit SVGs, so use a 1:1 box).
+      final icon = IconItem.fromJson((block['data-icon'] ?? '').toString());
+      final size = icon.svgPath.isEmpty ? 360000 : (360000 * 3 / 2).round();
+      return size.clamp(360000, contentWidthEmu).toInt();
+    }
+    return 360000;
   }
-  if (type == 'video') {
-    // Track 11, P1: fixed 16:9 box scaled to the content width — the same
-    // geometry the <p:pic> video shape gets in the PPTX pass.
-    return (contentWidthEmu * 9 / 16).round();
-  }
-  if (type == 'model3d') {
-    // Track 14: 16:9 box matching the am3d graphicFrame geometry.
-    return (contentWidthEmu * 9 / 16).round();
-  }
-  if (type == 'icon') {
-    // Track 15: square box sized from the icon's pixel size, scaled to the
-    // content width (icons are 24-unit SVGs, so use a 1:1 box).
-    final icon = IconItem.fromJson((block['data-icon'] ?? '').toString());
-    final size = icon.svgPath.isEmpty ? 360000 : (360000 * 3 / 2).round();
-    return size.clamp(360000, contentWidthEmu).toInt();
-  }
-  return 360000;
-}
 
-/// Build one OOXML `<p:sldLayout>` part with real placeholders (Track 05).
+  /// Build one OOXML `<p:sldLayout>` part with real placeholders (Track 05).
   ///
   /// Shapes use the standard `p:sp` + `p:ph` structure (type/index) with EMU
   /// geometry from the registry; `clrMapOvr` pins the layout to the master's
@@ -2166,21 +2114,25 @@ static int estimateBlockHeight(
   static String _buildSlideLayoutXml(PptLayoutDef def) {
     final typeAttr = def.schemaType == null ? '' : ' type="${def.schemaType}"';
     final b = StringBuffer(
-        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
-        '<p:sldLayout xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"$typeAttr preserve="1">\n'
-        '  <p:cSld><p:spTree>'
-        '<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>'
-        '<p:grpSpPr/>');
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+      '<p:sldLayout xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"$typeAttr preserve="1">\n'
+      '  <p:cSld><p:spTree>'
+      '<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>'
+      '<p:grpSpPr/>',
+    );
     var shapeId = 2;
     for (final ph in def.placeholders) {
       final idxAttr = ph.idx == null ? '' : ' idx="${ph.idx}"';
       b.write('<p:sp>');
       b.write(
-          '<p:nvSpPr><p:cNvPr id="$shapeId" name="${_xmlEscape(ph.name)}"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="${ph.phType}"$idxAttr/></p:nvPr></p:nvSpPr>');
+        '<p:nvSpPr><p:cNvPr id="$shapeId" name="${_xmlEscape(ph.name)}"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="${ph.phType}"$idxAttr/></p:nvPr></p:nvSpPr>',
+      );
       b.write(
-          '<p:spPr><a:xfrm><a:off x="${ph.x}" y="${ph.y}"/><a:ext cx="${ph.cx}" cy="${ph.cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>');
+        '<p:spPr><a:xfrm><a:off x="${ph.x}" y="${ph.y}"/><a:ext cx="${ph.cx}" cy="${ph.cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>',
+      );
       b.write(
-          '<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang="en-US"/></a:p></p:txBody>');
+        '<p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang="en-US"/></a:p></p:txBody>',
+      );
       b.write('</p:sp>');
       shapeId++;
     }
@@ -2218,9 +2170,9 @@ static int estimateBlockHeight(
     // Track 03, P4: dedupe by content (SHA-256 of the final bytes) — the
     // same image on several slides embeds one media part; every slide still
     // declares its own relationship to it.
-    final contentKey =
-        crypto.sha256.convert(loaded.bytes).toString();
-    final existingName = debugDisableMediaDedupe ? null : mediaByContentKey?[contentKey];
+    final contentKey = crypto.sha256.convert(loaded.bytes).toString();
+    final existingName =
+        debugDisableMediaDedupe ? null : mediaByContentKey?[contentKey];
     final name = existingName ?? 'image${nextMediaIndex()}.${loaded.ext}';
     if (existingName == null) {
       mediaByContentKey?[contentKey] = name;
@@ -2231,22 +2183,21 @@ static int estimateBlockHeight(
     // Scale to fit the content width and remaining vertical space.
     int imgW = loaded.width * _emuPerPx;
     int imgH = loaded.height * _emuPerPx;
-    final scale = [
-      1.0,
-      w / imgW,
-      h / imgH,
-    ].reduce((a, c) => a < c ? a : c);
+    final scale = [1.0, w / imgW, h / imgH].reduce((a, c) => a < c ? a : c);
     imgW = (imgW * scale).round();
     imgH = (imgH * scale).round();
     final xOff = x + ((w - imgW) ~/ 2);
 
     b.write('      <p:pic>\n');
     b.write(
-        '        <p:nvPicPr><p:cNvPr id="$shapeId" name="Picture $shapeId"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr>\n');
+      '        <p:nvPicPr><p:cNvPr id="$shapeId" name="Picture $shapeId"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr>\n',
+    );
     b.write(
-        '        <p:blipFill><a:blip r:embed="$rId"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>\n');
+      '        <p:blipFill><a:blip r:embed="$rId"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>\n',
+    );
     b.write(
-        '        <p:spPr><a:xfrm><a:off x="$xOff" y="$y"/><a:ext cx="$imgW" cy="$imgH"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>\n');
+      '        <p:spPr><a:xfrm><a:off x="$xOff" y="$y"/><a:ext cx="$imgW" cy="$imgH"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>\n',
+    );
     b.write('      </p:pic>\n');
   }
 
@@ -2287,11 +2238,14 @@ static int estimateBlockHeight(
 
     b.write('      <p:pic>\n');
     b.write(
-        '        <p:nvPicPr><p:cNvPr id="$shapeId" name="Icon ${icon.name}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr>\n');
+      '        <p:nvPicPr><p:cNvPr id="$shapeId" name="Icon ${icon.name}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr>\n',
+    );
     b.write(
-        '        <p:blipFill><a:blip r:embed="$rId"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>\n');
+      '        <p:blipFill><a:blip r:embed="$rId"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>\n',
+    );
     b.write(
-        '        <p:spPr><a:xfrm><a:off x="$xOff" y="$y"/><a:ext cx="$iconSize" cy="$iconSize"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>\n');
+      '        <p:spPr><a:xfrm><a:off x="$xOff" y="$y"/><a:ext cx="$iconSize" cy="$iconSize"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>\n',
+    );
     b.write('      </p:pic>\n');
   }
 
@@ -2312,32 +2266,6 @@ static int estimateBlockHeight(
       groups.last.add(run);
     }
     return groups;
-  }
-
-  static List<Map<String, String>> _prepareRunGroup(
-    List<Map<String, String>> runs,
-    String startMarker,
-  ) {
-    final prepared = runs.map(Map<String, String>.from).toList();
-    if (prepared.isEmpty) return prepared;
-
-    // HTML collapses normal whitespace. Preserve a single boundary space
-    // between differently styled runs, but not at paragraph edges.
-    for (final run in prepared) {
-      if (run['isBreak'] != 'true') {
-        run['text'] = (run['text'] ?? '').replaceAll(RegExp(r'\s+'), ' ');
-      }
-    }
-    final textRuns = prepared.where((run) => run['isBreak'] != 'true').toList();
-    if (textRuns.isNotEmpty) {
-      textRuns.first['text'] = (textRuns.first['text'] ?? '').trimLeft();
-      textRuns.last['text'] = (textRuns.last['text'] ?? '').trimRight();
-    }
-    prepared.removeWhere(
-      (run) => run['isBreak'] != 'true' && (run['text'] ?? '').isEmpty,
-    );
-    if (prepared.isNotEmpty) prepared.first[startMarker] = 'true';
-    return prepared;
   }
 
   static String _textElement(String text) {
@@ -2363,14 +2291,21 @@ static int estimateBlockHeight(
 
     b.write('      <p:sp>\n');
     b.write(
-        '        <p:nvSpPr><p:cNvPr id="$shapeId" name="Content Text"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr/></p:nvSpPr>\n');
+      '        <p:nvSpPr><p:cNvPr id="$shapeId" name="Content Text"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr/></p:nvSpPr>\n',
+    );
     b.write(
-        '        <p:spPr><a:xfrm><a:off x="$x" y="$y"/><a:ext cx="$w" cy="$h"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>\n');
+      '        <p:spPr><a:xfrm><a:off x="$x" y="$y"/><a:ext cx="$w" cy="$h"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>\n',
+    );
     b.write('        <p:txBody><a:bodyPr/><a:lstStyle/>\n');
 
     for (final paraRuns in _groupRuns(paragraphs, 'paragraphStart')) {
-      _writeParagraphRuns(b, paraRuns,
-          indentLevel: 0, rels: rels, sizeScale: sizeScale);
+      _writeParagraphRuns(
+        b,
+        paraRuns,
+        indentLevel: 0,
+        rels: rels,
+        sizeScale: sizeScale,
+      );
     }
 
     b.write('        </p:txBody>\n');
@@ -2395,9 +2330,11 @@ static int estimateBlockHeight(
 
     b.write('      <p:sp>\n');
     b.write(
-        '        <p:nvSpPr><p:cNvPr id="$shapeId" name="List Content"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr/></p:nvSpPr>\n');
+      '        <p:nvSpPr><p:cNvPr id="$shapeId" name="List Content"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr/></p:nvSpPr>\n',
+    );
     b.write(
-        '        <p:spPr><a:xfrm><a:off x="$x" y="$y"/><a:ext cx="$w" cy="$h"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>\n');
+      '        <p:spPr><a:xfrm><a:off x="$x" y="$y"/><a:ext cx="$w" cy="$h"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>\n',
+    );
     b.write('        <p:txBody><a:bodyPr/><a:lstStyle/>\n');
 
     final itemGroups = _groupRuns(items, 'itemStart');
@@ -2415,14 +2352,20 @@ static int estimateBlockHeight(
       if (ordered) {
         // Numbered list
         b.write(
-            '><a:buAutoNum type="arabicPeriod" startAt="${i + 1}"/></a:pPr>\n');
+          '><a:buAutoNum type="arabicPeriod" startAt="${i + 1}"/></a:pPr>\n',
+        );
       } else {
         // Bullet list — actual bullet glyph (fixed literal \u2022 bug)
         b.write('><a:buChar char="\u2022"/></a:pPr>\n');
       }
       for (final run in itemRuns) {
-        _writeTextRun(b, run,
-            rels: rels, indent: '            ', sizeScale: sizeScale);
+        _writeTextRun(
+          b,
+          run,
+          rels: rels,
+          indent: '            ',
+          sizeScale: sizeScale,
+        );
       }
       b.write('          </a:p>\n');
     }
@@ -2456,19 +2399,24 @@ static int estimateBlockHeight(
       rows.add(typedRow);
     }
 
-    final cols =
-        rows.fold<int>(0, (max, row) => row.length > max ? row.length : max);
+    final cols = rows.fold<int>(
+      0,
+      (max, row) => row.length > max ? row.length : max,
+    );
     if (cols == 0) return;
     final rowHeight = ((h ?? rows.length * 400000) / rows.length).floor();
     final tableHeight = rowHeight * rows.length;
 
     b.write('      <p:graphicFrame>\n');
     b.write(
-        '        <p:nvGraphicFramePr><p:cNvPr id="$shapeId" name="Table"/><p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr><p:nvPr/></p:nvGraphicFramePr>\n');
+      '        <p:nvGraphicFramePr><p:cNvPr id="$shapeId" name="Table"/><p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr><p:nvPr/></p:nvGraphicFramePr>\n',
+    );
     b.write(
-        '        <p:xfrm><a:off x="$x" y="$y"/><a:ext cx="$w" cy="$tableHeight"/></p:xfrm>\n');
+      '        <p:xfrm><a:off x="$x" y="$y"/><a:ext cx="$w" cy="$tableHeight"/></p:xfrm>\n',
+    );
     b.write(
-        '        <a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table">\n');
+      '        <a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table">\n',
+    );
     b.write('          <a:tbl><a:tblPr/><a:tblGrid>\n');
 
     for (int c = 0; c < cols; c++) {
@@ -2493,9 +2441,11 @@ static int estimateBlockHeight(
         b.write('                  <a:pPr marL="0" indent="0"/>\n');
         b.write('                  <a:r>\n');
         b.write(
-            '                    ${_runProps(effectiveCell, defaultSize: '1600', sizeScale: sizeScale)}\n');
+          '                    ${_runProps(effectiveCell, defaultSize: '1600', sizeScale: sizeScale)}\n',
+        );
         b.write(
-            '                    <a:t>${_xmlEscape(cell['text'] ?? '')}</a:t>\n');
+          '                    <a:t>${_xmlEscape(cell['text'] ?? '')}</a:t>\n',
+        );
         b.write('                  </a:r>\n');
         b.write('                </a:p>\n');
         // Fixed: single closing tag (was duplicated, producing invalid OOXML)
@@ -2560,7 +2510,8 @@ static int estimateBlockHeight(
     if (href != null && href.isNotEmpty && rels != null) {
       final rId = rels.addHyperlink(_xmlEscape(href));
       b.write(
-          '<a:hlinkClick xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="$rId"/>');
+        '<a:hlinkClick xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="$rId"/>',
+      );
     }
     b.write('</a:rPr>');
     return b.toString();
@@ -2575,7 +2526,8 @@ static int estimateBlockHeight(
   }) {
     final visibleRuns = runs
         .where(
-            (run) => run['isBreak'] == 'true' || (run['text'] ?? '').isNotEmpty)
+          (run) => run['isBreak'] == 'true' || (run['text'] ?? '').isNotEmpty,
+        )
         .toList();
     if (visibleRuns.isEmpty) return;
 
@@ -2592,8 +2544,13 @@ static int estimateBlockHeight(
     if (align != null && align.isNotEmpty) b.write(' algn="$align"');
     b.write('><a:buNone/></a:pPr>\n');
     for (final run in visibleRuns) {
-      _writeTextRun(b, run,
-          rels: rels, indent: '            ', sizeScale: sizeScale);
+      _writeTextRun(
+        b,
+        run,
+        rels: rels,
+        indent: '            ',
+        sizeScale: sizeScale,
+      );
     }
     b.write('          </a:p>\n');
   }
@@ -2609,7 +2566,9 @@ static int estimateBlockHeight(
       // a:br is a direct child of a:p. Placing it inside a:r violates
       // CT_RegularTextRun and causes PowerPoint/OpenXmlValidator to reject it.
       b.write('$indent<a:br>\n');
-      b.write('$indent  ${_runProps(run, defaultSize: '1800', rels: rels, sizeScale: sizeScale)}\n');
+      b.write(
+        '$indent  ${_runProps(run, defaultSize: '1800', rels: rels, sizeScale: sizeScale)}\n',
+      );
       b.write('$indent</a:br>\n');
       return;
     }
@@ -2617,710 +2576,43 @@ static int estimateBlockHeight(
     final text = run['text'] ?? '';
     if (text.isEmpty) return;
     b.write('$indent<a:r>\n');
-    b.write('$indent  ${_runProps(run, defaultSize: '1800', rels: rels, sizeScale: sizeScale)}\n');
+    b.write(
+      '$indent  ${_runProps(run, defaultSize: '1800', rels: rels, sizeScale: sizeScale)}\n',
+    );
     b.write('$indent  ${_textElement(text)}\n');
     b.write('$indent</a:r>\n');
   }
 
-  // ---- HTML parsing ----
+  static List<Map<String, dynamic>> parseHtmlContentFull(
+    String html, {
+    HtmlParseCache? parseCache,
+  }) =>
+      HtmlParseCore.parseHtmlContentFull(html, parseCache: parseCache);
 
-  /// Extract speaker notes from an `<aside class="notes">` element.
-  static String extractNotes(String html, {HtmlParseCache? parseCache}) {
-    if (html.trim().isEmpty) return '';
-    if (parseCache != null) {
-      // Reuses the session tokenization instead of re-parsing the content
-      // that _buildSlideXml has just parsed (Track 01, phase 3).
-      return parseCache.notesFor(html);
-    }
-    try {
-      final doc = html_parser.parse(html);
-      final aside = doc.querySelector('aside.notes');
-      return aside?.text.trim() ?? '';
-    } catch (_) {
-      return '';
-    }
-  }
-
-  /// Parse HTML content and return structured blocks (text, list, table, image)
-  static List<Map<String, dynamic>> parseHtmlContentFull(String html,
-      {HtmlParseCache? parseCache}) {
-    if (html.trim().isEmpty) {
-      return [
-        {
-          'type': 'text',
-          'paragraphs': [
-            {'text': '', 'bold': 'false', 'italic': 'false'}
-          ]
-        }
-      ];
-    }
-    if (parseCache != null) {
-      // One tokenization per unique content, shared by PPTX and PDF.
-      return parseCache.blocksFor(html);
-    }
-    final document = html_parser.parse(html);
-    return parseHtmlContentFullFromDoc(document, fallbackText: html);
-  }
-
-  /// Parse from an already-parsed DOM document (avoids double-parsing).
   static List<Map<String, dynamic>> parseHtmlContentFullFromDoc(
-      dom.Document document,
-      {String fallbackText = ''}) {
-    final body = document.body;
-    if (body == null) {
-      return [
-        {
-          'type': 'text',
-          'paragraphs': [
-            {'text': fallbackText, 'bold': 'false', 'italic': 'false'}
-          ]
-        }
-      ];
-    }
-    // Speaker notes are not part of the visible slide content.
-    for (final aside in body.querySelectorAll('aside.notes')) {
-      aside.remove();
-    }
-    final blocks = _extractBlocks(body);
-    if (blocks.isEmpty) {
-      return [
-        {
-          'type': 'text',
-          'paragraphs': [
-            {'text': body.text, 'bold': 'false', 'italic': 'false'}
-          ]
-        }
-      ];
-    }
-    return blocks;
-  }
+    dom.Document document, {
+    String fallbackText = '',
+  }) =>
+      HtmlParseCore.parseHtmlContentFullFromDoc(
+        document,
+        fallbackText: fallbackText,
+      );
 
-  /// Legacy single-paragraph extraction (kept for backward compatibility)
-  static List<Map<String, String>> parseHtmlContent(String html) {
-    final blocks = parseHtmlContentFull(html);
-    final paragraphs = <Map<String, String>>[];
-    for (final block in blocks) {
-      if (block['type'] == 'text') {
-        for (final run
-            in (block['paragraphs'] as List).cast<Map<String, String>>()) {
-          final legacyRun = Map<String, String>.from(run)
-            ..remove('paragraphStart')
-            ..remove('itemStart');
-          paragraphs.add(legacyRun);
-        }
-      } else if (block['type'] == 'list') {
-        for (final item
-            in (block['items'] as List).cast<Map<String, String>>()) {
-          final legacyItem = Map<String, String>.from(item)
-            ..remove('paragraphStart')
-            ..remove('itemStart');
-          paragraphs.add(legacyItem);
-        }
-      }
-    }
-    return paragraphs;
-  }
+  static List<Map<String, String>> parseHtmlContent(String html) =>
+      HtmlParseCore.parseHtmlContent(html);
 
-  // ---- Inline style parsing ----
+  static String extractNotes(String html, {HtmlParseCache? parseCache}) =>
+      HtmlParseCore.extractNotes(html, parseCache: parseCache);
 
-  static final RegExp _styleDeclRegExp = RegExp(r'([\w-]+)\s*:\s*([^;]+)');
-
-  // ---- Slide-pass content regexes -------------------------------------
-  // `_buildSlideXml` walks every slide and, per content type it contains,
-  // previously recompiled the same pattern per slide. Hoisted once: they
-  // are pure patterns (no captured locals) and deck export builds one
-  // slide XML per slide.
-  static final RegExp _bgColorAttrRe = RegExp(
-    r"""data-bg-color=["']([^"']+)["']""",
-    caseSensitive: false,
-  );
-  static final RegExp _diagramPatternRe = RegExp(
-    r"""data-smartart=(['"])(.*?)\1""",
-    caseSensitive: false,
+  static final RegExp _timingInnerRe = RegExp(
+    r'<p:timing>(.*)</p:timing>',
     dotAll: true,
   );
-  static final RegExp _chartPatternRe = RegExp(
-    r"""data-chart='([^']*)'""",
-    caseSensitive: false,
-  );
-  static final RegExp _videoPatternRe = RegExp(
-    r"""<video\b[^>]*data-video=(['"])(.*?)\1[^>]*>""",
-    caseSensitive: false,
-    dotAll: true,
-  );
-  static final RegExp _model3dPatternRe = RegExp(
-    r"""data-model3d=(['"])(.*?)\1""",
-    caseSensitive: false,
-    dotAll: true,
-  );
-  static final RegExp _actionPatternRe = RegExp(
-    r"""data-action=(['"])(.*?)\1""",
-    caseSensitive: false,
-    dotAll: true,
-  );
-  static final RegExp _equationPatternRe = RegExp(
-    r"""data-equation=(['"])(.*?)\1""",
-    caseSensitive: false,
-    dotAll: true,
-  );
-  static final RegExp _olePatternRe = RegExp(
-    r"""data-ole=(['"])(.*?)\1""",
-    caseSensitive: false,
-    dotAll: true,
-  );
-  static final RegExp _zoomPatternRe = RegExp(
-    r"""data-zoom=(['"])(.*?)\1""",
-    caseSensitive: false,
-    dotAll: true,
-  );
-  static final RegExp _sectionZoomPatternRe = RegExp(
-    r"""data-sectionzoom=(['"])(.*?)\1""",
-    caseSensitive: false,
-    dotAll: true,
-  );
-  static final RegExp _cameoPatternRe = RegExp(
-    r"""data-cameo=(['"])(.*?)\1""",
-    caseSensitive: false,
-    dotAll: true,
-  );
-  /// Strip the outer `<p:timing>` wrapper when merging per-animation timing
-  /// into the slide timing block (line 2080 area).
-  static final RegExp _timingInnerRe =
-      RegExp(r'<p:timing>(.*)</p:timing>', dotAll: true);
 
-  static const Map<String, String> _cssColorNames = {
-    'black': '000000',
-    'white': 'FFFFFF',
-    'red': 'FF0000',
-    'green': '008000',
-    'blue': '0000FF',
-    'yellow': 'FFFF00',
-    'orange': 'FFA500',
-    'purple': '800080',
-    'gray': '808080',
-    'grey': '808080',
-    'silver': 'C0C0C0',
-    'navy': '000080',
-    'teal': '008080',
-    'maroon': '800000',
-    'olive': '808000',
-    'lime': '00FF00',
-    'aqua': '00FFFF',
-    'cyan': '00FFFF',
-    'magenta': 'FF00FF',
-    'fuchsia': 'FF00FF',
-    'pink': 'FFC0CB',
-    'brown': 'A52A2A',
-    'gold': 'FFD700',
-  };
+  static String? cssColorToHex(String raw) => HtmlParseCore.cssColorToHex(raw);
 
-  /// Normalize a CSS color (#rgb, #rrggbb, rgb(), named) to RRGGBB, or null.
-  static String? cssColorToHex(String raw) {
-    final v = raw.trim().toLowerCase();
-    if (v.isEmpty) return null;
-    if (v.startsWith('#')) {
-      final hex = v.substring(1);
-      if (RegExp(r'^[0-9a-f]{6}$').hasMatch(hex)) return hex.toUpperCase();
-      if (RegExp(r'^[0-9a-f]{3}$').hasMatch(hex)) {
-        return hex.split('').map((c) => '$c$c').join().toUpperCase();
-      }
-      return null;
-    }
-    final rgbMatch =
-        RegExp(r'^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)').firstMatch(v);
-    if (rgbMatch != null) {
-      String toHex(String s) =>
-          int.parse(s).clamp(0, 255).toRadixString(16).padLeft(2, '0');
-      return (toHex(rgbMatch.group(1)!) +
-              toHex(rgbMatch.group(2)!) +
-              toHex(rgbMatch.group(3)!))
-          .toUpperCase();
-    }
-    return _cssColorNames[v]?.toUpperCase();
-  }
-
-  /// Convert a CSS font-size (px/pt/em/rem) to OOXML hundredths of a point.
-  static String? cssFontSizeToSz(String raw) {
-    final v = raw.trim().toLowerCase();
-    final match = RegExp(r'^([\d.]+)\s*(px|pt|em|rem)?$').firstMatch(v);
-    if (match == null) return null;
-    final value = double.tryParse(match.group(1)!);
-    if (value == null || value <= 0) return null;
-    final unit = match.group(2) ?? 'px';
-    double pt;
-    switch (unit) {
-      case 'pt':
-        pt = value;
-        break;
-      case 'em':
-      case 'rem':
-        pt = value * 12; // 1em ~ 16px = 12pt
-        break;
-      default: // px
-        pt = value * 0.75;
-    }
-    final sz = (pt * 100).round();
-    if (sz < 100 || sz > 40000) return null;
-    return sz.toString();
-  }
-
-  /// Parse style/attributes of [el] and merge run-level styling into [style].
-  static Map<String, String> _mergeElementStyle(
-      dom.Element el, Map<String, String> style) {
-    final merged = Map<String, String>.from(style);
-    final styleAttr = el.attributes['style'];
-    if (styleAttr != null && styleAttr.isNotEmpty) {
-      for (final m in _styleDeclRegExp.allMatches(styleAttr)) {
-        final prop = m.group(1)!.trim().toLowerCase();
-        final value = m.group(2)!.trim();
-        switch (prop) {
-          case 'color':
-            final hex = cssColorToHex(value);
-            if (hex != null) merged['color'] = hex;
-            break;
-          case 'background-color':
-            final hex = cssColorToHex(value);
-            if (hex != null) merged['highlight'] = hex;
-            break;
-          case 'font-size':
-            final sz = cssFontSizeToSz(value);
-            if (sz != null) merged['size'] = sz;
-            break;
-          case 'font-family':
-            final family = value
-                .split(',')
-                .first
-                .trim()
-                .replaceAll(RegExp(r'''["']'''), '');
-            if (family.isNotEmpty) merged['font'] = family;
-            break;
-          case 'font-weight':
-            if (value == 'bold' || (int.tryParse(value) ?? 0) >= 600) {
-              merged['bold'] = 'true';
-            }
-            break;
-          case 'font-style':
-            if (value == 'italic') merged['italic'] = 'true';
-            break;
-          case 'text-decoration':
-            if (value.contains('underline')) merged['underline'] = 'true';
-            if (value.contains('line-through')) merged['strike'] = 'true';
-            break;
-          case 'text-align':
-            final algn = _cssAlignToAlgn(value);
-            if (algn != null) merged['align'] = algn;
-            break;
-        }
-      }
-    }
-    final alignAttr = el.attributes['align'];
-    if (alignAttr != null) {
-      final algn = _cssAlignToAlgn(alignAttr);
-      if (algn != null) merged['align'] = algn;
-    }
-    return merged;
-  }
-
-  static String? _cssAlignToAlgn(String value) {
-    switch (value.trim().toLowerCase()) {
-      case 'left':
-        return 'l';
-      case 'center':
-        return 'ctr';
-      case 'right':
-        return 'r';
-      case 'justify':
-        return 'just';
-    }
-    return null;
-  }
-
-  static Map<String, String> _makeRun(String text, Map<String, String> style,
-      {bool isBreak = false}) {
-    return {
-      'text': text,
-      'bold': style['bold'] ?? 'false',
-      'italic': style['italic'] ?? 'false',
-      if (style['underline'] == 'true') 'underline': 'true',
-      if (style['strike'] == 'true') 'strike': 'true',
-      if ((style['color'] ?? '').isNotEmpty) 'color': style['color']!,
-      if ((style['highlight'] ?? '').isNotEmpty)
-        'highlight': style['highlight']!,
-      if ((style['size'] ?? '').isNotEmpty) 'size': style['size']!,
-      if ((style['font'] ?? '').isNotEmpty) 'font': style['font']!,
-      if ((style['align'] ?? '').isNotEmpty) 'align': style['align']!,
-      if ((style['href'] ?? '').isNotEmpty) 'href': style['href']!,
-      if (isBreak) 'isBreak': 'true',
-    };
-  }
-
-  static List<Map<String, dynamic>> _extractBlocks(dom.Element element,
-      [Map<String, String> inheritedStyle = const {}]) {
-    final result = <Map<String, dynamic>>[];
-    List<Map<String, String>> currentParagraphs = [];
-    List<Map<String, String>> currentListItems = [];
-    bool currentListOrdered = false;
-    bool inList = false;
-
-    void flushParagraphs() {
-      if (currentParagraphs.isNotEmpty) {
-        result.add({
-          'type': 'text',
-          'paragraphs': List.from(currentParagraphs),
-        });
-        currentParagraphs = [];
-      }
-    }
-
-    void flushList() {
-      if (currentListItems.isNotEmpty) {
-        result.add({
-          'type': 'list',
-          'items': List.from(currentListItems),
-          'ordered': currentListOrdered,
-        });
-        currentListItems = [];
-      }
-      inList = false;
-    }
-
-    for (final node in element.nodes) {
-      if (node is dom.Text) {
-        final normalized = node.text.replaceAll(RegExp(r'\s+'), ' ').trim();
-        if (normalized.isNotEmpty) {
-          // A bare text node appearing after a list must NOT inherit the
-          // inList state (rare in well-formed HTML, but a body like
-          // `<ul>...</ul>loose text` would otherwise merge "loose text"
-          // into the trailing list). Flush the list first so the text
-          // lands in the paragraphs stream.
-          if (inList) flushList();
-          final run = _makeRun(normalized, inheritedStyle);
-          if (currentParagraphs.isEmpty) run['paragraphStart'] = 'true';
-          currentParagraphs.add(run);
-        }
-      } else if (node is dom.Element) {
-        final tag = node.localName;
-        final style = _mergeElementStyle(node, inheritedStyle);
-
-        if (tag == 'br') {
-          final run = _makeRun('', inheritedStyle, isBreak: true);
-          if (inList) {
-            if (currentListItems.isEmpty) run['itemStart'] = 'true';
-            currentListItems.add(run);
-          } else {
-            if (currentParagraphs.isEmpty) {
-              run['paragraphStart'] = 'true';
-            }
-            currentParagraphs.add(run);
-          }
-        } else if (tag == 'img') {
-          flushParagraphs();
-          flushList();
-          final src = node.attributes['src'] ?? '';
-          if (src.isNotEmpty) {
-            result.add({'type': 'image', 'src': src});
-          }
-        } else if (tag == 'video' &&
-            node.attributes.containsKey('data-video')) {
-          // Track 11: video blocks become dedicated blocks (the PDF renderer
-          // draws the poster; PPTX emits <p:pic> media shapes via its own
-          // pass; the HTML exporter rewrites the tag for the player).
-          flushParagraphs();
-          flushList();
-          result.add({
-            'type': 'video',
-            'data-video': node.attributes['data-video'] ?? '',
-            'poster': node.attributes['poster'] ?? '',
-          });
-        } else if (tag == 'span' && node.attributes.containsKey('data-icon')) {
-          // Track 15: icon blocks become dedicated blocks (PDF renders the
-          // raster; PPTX emits <p:pic> of the rendered PNG; HTML inlines SVG).
-          flushParagraphs();
-          flushList();
-          result.add({
-            'type': 'icon',
-            'data-icon': node.attributes['data-icon'] ?? '',
-          });
-        } else if (tag == 'div' && node.attributes.containsKey('data-smartart')) {
-          // Track 10: SmartArt placeholders become dedicated blocks (PDF
-          // renderer; PPTX emits <dgm:diagram> shapes via its own pass).
-          flushParagraphs();
-          flushList();
-          result.add({
-            'type': 'smartart',
-            'data-smartart': node.attributes['data-smartart'] ?? '',
-          });
-        } else if (tag == 'div' &&
-            node.attributes.containsKey('data-model3d')) {
-          // Track 14: 3D model placeholders become dedicated blocks (PDF
-          // draws the poster placeholder; PPTX emits the am3d shape via its
-          // own pass; HTML replaces with the poster + note).
-          flushParagraphs();
-          flushList();
-          result.add({
-            'type': 'model3d',
-            'data-model3d': node.attributes['data-model3d'] ?? '',
-          });
-        } else if (tag == 'div' && node.attributes.containsKey('data-chart')) {
-          // Track 08: chart placeholders become dedicated blocks (consumed
-          // by the PDF renderer; PPTX emits <c:chart> shapes via its own
-          // pass and ignores these blocks).
-          flushParagraphs();
-          flushList();
-          result.add({
-            'type': 'chart',
-            'data-chart': node.attributes['data-chart'] ?? '',
-          });
-        } else if (tag == 'div' && node.attributes.containsKey('data-action')) {
-          // Track 18: action buttons become dedicated blocks (PDF renders a
-          // labelled button; PPTX emits the p:sp with hlinkClick).
-          flushParagraphs();
-          flushList();
-          result.add({
-            'type': 'action',
-            'data-action': node.attributes['data-action'] ?? '',
-          });
-        } else if (tag == 'div' && node.attributes.containsKey('data-equation')) {
-          // Track 18: equations become dedicated blocks (PDF renders the
-          // plain-text fallback; PPTX emits <a:math>).
-          flushParagraphs();
-          flushList();
-          result.add({
-            'type': 'equation',
-            'data-equation': node.attributes['data-equation'] ?? '',
-          });
-        } else if (tag == 'div' && node.attributes.containsKey('data-ole')) {
-          // Track 18, P6: OLE embedded objects become dedicated blocks.
-          flushParagraphs();
-          flushList();
-          result.add({
-            'type': 'ole',
-            'data-ole': node.attributes['data-ole'] ?? '',
-          });
-        } else if (tag == 'div' && node.attributes.containsKey('data-zoom')) {
-          // Track 20, P5: slide zoom becomes a dedicated block.
-          flushParagraphs();
-          flushList();
-          result.add({
-            'type': 'zoom',
-            'data-zoom': node.attributes['data-zoom'] ?? '',
-          });
-        } else if (tag == 'div' &&
-            node.attributes.containsKey('data-sectionzoom')) {
-          // Track 20, P6: Section/Summary Zoom becomes a dedicated block.
-          flushParagraphs();
-          flushList();
-          result.add({
-            'type': 'sectionzoom',
-            'data-sectionzoom': node.attributes['data-sectionzoom'] ?? '',
-          });
-        } else if (tag == 'div' && node.attributes.containsKey('data-cameo')) {
-          // Track 20, P8: cameo (live camera) becomes a dedicated block.
-          flushParagraphs();
-          flushList();
-          result.add({
-            'type': 'cameo',
-            'data-cameo': node.attributes['data-cameo'] ?? '',
-          });
-        } else if (tag == 'p' ||
-            tag == 'div' ||
-            tag == 'h1' ||
-            tag == 'h2' ||
-            tag == 'h3' ||
-            tag == 'h4' ||
-            tag == 'h5' ||
-            tag == 'h6') {
-          flushList();
-          // Nested block content (images, lists, tables inside div/p).
-          final hasBlockChildren = node.children.any((c) => const [
-                'img',
-                'ul',
-                'ol',
-                'table',
-                'p',
-                'div'
-              ].contains(c.localName));
-          if ((tag == 'div' || tag == 'p') && hasBlockChildren) {
-            flushParagraphs();
-            result.addAll(_extractBlocks(node, style));
-            continue;
-          }
-          var subPars = _extractInlineParagraphs(node, style);
-          if (subPars.isNotEmpty) {
-            // For headings, make them bold
-            if (tag != null && tag.startsWith('h')) {
-              for (final p in subPars) {
-                p['bold'] = 'true';
-                p['italic'] = p['italic'] ?? 'false';
-              }
-            }
-            subPars = _prepareRunGroup(subPars, 'paragraphStart');
-            currentParagraphs.addAll(subPars);
-          }
-        } else if (tag == 'ul' || tag == 'ol') {
-          flushParagraphs();
-          flushList();
-          inList = true;
-          currentListOrdered = (tag == 'ol');
-          for (final child in node.nodes) {
-            if (child is dom.Element && child.localName == 'li') {
-              final liStyle = _mergeElementStyle(child, style);
-              final items = _prepareRunGroup(
-                _extractInlineParagraphs(child, liStyle),
-                'itemStart',
-              );
-              for (final item in items) {
-                currentListItems.add(item);
-              }
-            }
-          }
-        } else if (tag == 'table') {
-          flushParagraphs();
-          flushList();
-          final tableData = _extractTable(node);
-          if (tableData.isNotEmpty) {
-            result.add({
-              'type': 'table',
-              'rows': tableData,
-              'headerRow': node.querySelector('tr th') != null,
-            });
-          }
-        } else if (tag == 'strong' || tag == 'b') {
-          var children = _extractInlineParagraphs(
-            node,
-            {...style, 'bold': 'true'},
-          );
-          if (inList && currentListItems.isEmpty) {
-            children = _prepareRunGroup(children, 'itemStart');
-          } else if (!inList && currentParagraphs.isEmpty) {
-            children = _prepareRunGroup(children, 'paragraphStart');
-          }
-          for (final child in children) {
-            if (inList) {
-              currentListItems.add(child);
-            } else {
-              currentParagraphs.add(child);
-            }
-          }
-        } else if (tag == 'em' || tag == 'i') {
-          var children = _extractInlineParagraphs(
-            node,
-            {...style, 'italic': 'true'},
-          );
-          if (inList && currentListItems.isEmpty) {
-            children = _prepareRunGroup(children, 'itemStart');
-          } else if (!inList && currentParagraphs.isEmpty) {
-            children = _prepareRunGroup(children, 'paragraphStart');
-          }
-          for (final child in children) {
-            if (inList) {
-              currentListItems.add(child);
-            } else {
-              currentParagraphs.add(child);
-            }
-          }
-        } else {
-          // Recurse into unknown elements
-          final subBlocks = _extractBlocks(node, style);
-          for (final block in subBlocks) {
-            if (block['type'] == 'text') {
-              currentParagraphs.addAll(
-                  (block['paragraphs'] as List).cast<Map<String, String>>());
-            } else if (block['type'] == 'list' ||
-                block['type'] == 'image' ||
-                block['type'] == 'table') {
-              flushParagraphs();
-              result.add(block);
-            }
-          }
-        }
-      }
-    }
-
-    flushParagraphs();
-    flushList();
-    return result;
-  }
-
-  /// Extract inline paragraphs from an element (text leaves only)
-  static List<Map<String, String>> _extractInlineParagraphs(dom.Element element,
-      [Map<String, String> inheritedStyle = const {}]) {
-    final result = <Map<String, String>>[];
-    for (final node in element.nodes) {
-      if (node is dom.Text) {
-        final normalized = node.text.replaceAll(RegExp(r'\s+'), ' ');
-        if (normalized.trim().isNotEmpty) {
-          result.add(_makeRun(normalized, inheritedStyle));
-        }
-      } else if (node is dom.Element) {
-        final tag = node.localName;
-        final style = _mergeElementStyle(node, inheritedStyle);
-        if (tag == 'br') {
-          result.add(_makeRun('', inheritedStyle, isBreak: true));
-        } else if (tag == 'strong' || tag == 'b') {
-          result.addAll(
-              _extractInlineParagraphs(node, {...style, 'bold': 'true'}));
-        } else if (tag == 'em' || tag == 'i') {
-          result.addAll(
-              _extractInlineParagraphs(node, {...style, 'italic': 'true'}));
-        } else if (tag == 'u' || tag == 'ins') {
-          result.addAll(
-              _extractInlineParagraphs(node, {...style, 'underline': 'true'}));
-        } else if (tag == 's' || tag == 'del' || tag == 'strike') {
-          result.addAll(
-              _extractInlineParagraphs(node, {...style, 'strike': 'true'}));
-        } else if (tag == 'a') {
-          final href = node.attributes['href'] ?? '';
-          result.addAll(_extractInlineParagraphs(
-              node, href.isNotEmpty ? {...style, 'href': href} : style));
-        } else {
-          result.addAll(_extractInlineParagraphs(node, style));
-        }
-      }
-    }
-    return result;
-  }
-
-  /// Extract table data as list of rows (each row is list of cell paragraphs)
-  static List<List<Map<String, String>>> _extractTable(dom.Element tableEl) {
-    final rows = <List<Map<String, String>>>[];
-    for (final child in tableEl.nodes) {
-      if (child is dom.Element) {
-        if (child.localName == 'thead') {
-          for (final th in child.nodes) {
-            if (th is dom.Element && th.localName == 'tr') {
-              rows.add(_extractTableRow(th));
-            }
-          }
-        } else if (child.localName == 'tbody') {
-          for (final tr in child.nodes) {
-            if (tr is dom.Element && tr.localName == 'tr') {
-              rows.add(_extractTableRow(tr));
-            }
-          }
-        } else if (child.localName == 'tr') {
-          rows.add(_extractTableRow(child));
-        }
-      }
-    }
-    return rows;
-  }
-
-  static List<Map<String, String>> _extractTableRow(dom.Element tr) {
-    final cells = <Map<String, String>>[];
-    for (final child in tr.nodes) {
-      if (child is dom.Element &&
-          (child.localName == 'th' || child.localName == 'td')) {
-        final style = _mergeElementStyle(child, const {});
-        final text = child.text.trim();
-        final isHeader = child.localName == 'th';
-        final cell = _makeRun(text, style);
-        if (isHeader) cell['bold'] = 'true';
-        cells.add(cell);
-      }
-    }
-    return cells;
-  }
+  static String? cssFontSizeToSz(String raw) =>
+      HtmlParseCore.cssFontSizeToSz(raw);
 
   static String _xmlEscape(String input) {
     return input
@@ -3338,12 +2630,24 @@ static int estimateBlockHeight(
   static final List<String> transitionWarnings = [];
 
   /// PowerPoint 2010+ p14 transition namespace.
-  static const String _p14Ns = 'http://schemas.microsoft.com/office/powerpoint/2010/main';
+  static const String _p14Ns =
+      'http://schemas.microsoft.com/office/powerpoint/2010/main';
 
   /// Track 33, P2: effects that only exist in the p14 namespace.
   static const Set<String> _p14Transitions = {
-    'curtain', 'ferris', 'flip', 'gallery', 'honeycomb', 'invert', 'orbit',
-    'pageCurl', 'ripple', 'shred', 'vortex', 'origami', 'reveal',
+    'curtain',
+    'ferris',
+    'flip',
+    'gallery',
+    'honeycomb',
+    'invert',
+    'orbit',
+    'pageCurl',
+    'ripple',
+    'shred',
+    'vortex',
+    'origami',
+    'reveal',
   };
 
   /// Builds the `<p:transition>` element for [effect].
@@ -3536,8 +2840,9 @@ static int estimateBlockHeight(
       // Track 33: 'cedar' has no PPTX equivalent — fall back to fade.
       case SlideEffect.cedar:
         type = 'fade';
-        transitionWarnings
-            .add('Cedar has no PPTX equivalent — exported as Fade.');
+        transitionWarnings.add(
+          'Cedar has no PPTX equivalent — exported as Fade.',
+        );
         break;
 
       default:
@@ -3559,8 +2864,7 @@ static int estimateBlockHeight(
     };
     final isP14 = _p14Transitions.contains(type);
     final p14Attr = isP14 ? ' xmlns:p14="$_p14Ns"' : '';
-    String xml =
-        '<p:transition spd="$spd" advClick="1"$timing$p14Attr>';
+    String xml = '<p:transition spd="$spd" advClick="1"$timing$p14Attr>';
     if (soundRid != null && soundRid.isNotEmpty) {
       xml += '<p:snd r:embed="$soundRid"/>';
     }

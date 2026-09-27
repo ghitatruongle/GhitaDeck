@@ -4,6 +4,8 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'bench_common.dart';
+import 'package:ghita_ppt_converter/core/html/html_parser.dart';
 import 'package:ghita_ppt_converter/services/export_job.dart';
 import 'package:ghita_ppt_converter/services/export_primitives.dart';
 import 'package:ghita_ppt_converter/services/ppt_generator.dart';
@@ -54,8 +56,7 @@ void main() {
       '<h1>Slide ảnh $n</h1><img src="$pngDataUri"/>'
       '<p>Chú thích ảnh $n</p>';
 
-  String slideStyled(int n) =>
-      '<h1>Đầu đề $n</h1><h2>Phụ đề $n</h2>'
+  String slideStyled(int n) => '<h1>Đầu đề $n</h1><h2>Phụ đề $n</h2>'
       '<p style="color:#ff0000">Chữ màu đỏ $n</p>'
       '<p style="font-size:150%">Chữ cỡ lớn $n</p>'
       '<p style="text-decoration:underline">Chữ gạch chân $n</p>';
@@ -78,8 +79,7 @@ void main() {
     };
   });
 
-  Future<void> runTemp(
-      Future<void> Function(Directory dir) body) async {
+  Future<void> runTemp(Future<void> Function(Directory dir) body) async {
     final dir = await Directory.systemTemp.createTemp('ghita_bench_');
     try {
       await body(dir);
@@ -146,17 +146,28 @@ void main() {
       await job.run(timings: warmTimings);
     });
 
-    // PDF + HTML totals (after-mode) for the same deck.
+    // PDF + HTML totals (after-mode) for the same deck. PDF runs twice:
+    // the first run pays the one-time system-font load, the second is the
+    // steady-state number the perf gate uses.
     final pdfTimings = ExportTimings();
+    final pdfWarmTimings = ExportTimings();
     await runTemp((dir) async {
-      final job = ExportJob(
+      final cold = ExportJob(
         slides: slides,
         outputPath: '${dir.path}/deck.pdf',
         format: ExportJobFormat.pdf,
         options: const ExportJobOptions(includeNotes: true),
         parseCache: afterCache,
       );
-      await job.run(timings: pdfTimings);
+      await cold.run(timings: pdfTimings);
+      final warm = ExportJob(
+        slides: slides,
+        outputPath: '${dir.path}/deck-warm.pdf',
+        format: ExportJobFormat.pdf,
+        options: const ExportJobOptions(includeNotes: true),
+        parseCache: afterCache,
+      );
+      await warm.run(timings: pdfWarmTimings);
     });
     final htmlTimings = ExportTimings();
     await runTemp((dir) async {
@@ -183,14 +194,27 @@ void main() {
       '| Trước (v1.6.3): parse lẻ + ZIP mức 1, nén cả media | '
           '${_fmt(beforeParseMs)} ms | — (nằm trong Tổng) | — | '
           '${_fmt(beforeTimings.totalMs)} ms | ${beforeTimings.bytes} B |',
-      afterTimings.toTableRow('Sau (T01): parse 1 lần + ZIP mức 9, media stored'),
+      afterTimings
+          .toTableRow('Sau (T01): parse 1 lần + ZIP mức 9, media stored'),
       warmTimings.toTableRow('Sau, lần 2 cùng phiên (cache đã ấm)'),
-      '| Sau (T01): PDF (tổng) | — | — | — | ${_fmt(pdfTimings.totalMs)} ms | '
-          '${pdfTimings.bytes} B |',
+      '| Sau (T01): PDF (tổng, lần đầu có nạp font hệ thống) | — | — | — | '
+          '${_fmt(pdfTimings.totalMs)} ms | ${pdfTimings.bytes} B |',
+      '| Sau (T01): PDF (ấm, chuẩn cho perf gate) | — | — | — | '
+          '${_fmt(pdfWarmTimings.totalMs)} ms | ${pdfWarmTimings.bytes} B |',
       '| Sau (T01): HTML (tổng) | — | — | — | ${_fmt(htmlTimings.totalMs)} ms | '
           '${htmlTimings.bytes} B |',
       '| Tham khảo | deck 20 slide, 4 nội dung duy nhất (lặp 5 lần), có ảnh PNG 128x96 | — | — | — | — |',
     ];
+
+    PerfGateReport(
+      suite: 'export_20_slide',
+      environment: BenchEnvironment.current(),
+      metrics: [
+        BenchMetric('pptxExport20SlideMs', afterTimings.totalMs, 90),
+        BenchMetric('pdfExport20SlideMs', pdfWarmTimings.totalMs, 150),
+        BenchMetric('htmlDeckBuildMs', htmlTimings.totalMs, 240),
+      ],
+    ).writeCurrentJson('tool/perf_current.json');
 
     final label = Platform.environment['GHITA_BENCH_LABEL'];
     if (label != null) {
@@ -209,8 +233,7 @@ void main() {
   });
 }
 
-String _fmt(double v) =>
-    v >= 100 ? v.toStringAsFixed(0) : v.toStringAsFixed(1);
+String _fmt(double v) => v >= 100 ? v.toStringAsFixed(0) : v.toStringAsFixed(1);
 
 Uint8List _makePng(int w, int h) {
   final image = img.Image(width: w, height: h);

@@ -140,42 +140,58 @@ class OleService {
   }) {
     final ext = ole.fileName.contains('.') ? ole.fileName.split('.').last : 'bin';
     final progId = _progIdFor(ext);
-    return '<p:sp>\n'
-        '  <p:nvSpPr><p:cNvPr id="$shapeId" name="OLE Object ${ole.iconLabel}"/>'
-        '<p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr>'
-        '<p:nvPr/>'
-        '<p:oleObj name="${ole.iconLabel}"'
-        ' r:id="$oleRid"'
-        ' progId="$progId"'
-        ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"'
-        '/></p:nvSpPr>\n'
-        '  <p:spPr><a:xfrm><a:off x="$offX" y="$offY"/>'
-        '<a:ext cx="$extCx" cy="$extCy"/></a:xfrm>'
-        '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>'
-        '<a:solidFill><a:srgbClr val="F0F4F8"/></a:solidFill>'
-        '<a:ln><a:solidFill><a:srgbClr val="B0C4DE"/></a:solidFill></a:ln>'
-        '</p:spPr>\n'
-        '  <p:txBody><a:bodyPr/><a:lstStyle/>'
-        '<a:p><a:pPr algn="ctr"/>'
-        '<a:r><a:rPr lang="en-US" sz="1400" b="1">'
-        '<a:solidFill><a:srgbClr val="333333"/></a:solidFill></a:rPr>'
-        '<a:t>${_xml(ole.iconLabel)}</a:t></a:r>'
-        '<a:r><a:rPr lang="en-US" sz="1000">'
-        '<a:solidFill><a:srgbClr val="888888"/></a:solidFill></a:rPr>'
-        '<a:t>\n${_xml(ole.fileName)}</a:t></a:r></a:p>'
-        '</p:txBody>\n'
-        '</p:sp>\n'
-        // Also a <p:pic> icon overlay (the document icon).
-        '<p:pic>\n'
-        '  <p:nvPicPr><p:cNvPr id="${shapeId + 1}" name="OLE Icon ${ole.iconLabel}"/>'
-        '<p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr>'
-        '<p:nvPr/></p:nvPicPr>\n'
-        '  <p:blipFill><a:blip r:embed="$iconRid"/>'
-        '<a:stretch><a:fillRect/></a:stretch></p:blipFill>\n'
-        '  <p:spPr><a:xfrm><a:off x="$offX" y="$offY"/>'
-        '<a:ext cx="$extCx" cy="$extCy"/></a:xfrm>'
-        '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>\n'
-        '</p:pic>\n';
+    final buffer = StringBuffer();
+    buffer.write('<p:pic>');
+    buffer.write('<p:nvPicPr>');
+    buffer.write('<p:cNvPr id="$shapeId" name="${ole.fileName}"/>');
+    buffer.write('<p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr>');
+    buffer.write('<p:nvPr/>');
+    buffer.write(
+        '<p:extLst><p:ext uri="{FF2B5EF4-FFF2-40B4-BE49-F238E27FC236}">');
+    buffer.write(
+        '<p14:compatExt xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" spid="_x0000_s${shapeId}0"/>');
+    buffer.write('</p:ext></p:extLst>');
+    buffer.write('</p:nvPicPr>');
+    buffer.write('<p:blipFill><a:blip r:embed="$iconRid"/>');
+    buffer.write('<a:stretch><a:fillRect/></a:stretch></p:blipFill>');
+    buffer.write('<p:spPr><a:xfrm><a:off x="$offX" y="$offY"/>');
+    buffer.write('<a:ext cx="$extCx" cy="$extCy"/></a:xfrm>');
+    buffer.write(
+        '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>');
+    buffer.write('</p:pic>');
+    buffer.write('<p:graphicFrame>');
+    buffer.write('<p:nvGraphicFramePr>');
+    buffer.write(
+        '<p:cNvPr id="$shapeId" name="OLE Object ${ole.iconLabel}"/>');
+    buffer.write(
+        '<p:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></p:cNvGraphicFramePr>');
+    buffer.write('<p:nvPr/>');
+    buffer.write('</p:nvGraphicFramePr>');
+    buffer.write('<p:xfrm><a:off x="$offX" y="$offY"/>');
+    buffer.write('<a:ext cx="$extCx" cy="$extCy"/></p:xfrm>');
+    buffer.write('<a:graphic>');
+    buffer.write(
+        '<a:graphicData uri="http://schemas.openxmlformats.org/presentationml/2006/ole">');
+    buffer.write(
+        '<mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">');
+    buffer.write(
+        '<mc:Choice xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" Requires="p14">');
+    buffer.write(
+        '<p:oleObj spid="_x0000_s${shapeId}0" name="${ole.iconLabel}" r:id="$oleRid" imgW="$extCx" imgH="$extCy" progId="$progId">');
+    buffer.write('<p:embed/>');
+    buffer.write('</p:oleObj>');
+    buffer.write('</mc:Choice>');
+    buffer.write('<mc:Fallback>');
+    buffer.write(
+        '<p:oleObj name="${ole.iconLabel}" r:id="$oleRid" imgW="$extCx" imgH="$extCy" progId="$progId">');
+    buffer.write('<p:embed/>');
+    buffer.write('</p:oleObj>');
+    buffer.write('</mc:Fallback>');
+    buffer.write('</mc:AlternateContent>');
+    buffer.write('</a:graphicData>');
+    buffer.write('</a:graphic>');
+    buffer.write('</p:graphicFrame>');
+    return buffer.toString();
   }
 
   /// Generate a simple document-icon PNG (48×48) for the OLE shape.
@@ -204,10 +220,4 @@ class OleService {
       default: return 'Package';
     }
   }
-
-  static String _xml(String t) => t
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;');
 }

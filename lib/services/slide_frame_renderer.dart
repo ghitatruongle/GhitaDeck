@@ -8,10 +8,8 @@
 /// The renderer reuses the same block parser as the PPTX/PDF exporters
 /// ([PPTGenerator.parseHtmlContentFull]) so text/list/table/image geometry
 /// matches the other formats. Text glyphs use the bundled bitmap fonts
-/// (ASCII range; non-ASCII glyphs render as a visible box). The Windows app
-/// prefers the higher-fidelity PDF→raster path ([SlidePdfRasterizer]) when
-/// available — this service is the deterministic fallback and the engine
-/// behind the automated tests.
+/// (ASCII range; non-ASCII glyphs render as a visible box). This service is
+/// the deterministic fallback and the engine behind the automated tests.
 library;
 
 import 'dart:math' as math;
@@ -22,7 +20,7 @@ import '../models/drawn_shape.dart';
 import '../models/free_shape.dart';
 import '../models/icon_item.dart';
 import 'html_image_loader.dart';
-import 'ppt_generator.dart';
+import '../core/html/html_parser.dart';
 
 /// Result of rasterizing one slide.
 class RenderedFrame {
@@ -72,7 +70,7 @@ class SlideFrameRenderer {
       img.fill(image, color: img.ColorRgba8(255, 255, 255, 255));
     }
 
-    final blocks = PPTGenerator.parseHtmlContentFull(html);
+    final blocks = HtmlParseCore.parseHtmlContentFull(html);
     _drawBlocks(image, blocks, width, height);
 
     _drawVisualElements(image, slide, width, height);
@@ -84,11 +82,11 @@ class SlideFrameRenderer {
   /// Resolve the slide background hex: typed `bgColor` wins, then the HTML
   /// `data-bg-color` attribute (same precedence as the PPTX exporter).
   static String? _slideBgHex(Map<String, dynamic> slide, String html) {
-    final typed = PPTGenerator.cssColorToHex((slide['bgColor'] ?? '').toString());
+    final typed = HtmlParseCore.cssColorToHex((slide['bgColor'] ?? '').toString());
     if (typed != null) return typed;
     final match = _bgColorRe.firstMatch(html);
     if (match == null) return null;
-    return PPTGenerator.cssColorToHex(match.group(1)!);
+    return HtmlParseCore.cssColorToHex(match.group(1)!);
   }
 
   static img.ColorRgba8 _color(String hex, int alpha) {

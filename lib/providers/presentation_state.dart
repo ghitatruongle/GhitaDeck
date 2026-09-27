@@ -3,9 +3,8 @@ import 'dart:io';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/export_options.dart';
+import 'deck_export_actions.dart';
 import '../models/guide_settings.dart';
 import '../models/object_animation.dart';
 import '../models/chart_data.dart';
@@ -34,8 +33,6 @@ import '../services/ole_service.dart';
 import '../services/zoom_feature_service.dart';
 import '../services/cameo_service.dart';
 import '../services/html_export_service.dart';
-import '../services/export_isolate.dart';
-import '../services/export_primitives.dart';
 import '../services/smart_draft_manager.dart';
 import '../services/time_machine_history_service.dart';
 import '../services/project_bundle_service.dart';
@@ -46,13 +43,15 @@ import 'config_service.dart';
 // imports of presentation_state.dart keep working.
 export '../models/slide.dart' show Slide, SlideEffect;
 
-class PresentationState with ChangeNotifier {
+class PresentationState with ChangeNotifier, DeckExportActions {
   List<Slide> _slides = [];
   SlideEffect _slideEffect = SlideEffect.none;
   DeckMeta _deckMeta = const DeckMeta();
   String _aspectRatio = '16:9';
   String _presentationTitle = 'Dự Án Thuyết Trình';
+  @override
   String? exportStatus;
+  @override
   String? lastExportedPath;
 
   // Document lifecycle state. The editor can render a recovery/loading state
@@ -75,6 +74,7 @@ class PresentationState with ChangeNotifier {
   SetupShowSettings _setupShow = const SetupShowSettings();
   List<CustomShow> _customShows = [];
 
+  @override
   SetupShowSettings get setupShow => _setupShow;
 
   set setupShow(SetupShowSettings value) {
@@ -92,6 +92,7 @@ class PresentationState with ChangeNotifier {
 
   /// The active custom show (if one was picked for this session).
   CustomShow? _activeCustomShow;
+  @override
   CustomShow? get activeCustomShow => _activeCustomShow;
   set activeCustomShow(CustomShow? show) {
     _activeCustomShow = show;
@@ -127,7 +128,9 @@ class PresentationState with ChangeNotifier {
   // to benefit from its image downscaling / in-memory optimizations.
   final HtmlExportService _htmlExportService = HtmlExportService();
 
+  @override
   List<Slide> get slides => _slides;
+  @override
   SlideEffect get slideEffect => _slideEffect;
   DeckMeta get deckMeta => _deckMeta;
   bool get isHydrating => _isHydrating;
@@ -191,7 +194,8 @@ class PresentationState with ChangeNotifier {
     final current = currentAnimations;
     final without = [
       for (final a in current)
-        if (!(a.shapeId == animation.shapeId && a.effect == animation.effect)) a,
+        if (!(a.shapeId == animation.shapeId && a.effect == animation.effect))
+          a,
     ];
     updateAnimations([...without, animation]);
   }
@@ -209,7 +213,10 @@ class PresentationState with ChangeNotifier {
     }
     return _slides[_currentSlideIndex];
   }
+
+  @override
   bool get autoAdvance => _autoAdvance;
+  @override
   int get autoAdvanceSeconds => _autoAdvanceSeconds;
 
   /// Backward-compatible alias: returns effect name as string.
@@ -498,8 +505,7 @@ class PresentationState with ChangeNotifier {
     if (index < 0 || index >= _slides.length) return;
     final slide = _slides[index];
     var html = slide.htmlContent;
-    if (editIndex != null &&
-        editIndex < ChartService.chartsIn(html).length) {
+    if (editIndex != null && editIndex < ChartService.chartsIn(html).length) {
       html = ChartService.replaceChartAt(html, editIndex, chart);
     } else {
       html = '${html.trimRight()}\n${ChartService.chartMarkup(chart)}';
@@ -532,8 +538,7 @@ class PresentationState with ChangeNotifier {
     if (index < 0 || index >= _slides.length) return;
     final slide = _slides[index];
     var html = slide.htmlContent;
-    if (editIndex != null &&
-        editIndex < Model3DService.modelsIn(html).length) {
+    if (editIndex != null && editIndex < Model3DService.modelsIn(html).length) {
       html = Model3DService.replaceModel3dAt(html, editIndex, model);
     } else {
       html = '${html.trimRight()}\n${Model3DService.model3dMarkup(model)}';
@@ -596,7 +601,8 @@ class PresentationState with ChangeNotifier {
     if (index < 0 || index >= _slides.length) return;
     final slide = _slides[index];
     var html = slide.htmlContent;
-    if (editIndex != null && editIndex < ZoomFeatureService.zoomsIn(html).length) {
+    if (editIndex != null &&
+        editIndex < ZoomFeatureService.zoomsIn(html).length) {
       html = ZoomFeatureService.replaceZoomAt(html, editIndex, zoom);
     } else {
       html = '${html.trimRight()}\n${ZoomFeatureService.zoomMarkup(zoom)}';
@@ -614,7 +620,8 @@ class PresentationState with ChangeNotifier {
         editIndex < SectionZoomService.sectionZoomCount(html)) {
       html = SectionZoomService.replaceSectionZoomAt(html, editIndex, zoom);
     } else {
-      html = '${html.trimRight()}\n${SectionZoomService.sectionZoomMarkup(zoom)}';
+      html =
+          '${html.trimRight()}\n${SectionZoomService.sectionZoomMarkup(zoom)}';
     }
     updateSlide(index, slide.copyWith(htmlContent: html));
   }
@@ -697,9 +704,11 @@ class PresentationState with ChangeNotifier {
     final visual = Map<String, dynamic>.of(slide.visualElements);
     final rawList = visual['shapes'];
     final list = rawList is List
-        ? rawList.map((e) => e is Map<String, dynamic>
-            ? e
-            : Map<String, dynamic>.from(e as Map)).toList()
+        ? rawList
+            .map((e) => e is Map<String, dynamic>
+                ? e
+                : Map<String, dynamic>.from(e as Map))
+            .toList()
         : <Map<String, dynamic>>[];
     if (editIndex != null && editIndex >= 0 && editIndex < list.length) {
       list[editIndex] = shape.toMap();
@@ -822,7 +831,6 @@ class PresentationState with ChangeNotifier {
     return LayerService.buildLayers(_slides[index]);
   }
 
-
   /// Track 26, P4: group [memberIds] into one group. Members keep their own
   /// geometry; the group box is the union bbox. Records undo.
   ShapeGroup? groupShapes(List<String> memberIds) {
@@ -848,8 +856,8 @@ class PresentationState with ChangeNotifier {
     final visual = Map<String, dynamic>.of(slide.visualElements);
     final rawGroups = visual['groups'];
     final groups = rawGroups is List
-        ? List<Map<String, dynamic>>.from(
-            rawGroups.map((e) => e is Map<String, dynamic>
+        ? List<Map<String, dynamic>>.from(rawGroups.map((e) =>
+            e is Map<String, dynamic>
                 ? e
                 : Map<String, dynamic>.from(e as Map)))
         : <Map<String, dynamic>>[];
@@ -868,14 +876,12 @@ class PresentationState with ChangeNotifier {
     final visual = Map<String, dynamic>.of(slide.visualElements);
     final rawGroups = visual['groups'];
     if (rawGroups is! List) return;
-    final groups = rawGroups
-        .where((e) {
-          final m = e is Map<String, dynamic>
-              ? e
-              : (e is Map ? Map<String, dynamic>.from(e) : null);
-          return m == null || m['id'] != groupId;
-        })
-        .toList();
+    final groups = rawGroups.where((e) {
+      final m = e is Map<String, dynamic>
+          ? e
+          : (e is Map ? Map<String, dynamic>.from(e) : null);
+      return m == null || m['id'] != groupId;
+    }).toList();
     if (groups.isEmpty) {
       visual.remove('groups');
     } else {
@@ -885,7 +891,8 @@ class PresentationState with ChangeNotifier {
   }
 
   /// Track 26, P4: move/scale a whole group through its members.
-  void transformGroup(String groupId, {double dx = 0, double dy = 0, double scale = 1}) {
+  void transformGroup(String groupId,
+      {double dx = 0, double dy = 0, double scale = 1}) {
     final index = _currentSlideIndex;
     if (index < 0 || index >= _slides.length) return;
     final slide = _slides[index];
@@ -926,16 +933,12 @@ class PresentationState with ChangeNotifier {
       w: group.w * (scale != 1 ? scale : 1),
       h: group.h * (scale != 1 ? scale : 1),
     );
-    visual['groups'] = rawGroups
-        .map((e) {
-          final m = e is Map<String, dynamic>
-              ? e
-              : (e is Map ? Map<String, dynamic>.from(e) : null);
-          return m != null && m['id'] == groupId
-              ? newGroup.toMap()
-              : e;
-        })
-        .toList();
+    visual['groups'] = rawGroups.map((e) {
+      final m = e is Map<String, dynamic>
+          ? e
+          : (e is Map ? Map<String, dynamic>.from(e) : null);
+      return m != null && m['id'] == groupId ? newGroup.toMap() : e;
+    }).toList();
     updateSlide(index, slide.copyWith(visualElements: visual));
   }
 
@@ -960,7 +963,7 @@ class PresentationState with ChangeNotifier {
     if (newIndex < 0 || newIndex >= _slides.length) return;
     if (oldIndex == newIndex) return;
 
-    final slide =     _slides.removeAt(oldIndex);
+    final slide = _slides.removeAt(oldIndex);
     _slides.insert(newIndex, slide);
     _recordHistory('Di chuyển Slide');
     notifyListeners();
@@ -1040,119 +1043,6 @@ class PresentationState with ChangeNotifier {
     savePresentation();
   }
 
-  List<Map<String, dynamic>> _slideMaps() =>
-      _slides.map((s) => s.toMap()).toList();
-
-  /// Execute the complete Advanced Export request. Every visible dialog option
-  /// is carried to the selected exporter rather than being reduced to a
-  /// format-only export.
-  Future<String> exportWithOptions(
-    String fileName,
-    ExportOptions options, {
-    ExportProgressCallback? onProgress,
-    ExportCancelToken? cancelToken,
-  }) async {
-    exportStatus = 'exporting';
-    notifyListeners();
-    try {
-      final selectedSlides = options.selectSlides(_slideMaps());
-      // B14: PDF's per-slide count counts the VISIBLE slides (hidden ones are
-      // skipped unless includeHiddenSlides) — preparing must agree, or the
-      // dialog's "x/N" total jumps mid-export.
-      final exportSlides = options.format == PresentationExportFormat.pdf &&
-              !options.includeHiddenSlides
-          ? selectedSlides
-              .where((s) => s['hidden'] != true)
-              .toList(growable: false)
-          : selectedSlides;
-      onProgress?.call(
-          ExportProgressBudget.preparing(exportSlides.length));
-      final targetDir = await getApplicationDocumentsDirectory();
-      final safeName =
-          fileName.replaceAll(RegExp(r'[^\w\.-]'), '_').replaceFirst(
-                RegExp('\\.${RegExp.escape(options.format.extension)}' r'$'),
-                '',
-              );
-      final outputPath =
-          '${targetDir.path}/$safeName.${options.format.extension}';
-
-      final String path;
-      switch (options.format) {
-        case PresentationExportFormat.pptx:
-          path = await runPptExportInIsolate(
-            selectedSlides,
-            outputPath,
-            effect: _slideEffect,
-            aspectRatio: options.aspectRatio,
-            includeNotes: options.includeNotes,
-            includeBackgrounds: options.includeBackgrounds,
-            imageMaxWidth: options.quality.imageMaxWidth,
-            autoAdvance:
-                _autoAdvance ? Duration(seconds: _autoAdvanceSeconds) : null,
-            fitContent: options.fitContent,
-            theme: options.theme,
-            onProgress: onProgress,
-            cancelToken: cancelToken,
-          );
-          break;
-        case PresentationExportFormat.html:
-          path = await runHtmlExportInIsolate(
-            selectedSlides,
-            outputPath,
-            aspectRatio: options.aspectRatio,
-            includeNotes: options.includeNotes,
-            includeBackgrounds: options.includeBackgrounds,
-            imageMaxWidth: options.quality.imageMaxWidth,
-            playerLocale: options.htmlPlayerLocale,
-            onProgress: onProgress,
-            cancelToken: cancelToken,
-          );
-          break;
-        case PresentationExportFormat.pdf:
-          path = await runPdfExportInIsolate(
-            exportSlides,
-            outputPath,
-            aspectRatio: options.aspectRatio,
-            includeNotes: options.includeNotes,
-            includeBackgrounds: options.includeBackgrounds,
-            imageMaxWidth: options.quality.imageMaxWidth,
-            paperSize: options.pdfPaperSize,
-            marginPreset: options.pdfMarginPreset,
-            scaleToFit: options.pdfScaleToFit,
-            includeHiddenSlides: options.includeHiddenSlides,
-            notesPages: options.pdfNotesPages,
-            bookmarks: options.pdfBookmarks,
-            onProgress: onProgress,
-            cancelToken: cancelToken,
-          );
-          break;
-        case PresentationExportFormat.docx:
-          // B10: DOCX used to build on the UI isolate — cancel was a no-op
-          // and progress never reached 100% on large decks. The worker
-          // reports per-slide progress and honors the cancel token.
-          path = await runDocxExportInIsolate(
-            selectedSlides,
-            outputPath,
-            includeNotes: options.includeNotes,
-            includeSlideList: options.docxIncludeSlideList,
-            onProgress: onProgress,
-            cancelToken: cancelToken,
-          );
-          break;
-      }
-      lastExportedPath = path;
-      exportStatus = 'success';
-      notifyListeners();
-      _resetExportStatus();
-      return path;
-    } catch (e) {
-      exportStatus = 'error';
-      notifyListeners();
-      _resetExportStatus();
-      rethrow;
-    }
-  }
-
   // ---- Persistence ----
 
   Future<void> savePresentation([String? title]) async {
@@ -1161,7 +1051,7 @@ class PresentationState with ChangeNotifier {
     notifyListeners();
     try {
       await _configService.saveSlides(
-          _slideMaps(), _slideEffect.name, _deckMeta.toJson());
+          slideMaps(), _slideEffect.name, _deckMeta.toJson());
       _savedRevision = revisionBeingSaved;
       if (_documentRevision == revisionBeingSaved) {
         _hasUnsavedChanges = false;
@@ -1199,184 +1089,13 @@ class PresentationState with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<String> exportToPPT(String fileName, {bool widescreen = true}) async {
-    exportStatus = 'exporting';
-    notifyListeners();
-    try {
-      final Directory targetDir = await getApplicationDocumentsDirectory();
-      final String sanitizeName = fileName.replaceAll(RegExp(r'[^\w\.-]'), '_');
-      final String fullPath = '${targetDir.path}/$sanitizeName.pptx';
+  @override
+  List<Map<String, dynamic>> slideMaps() =>
+      _slides.map((s) => s.toMap()).toList();
 
-      final String path = await runPptExportInIsolate(
-        _slideMaps(),
-        fullPath,
-        effect: _slideEffect,
-        widescreen: widescreen,
-        autoAdvance:
-            _autoAdvance ? Duration(seconds: _autoAdvanceSeconds) : null,
-      );
-      lastExportedPath = path;
-      exportStatus = 'success';
-      notifyListeners();
-      _resetExportStatus();
-      return path;
-    } catch (e) {
-      exportStatus = 'error';
-      notifyListeners();
-      _resetExportStatus();
-      rethrow;
-    }
-  }
+  @override
+  HtmlExportService get htmlExportService => _htmlExportService;
 
-  /// Export to a specific file path (used with file picker save dialog).
-  Future<String> exportToPPTPath(String filePath,
-      {bool widescreen = true}) async {
-    exportStatus = 'exporting';
-    notifyListeners();
-    try {
-      final String path = await runPptExportInIsolate(
-        _slideMaps(),
-        filePath,
-        effect: _slideEffect,
-        widescreen: widescreen,
-        autoAdvance:
-            _autoAdvance ? Duration(seconds: _autoAdvanceSeconds) : null,
-      );
-      lastExportedPath = path;
-      exportStatus = 'success';
-      notifyListeners();
-      _resetExportStatus();
-      return path;
-    } catch (e) {
-      exportStatus = 'error';
-      notifyListeners();
-      _resetExportStatus();
-      rethrow;
-    }
-  }
-
-  /// Export to a self-contained HTML file for browser-based presentation.
-  Future<String> exportToHtml(String fileName) async {
-    exportStatus = 'exporting';
-    notifyListeners();
-    try {
-      final Directory targetDir = await getApplicationDocumentsDirectory();
-      final String safeName = fileName.replaceAll(RegExp(r'[^\w\.-]'), '_');
-      final String fullPath = '${targetDir.path}/$safeName.html';
-      final String exportedPath =
-          await runHtmlExportInIsolate(_slideMaps(), fullPath);
-      lastExportedPath = exportedPath;
-      exportStatus = 'success';
-      notifyListeners();
-      _resetExportStatus();
-      return exportedPath;
-    } catch (e) {
-      exportStatus = 'error';
-      notifyListeners();
-      _resetExportStatus();
-      rethrow;
-    }
-  }
-
-  /// Export the HTML deck to an explicit path (save-as dialog).
-  Future<String> exportToHtmlPath(String filePath) async {
-    exportStatus = 'exporting';
-    notifyListeners();
-    try {
-      final String exportedPath =
-          await runHtmlExportInIsolate(_slideMaps(), filePath);
-      lastExportedPath = exportedPath;
-      exportStatus = 'success';
-      notifyListeners();
-      _resetExportStatus();
-      return exportedPath;
-    } catch (e) {
-      exportStatus = 'error';
-      notifyListeners();
-      _resetExportStatus();
-      rethrow;
-    }
-  }
-
-  /// Export slides as a landscape PDF document (one page per slide).
-  Future<String> exportToPdf(String fileName, {bool widescreen = true}) async {
-    exportStatus = 'exporting';
-    notifyListeners();
-    try {
-      final Directory targetDir = await getApplicationDocumentsDirectory();
-      final String sanitizeName = fileName.replaceAll(RegExp(r'[^\w\.-]'), '_');
-      final String fullPath = '${targetDir.path}/$sanitizeName.pdf';
-      final String exportedPath = await runPdfExportInIsolate(
-        _slideMaps(),
-        fullPath,
-        widescreen: widescreen,
-      );
-      lastExportedPath = exportedPath;
-      exportStatus = 'success';
-      notifyListeners();
-      _resetExportStatus();
-      return exportedPath;
-    } catch (e) {
-      exportStatus = 'error';
-      notifyListeners();
-      _resetExportStatus();
-      rethrow;
-    }
-  }
-
-  /// Export PDF to an explicit path (save-as dialog).
-  Future<String> exportToPdfPath(String filePath,
-      {bool widescreen = true}) async {
-    exportStatus = 'exporting';
-    notifyListeners();
-    try {
-      final String exportedPath = await runPdfExportInIsolate(
-        _slideMaps(),
-        filePath,
-        widescreen: widescreen,
-      );
-      lastExportedPath = exportedPath;
-      exportStatus = 'success';
-      notifyListeners();
-      _resetExportStatus();
-      return exportedPath;
-    } catch (e) {
-      exportStatus = 'error';
-      notifyListeners();
-      _resetExportStatus();
-      rethrow;
-    }
-  }
-
-  /// Build the standalone HTML deck string (used by in-app present mode).
-  ///
-  /// Reuses a single [HtmlExportService] instance and limits embedded images
-  /// to [imageMaxWidth] to reduce memory pressure during presentation.
-  /// When [slideOrder] is given (a custom show), only those slides are
-  /// included in the deck and [startIndex] is interpreted against that order.
-  String buildHtmlDeck({int startIndex = 0, List<int>? slideOrder}) {
-    var maps = _slideMaps();
-    final order = slideOrder ??
-        (_activeCustomShow?.validIndices(maps.length) ??
-            (_setupShow.autoAdvance
-                ? null
-                : null));
-    if (order != null && order.isNotEmpty) {
-      maps = [for (final i in order) if (i >= 0 && i < maps.length) maps[i]];
-    }
-    final Duration? autoAdvance;
-    if (_setupShow.autoAdvance) {
-      autoAdvance = Duration(seconds: _setupShow.advanceSeconds);
-    } else if (_autoAdvance) {
-      autoAdvance = Duration(seconds: _autoAdvanceSeconds);
-    } else {
-      autoAdvance = null;
-    }
-    return _htmlExportService.buildPresentationHtml(
-      maps,
-      startIndex: startIndex,
-      autoAdvance: autoAdvance,
-      imageMaxWidth: 1200,
-    );
-  }
+  @override
+  void resetExportStatus() => _resetExportStatus();
 }

@@ -11,6 +11,7 @@ import 'html_parse_codec.dart';
 import 'image_codec.dart';
 import 'image_optimizer_service.dart';
 import 'pdf_export_service.dart';
+import '../core/html/html_parser.dart';
 import 'ppt_generator.dart';
 import 'docx_report_service.dart';
 import 'zip_codec.dart';

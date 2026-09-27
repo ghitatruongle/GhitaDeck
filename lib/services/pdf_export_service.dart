@@ -16,13 +16,13 @@ import 'ole_service.dart';
 import 'zoom_feature_service.dart';
 import 'cameo_service.dart';
 import 'export_primitives.dart';
-import 'ppt_generator.dart';
+import '../core/html/html_parser.dart';
 import 'html_image_loader.dart';
 import 'icon_library_service.dart';
 
 /// Renders slides to a PDF document (Track 06).
 ///
-/// Reuses [PPTGenerator.parseHtmlContentFull] so PPTX and PDF exports share
+/// Reuses the shared HTML parse core so PPTX and PDF exports share
 /// the exact same HTML interpretation.
 ///
 /// Defaults reproduce the v1.6.3 output: one page per slide at the slide's
@@ -100,6 +100,44 @@ class PdfExportService {
     return null;
   }
 
+  static (PdfPageFormat, double) _resolvePdfGeometry({
+    required PdfPaperSize paperSize,
+    required ExportAspectRatio aspectRatio,
+    required PdfMarginPreset marginPreset,
+    required bool scaleToFit,
+  }) {
+    final slideWidth = aspectRatio.widthInches * PdfPageFormat.inch;
+    final slideHeight = aspectRatio.heightInches * PdfPageFormat.inch;
+    final marginPt = marginPreset.points;
+
+    // Page geometry: matchSlide keeps the v1.6.3 exact-slide pages; A4/Letter
+    // are landscape pages whose margins come from the preset.
+    final PdfPageFormat pageFormat;
+    switch (paperSize) {
+      case PdfPaperSize.a4:
+        pageFormat = PdfPageFormat(842, 595, marginAll: marginPt);
+      case PdfPaperSize.letter:
+        pageFormat = PdfPageFormat(792, 612, marginAll: marginPt);
+      case PdfPaperSize.matchSlide:
+        pageFormat = PdfPageFormat(slideWidth, slideHeight);
+    }
+    // Track 06, P3: scale the slide canvas to fit page size minus margins
+    // (never upscale — that would blur text).
+    final double scale;
+    if (paperSize == PdfPaperSize.matchSlide) {
+      scale = 1.0;
+    } else if (!scaleToFit) {
+      scale = 1.0;
+    } else {
+      final fit =
+          ((pageFormat.width - 2 * marginPt) / slideWidth).clamp(0.05, 1.0);
+      final fitHeight =
+          ((pageFormat.height - 2 * marginPt) / slideHeight).clamp(0.05, 1.0);
+      scale = fit < fitHeight ? fit : fitHeight;
+    }
+    return (pageFormat, scale);
+  }
+
   Future<String> exportToPdf(
     List<Map<String, dynamic>> slides,
     String outputPath, {
@@ -141,35 +179,17 @@ class PdfExportService {
         (widescreen
             ? ExportAspectRatio.widescreen16x9
             : ExportAspectRatio.standard4x3);
+    final geometry = _resolvePdfGeometry(
+      paperSize: paperSize,
+      aspectRatio: selectedRatio,
+      marginPreset: marginPreset,
+      scaleToFit: scaleToFit,
+    );
+    final pageFormat = geometry.$1;
+    final scale = geometry.$2;
+    final marginPt = marginPreset.points;
     final slideWidth = selectedRatio.widthInches * PdfPageFormat.inch;
     final slideHeight = selectedRatio.heightInches * PdfPageFormat.inch;
-    final marginPt = marginPreset.points;
-
-    // Page geometry: matchSlide keeps the v1.6.3 exact-slide pages; A4/Letter
-    // are landscape pages whose margins come from the preset.
-    final PdfPageFormat pageFormat;
-    switch (paperSize) {
-      case PdfPaperSize.a4:
-        pageFormat = PdfPageFormat(842, 595, marginAll: marginPt);
-      case PdfPaperSize.letter:
-        pageFormat = PdfPageFormat(792, 612, marginAll: marginPt);
-      case PdfPaperSize.matchSlide:
-        pageFormat = PdfPageFormat(slideWidth, slideHeight);
-    }
-    // Track 06, P3: scale the slide canvas to fit page size minus margins
-    // (never upscale — that would blur text).
-    final double scale;
-    if (paperSize == PdfPaperSize.matchSlide) {
-      scale = 1.0;
-    } else if (!scaleToFit) {
-      scale = 1.0;
-    } else {
-      final fit = ((pageFormat.width - 2 * marginPt) / slideWidth)
-          .clamp(0.05, 1.0);
-      final fitHeight = ((pageFormat.height - 2 * marginPt) / slideHeight)
-          .clamp(0.05, 1.0);
-      scale = fit < fitHeight ? fit : fitHeight;
-    }
 
     // Track page indices as they are appended so bookmarks and interleaved
     // notes pages stay aligned with their slides.
@@ -182,13 +202,15 @@ class PdfExportService {
       final slide = visible[i];
       final title = (slide['title'] ?? 'Slide ${i + 1}').toString();
       final rawHtml = (slide['htmlContent'] ?? '').toString();
-      final blocks = PPTGenerator.parseHtmlContentFull(rawHtml,
-          parseCache: parseCache);
-      final bgColor = includeBackgrounds ? _extractBgColor(slide) : null;
+      final blocks =
+          HtmlParseCore.parseHtmlContentFull(rawHtml, parseCache: parseCache);
+      final bgColor =
+          includeBackgrounds ? _extractBgColor(slide, parseCache) : null;
       // Inline notes ride on the slide itself; dedicated notes pages are an
       // independent axis and extract their own text.
-      final notes =
-          includeNotes ? _extractNotes(slide, rawHtml, parseCache: parseCache) : '';
+      final notes = includeNotes
+          ? _extractNotes(slide, rawHtml, parseCache: parseCache)
+          : '';
       final notesPageText = notesPages
           ? _extractNotes(slide, rawHtml, parseCache: parseCache)
           : '';
@@ -199,8 +221,7 @@ class PdfExportService {
         color: bgColor,
         width: double.infinity,
         height: double.infinity,
-        padding:
-            const pw.EdgeInsets.symmetric(horizontal: 48, vertical: 36),
+        padding: const pw.EdgeInsets.symmetric(horizontal: 48, vertical: 36),
         child: pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
@@ -232,13 +253,15 @@ class PdfExportService {
             // Track 17, P6: free-form text elements from visualElements.
             if (slide['visualElements'] is Map &&
                 (slide['visualElements'] as Map)['freeTexts'] is List) ...[
-              for (final raw in ((slide['visualElements'] as Map)['freeTexts'] as List))
+              for (final raw
+                  in ((slide['visualElements'] as Map)['freeTexts'] as List))
                 _buildFreeTextPdf(raw),
             ],
             // Track 21: drawn shapes from visualElements.
             if (slide['visualElements'] is Map &&
                 (slide['visualElements'] as Map)['shapes'] is List) ...[
-              for (final raw in ((slide['visualElements'] as Map)['shapes'] as List))
+              for (final raw
+                  in ((slide['visualElements'] as Map)['shapes'] as List))
                 _buildShapePdf(raw),
             ],
             if (notes.isNotEmpty) ...[
@@ -272,10 +295,18 @@ class PdfExportService {
 
       // Track 19, P5: header/footer bars drawn on each PDF page.
       // P7: when excludeFirst is on, the title slide (i == 0) gets no bars.
-      final hfHeader = (deckMeta?.excludeFirst ?? false) && i == 0 ? '' : (deckMeta?.header ?? '');
-      final hfFooter = (deckMeta?.excludeFirst ?? false) && i == 0 ? '' : (deckMeta?.footer ?? '');
-      final showNum = (deckMeta?.excludeFirst ?? false) && i == 0 ? false : (deckMeta?.slideNumber ?? false);
-      final showDate = (deckMeta?.excludeFirst ?? false) && i == 0 ? false : (deckMeta?.dateTime ?? false);
+      final hfHeader = (deckMeta?.excludeFirst ?? false) && i == 0
+          ? ''
+          : (deckMeta?.header ?? '');
+      final hfFooter = (deckMeta?.excludeFirst ?? false) && i == 0
+          ? ''
+          : (deckMeta?.footer ?? '');
+      final showNum = (deckMeta?.excludeFirst ?? false) && i == 0
+          ? false
+          : (deckMeta?.slideNumber ?? false);
+      final showDate = (deckMeta?.excludeFirst ?? false) && i == 0
+          ? false
+          : (deckMeta?.dateTime ?? false);
       final dateFormat = deckMeta?.dateTimeFormat ?? 'yyyy-MM-dd';
       slidePageIndices.add(doc.document.pdfPageList.pages.length);
       doc.addPage(
@@ -285,14 +316,18 @@ class PdfExportService {
               ? pw.EdgeInsets.zero
               : pw.EdgeInsets.all(marginPt),
           build: (context) {
-            if (paperSize == PdfPaperSize.matchSlide) return _wrapWithHF(slideCanvas, hfHeader, hfFooter, showNum, showDate, dateFormat, i + 1);
+            if (paperSize == PdfPaperSize.matchSlide) {
+              return _wrapWithHF(slideCanvas, hfHeader, hfFooter, showNum,
+                  showDate, dateFormat, i + 1);
+            }
             return pw.Center(
               child: pw.Transform.scale(
                 scale: scale,
                 child: pw.SizedBox(
                   width: slideWidth,
                   height: slideHeight,
-                  child: _wrapWithHF(slideCanvas, hfHeader, hfFooter, showNum, showDate, dateFormat, i + 1),
+                  child: _wrapWithHF(slideCanvas, hfHeader, hfFooter, showNum,
+                      showDate, dateFormat, i + 1),
                 ),
               ),
             );
@@ -372,8 +407,8 @@ class PdfExportService {
         case 'smartart':
           // Track 10, P4: paint the diagram with the same colours as the
           // SVG/PPTX renderers (title rendered as a widget above).
-          final graph = SmartArtGraph.fromJson(
-              (block['data-smartart'] ?? '').toString());
+          final graph =
+              SmartArtGraph.fromJson((block['data-smartart'] ?? '').toString());
           if (graph != null) {
             widgets.add(pw.Padding(
               padding: const pw.EdgeInsets.symmetric(vertical: 8),
@@ -422,8 +457,7 @@ class PdfExportService {
                   pw.SizedBox(height: 6),
                   pw.CustomPaint(
                     size: const PdfPoint(470, 200),
-                    painter: (canvas, size) =>
-                        _paintChart(canvas, size, chart),
+                    painter: (canvas, size) => _paintChart(canvas, size, chart),
                   ),
                   if (chart.style.showLegend && chart.series.length > 1)
                     pw.Wrap(
@@ -547,8 +581,8 @@ class PdfExportService {
         case 'video':
           // Track 11, P4: print output draws the poster frame (video cannot
           // play on paper); without a poster, a labelled placeholder box.
-          final data = VideoData.fromJson(
-              (block['data-video'] ?? '').toString());
+          final data =
+              VideoData.fromJson((block['data-video'] ?? '').toString());
           final posterSrc = data.poster.isNotEmpty
               ? data.poster
               : (block['poster'] ?? '').toString();
@@ -613,7 +647,8 @@ class PdfExportService {
                   ),
                   pw.Text(
                     'Xem trong PowerPoint',
-                    style: const pw.TextStyle(color: PdfColors.grey600, fontSize: 10),
+                    style: const pw.TextStyle(
+                        color: PdfColors.grey600, fontSize: 10),
                   ),
                 ],
               ),
@@ -622,8 +657,7 @@ class PdfExportService {
           break;
         case 'icon':
           // Track 15, P4: render the icon as a centred PNG raster.
-          final icon = IconItem.fromJson(
-              (block['data-icon'] ?? '').toString());
+          final icon = IconItem.fromJson((block['data-icon'] ?? '').toString());
           if (icon.svgPath.isNotEmpty) {
             final bytes = IconLibraryService.renderPng(icon, size: 48);
             widgets.add(pw.Padding(
@@ -640,19 +674,23 @@ class PdfExportService {
           break;
         case 'action':
           // Track 18, P1–P2: render a labelled action button.
-          final button = ActionButton.fromJson(
-              (block['data-action'] ?? '').toString());
+          final button =
+              ActionButton.fromJson((block['data-action'] ?? '').toString());
           widgets.add(pw.Padding(
             padding: const pw.EdgeInsets.symmetric(vertical: 4),
             child: pw.Container(
-              padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding:
+                  const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: pw.BoxDecoration(
                 color: PdfColors.blue700,
                 borderRadius: pw.BorderRadius.circular(6),
               ),
               child: pw.Text(
                 button.label.isEmpty ? button.defaultLabel : button.label,
-                style: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold, fontSize: 10),
+                style: pw.TextStyle(
+                    color: PdfColors.white,
+                    fontWeight: pw.FontWeight.bold,
+                    fontSize: 10),
               ),
             ),
           ));
@@ -662,8 +700,8 @@ class PdfExportService {
           // using the same layout engine as the SVG renderer — draws
           // fractions, radicals, superscripts, and subscripts with PDF
           // primitives.
-          final eq = EquationData.fromJson(
-              (block['data-equation'] ?? '').toString());
+          final eq =
+              EquationData.fromJson((block['data-equation'] ?? '').toString());
           final pdfWidget = _buildEquationPdf(eq.mathml);
           widgets.add(pw.Padding(
             padding: const pw.EdgeInsets.symmetric(vertical: 4),
@@ -672,8 +710,7 @@ class PdfExportService {
           break;
         case 'ole':
           // Track 18, P6: render the OLE object as a styled document icon.
-          final ole = OleData.fromJson(
-              (block['data-ole'] ?? '').toString());
+          final ole = OleData.fromJson((block['data-ole'] ?? '').toString());
           widgets.add(pw.Padding(
             padding: const pw.EdgeInsets.symmetric(vertical: 4),
             child: pw.Container(
@@ -694,7 +731,8 @@ class PdfExportService {
                         fontSize: 11,
                       )),
                   pw.Text(ole.fileName,
-                      style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+                      style: const pw.TextStyle(
+                          fontSize: 9, color: PdfColors.grey600)),
                 ],
               ),
             ),
@@ -702,8 +740,7 @@ class PdfExportService {
           break;
         case 'zoom':
           // Track 20, P5: render the slide zoom as a blue labelled box.
-          final zoom = ZoomItem.fromJson(
-              (block['data-zoom'] ?? '').toString());
+          final zoom = ZoomItem.fromJson((block['data-zoom'] ?? '').toString());
           widgets.add(pw.Padding(
             padding: const pw.EdgeInsets.symmetric(vertical: 4),
             child: pw.Container(
@@ -740,8 +777,7 @@ class PdfExportService {
               children: [
                 for (final e in sz.entries)
                   pw.Container(
-                    width:
-                        (sz.w <= 0 ? 80 : sz.w) / cols,
+                    width: (sz.w <= 0 ? 80 : sz.w) / cols,
                     padding: const pw.EdgeInsets.all(10),
                     decoration: pw.BoxDecoration(
                       color: PdfColors.blue800,
@@ -763,8 +799,8 @@ class PdfExportService {
           break;
         case 'cameo':
           // Track 20, P8: render the cameo as a dark camera placeholder box.
-          final cameo = CameoData.fromJson(
-              (block['data-cameo'] ?? '').toString());
+          final cameo =
+              CameoData.fromJson((block['data-cameo'] ?? '').toString());
           widgets.add(pw.Padding(
             padding: const pw.EdgeInsets.symmetric(vertical: 4),
             child: pw.Container(
@@ -853,8 +889,7 @@ class PdfExportService {
       top: shape.y * 0.75,
       child: pw.CustomPaint(
         size: PdfPoint(shape.w * 0.75, shape.h * 0.75),
-        painter: (canvas, size) =>
-            _paintDrawnShape(canvas, size, shape),
+        painter: (canvas, size) => _paintDrawnShape(canvas, size, shape),
       ),
     );
   }
@@ -872,7 +907,8 @@ class PdfExportService {
 
     PdfColor fillWith(double opacity) => fillOpacity >= 1
         ? fill!
-        : PdfColor.fromHex(_withAlpha(shape.fillColor, (opacity * 255).round()));
+        : PdfColor.fromHex(
+            _withAlpha(shape.fillColor, (opacity * 255).round()));
     final strokeColor = stroke ?? PdfColors.black;
 
     void strokePath() {
@@ -1166,15 +1202,19 @@ class PdfExportService {
     final dx = eff.shadowOffsetX * w / 100;
     final dy = eff.shadowOffsetY * h / 100;
     final shadowColor = _parseHex(eff.shadowColor) ?? PdfColors.grey;
-    canvas.setFillColor(PdfColor.fromHex(_withAlpha(eff.shadowColor,
-        (eff.shadowAlpha * 255).round().clamp(0, 255))));
+    canvas.setFillColor(PdfColor.fromHex(_withAlpha(
+        eff.shadowColor, (eff.shadowAlpha * 255).round().clamp(0, 255))));
     switch (shape.type) {
       case ShapeType.rect:
       case ShapeType.merged:
         if (shape.type == ShapeType.merged && shape.freeformPath.isNotEmpty) {
           _paintSvgPath(canvas, shape.freeformPath, w, h,
-              fill: eff.shadowColor, fillOpacity: eff.shadowAlpha,
-              stroke: null, strokeWidth: 0, offsetX: dx, offsetY: dy);
+              fill: eff.shadowColor,
+              fillOpacity: eff.shadowAlpha,
+              stroke: null,
+              strokeWidth: 0,
+              offsetX: dx,
+              offsetY: dy);
         } else {
           canvas.drawRect(dx, dy, w, h);
           canvas.fillPath();
@@ -1200,8 +1240,12 @@ class PdfExportService {
       case ShapeType.freeform:
         if (shape.freeformPath.isNotEmpty) {
           _paintSvgPath(canvas, shape.freeformPath, w, h,
-              fill: eff.shadowColor, fillOpacity: eff.shadowAlpha,
-              stroke: null, strokeWidth: 0, offsetX: dx, offsetY: dy);
+              fill: eff.shadowColor,
+              fillOpacity: eff.shadowAlpha,
+              stroke: null,
+              strokeWidth: 0,
+              offsetX: dx,
+              offsetY: dy);
         } else {
           canvas.drawRect(dx, dy, w, h);
           canvas.fillPath();
@@ -1307,10 +1351,12 @@ class PdfExportService {
               children: [
                 if (hfHeader.isNotEmpty)
                   pw.Text(hfHeader,
-                      style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
+                      style: const pw.TextStyle(
+                          fontSize: 8, color: PdfColors.grey700)),
                 if (showDate)
                   pw.Text(_formatDate(dateFormat),
-                      style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
+                      style: const pw.TextStyle(
+                          fontSize: 8, color: PdfColors.grey700)),
               ],
             ),
           ),
@@ -1323,10 +1369,12 @@ class PdfExportService {
               children: [
                 if (hfFooter.isNotEmpty)
                   pw.Text(hfFooter,
-                      style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
+                      style: const pw.TextStyle(
+                          fontSize: 8, color: PdfColors.grey700)),
                 if (showNum)
                   pw.Text('$slideIndex',
-                      style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
+                      style: const pw.TextStyle(
+                          fontSize: 8, color: PdfColors.grey700)),
               ],
             ),
           ),
@@ -1358,7 +1406,8 @@ class PdfExportService {
     try {
       return _pdfLayoutRun(inner) ??
           pw.Text(mathml,
-              style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 14));
+              style:
+                  pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 14));
     } catch (_) {
       return pw.Text(mathml,
           style: pw.TextStyle(fontStyle: pw.FontStyle.italic, fontSize: 14));
@@ -1368,8 +1417,8 @@ class PdfExportService {
   pw.Widget? _pdfLayoutRun(String s) {
     final trimmed = s.trim();
     if (trimmed.isEmpty) return null;
-    final tagMatch = RegExp(r'^<([a-zA-Z]+)>(.*)</\1>$', dotAll: true)
-        .firstMatch(trimmed);
+    final tagMatch =
+        RegExp(r'^<([a-zA-Z]+)>(.*)</\1>$', dotAll: true).firstMatch(trimmed);
     if (tagMatch == null) {
       return pw.Text(trimmed,
           style: pw.TextStyle(fontSize: 14, fontStyle: pw.FontStyle.italic));
@@ -1388,81 +1437,85 @@ class PdfExportService {
                     tag == 'mi' ? pw.FontStyle.italic : pw.FontStyle.normal));
       case 'mrow':
         return _pdfConcat(inner);
-      case 'mfrac': {
-        final parts = _splitTopLevelEq(inner);
-        if (parts.length != 2) return pw.Text('?');
-        final numW = _pdfLayoutRun(parts[0]);
-        final denW = _pdfLayoutRun(parts[1]);
-        if (numW == null || denW == null) return pw.Text('?');
-        return pw.Column(
-          mainAxisSize: pw.MainAxisSize.min,
-          children: [
-            numW,
-            pw.Container(
-                height: 1,
-                color: PdfColors.black,
-                margin: const pw.EdgeInsets.symmetric(vertical: 2)),
-            denW,
-          ],
-        );
-      }
-      case 'msqrt': {
-        final innerW = _pdfLayoutRun(inner);
-        if (innerW == null) return null;
-        return pw.Row(
-          mainAxisSize: pw.MainAxisSize.min,
-          children: [
-            pw.Text('\u221A', style: const pw.TextStyle(fontSize: 16)),
-            pw.Container(
-              decoration: const pw.BoxDecoration(
-                border: pw.Border(
-                    top: pw.BorderSide(color: PdfColors.black, width: 1)),
+      case 'mfrac':
+        {
+          final parts = _splitTopLevelEq(inner);
+          if (parts.length != 2) return pw.Text('?');
+          final numW = _pdfLayoutRun(parts[0]);
+          final denW = _pdfLayoutRun(parts[1]);
+          if (numW == null || denW == null) return pw.Text('?');
+          return pw.Column(
+            mainAxisSize: pw.MainAxisSize.min,
+            children: [
+              numW,
+              pw.Container(
+                  height: 1,
+                  color: PdfColors.black,
+                  margin: const pw.EdgeInsets.symmetric(vertical: 2)),
+              denW,
+            ],
+          );
+        }
+      case 'msqrt':
+        {
+          final innerW = _pdfLayoutRun(inner);
+          if (innerW == null) return null;
+          return pw.Row(
+            mainAxisSize: pw.MainAxisSize.min,
+            children: [
+              pw.Text('\u221A', style: const pw.TextStyle(fontSize: 16)),
+              pw.Container(
+                decoration: const pw.BoxDecoration(
+                  border: pw.Border(
+                      top: pw.BorderSide(color: PdfColors.black, width: 1)),
+                ),
+                child: innerW,
               ),
-              child: innerW,
-            ),
-          ],
-        );
-      }
-      case 'msup': {
-        final parts = _splitTopLevelEq(inner);
-        if (parts.length != 2) return pw.Text('?');
-        return pw.Row(
-          mainAxisSize: pw.MainAxisSize.min,
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            _pdfLayoutRun(parts[0]) ?? pw.Text(''),
-            pw.Padding(
-              padding: const pw.EdgeInsets.only(left: 1),
-              child: pw.Column(
-                mainAxisSize: pw.MainAxisSize.min,
-                children: [
-                  _pdfLayoutRun(parts[1]) ?? pw.Text(''),
-                ],
+            ],
+          );
+        }
+      case 'msup':
+        {
+          final parts = _splitTopLevelEq(inner);
+          if (parts.length != 2) return pw.Text('?');
+          return pw.Row(
+            mainAxisSize: pw.MainAxisSize.min,
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              _pdfLayoutRun(parts[0]) ?? pw.Text(''),
+              pw.Padding(
+                padding: const pw.EdgeInsets.only(left: 1),
+                child: pw.Column(
+                  mainAxisSize: pw.MainAxisSize.min,
+                  children: [
+                    _pdfLayoutRun(parts[1]) ?? pw.Text(''),
+                  ],
+                ),
               ),
-            ),
-          ],
-        );
-      }
-      case 'msub': {
-        final parts = _splitTopLevelEq(inner);
-        if (parts.length != 2) return pw.Text('?');
-        return pw.Row(
-          mainAxisSize: pw.MainAxisSize.min,
-          crossAxisAlignment: pw.CrossAxisAlignment.end,
-          children: [
-            _pdfLayoutRun(parts[0]) ?? pw.Text(''),
-            pw.Padding(
-              padding: const pw.EdgeInsets.only(left: 1),
-              child: pw.Column(
-                mainAxisSize: pw.MainAxisSize.min,
-                children: [
-                  _pdfLayoutRun(parts[1]) ?? pw.Text(''),
-                ],
+            ],
+          );
+        }
+      case 'msub':
+        {
+          final parts = _splitTopLevelEq(inner);
+          if (parts.length != 2) return pw.Text('?');
+          return pw.Row(
+            mainAxisSize: pw.MainAxisSize.min,
+            crossAxisAlignment: pw.CrossAxisAlignment.end,
+            children: [
+              _pdfLayoutRun(parts[0]) ?? pw.Text(''),
+              pw.Padding(
+                padding: const pw.EdgeInsets.only(left: 1),
+                child: pw.Column(
+                  mainAxisSize: pw.MainAxisSize.min,
+                  children: [
+                    _pdfLayoutRun(parts[1]) ?? pw.Text(''),
+                  ],
+                ),
               ),
-            ),
-          ],
-        );
-      }
+            ],
+          );
+        }
       default:
         return _pdfLayoutRun(inner);
     }
@@ -1581,18 +1634,17 @@ class PdfExportService {
     final explicit = (slide['notes'] ?? '').toString().trim();
     return explicit.isNotEmpty
         ? explicit
-        : PPTGenerator.extractNotes(html, parseCache: parseCache);
+        : HtmlParseCore.extractNotes(html, parseCache: parseCache);
   }
 
-  PdfColor? _extractBgColor(Map<String, dynamic> slide) {
+  PdfColor? _extractBgColor(
+      Map<String, dynamic> slide, HtmlParseCache? parseCache) {
     final typed =
-        PPTGenerator.cssColorToHex((slide['bgColor'] ?? '').toString());
+        HtmlParseCore.cssColorToHex((slide['bgColor'] ?? '').toString());
     final html = (slide['htmlContent'] ?? '').toString();
-    final match =
-        RegExp(r"""data-bg-color=["']([^"']+)["']""", caseSensitive: false)
-            .firstMatch(html);
-    final hex = typed ??
-        (match == null ? null : PPTGenerator.cssColorToHex(match.group(1)!));
+    final attr = parseCache?.entryFor(html).bgColor ??
+        HtmlAttrScan.bgColorAttrRe.firstMatch(html)?.group(1);
+    final hex = typed ?? HtmlParseCore.cssColorToHex(attr ?? '');
     if (hex == null) return null;
     try {
       return PdfColor.fromHex(hex);
@@ -1649,14 +1701,14 @@ void _paintSmartArt(PdfGraphics canvas, PdfPoint size, SmartArtGraph graph) {
         box(0, w / 2 - 70, 10, 140, 40);
         final kids = graph.childrenOf(top.first.id);
         for (var i = 0; i < kids.length; i++) {
-          box(i + 1, 15 + i * (w - 30) / math.max(kids.length, 1),
-              h - 70, (w - 30) / math.max(kids.length, 1) - 10, 55);
+          box(i + 1, 15 + i * (w - 30) / math.max(kids.length, 1), h - 70,
+              (w - 30) / math.max(kids.length, 1) - 10, 55);
         }
       }
     case SmartArtGroup.matrix:
       for (var i = 0; i < nodes.length; i++) {
-        box(i, 15 + (i % 2) * ((w - 40) / 2 + 10),
-            h / 2 - 30 + (i ~/ 2) * 70, (w - 40) / 2, 60);
+        box(i, 15 + (i % 2) * ((w - 40) / 2 + 10), h / 2 - 30 + (i ~/ 2) * 70,
+            (w - 40) / 2, 60);
       }
     case SmartArtGroup.pyramid:
       final slotH = (h - 20) / n;
@@ -1773,9 +1825,7 @@ void _paintLine(
           plotX + c * step,
           plotY +
               plotH -
-              (chart.maxValue == 0
-                  ? 0
-                  : chart.valueAt(s, c) / chart.maxValue) *
+              (chart.maxValue == 0 ? 0 : chart.valueAt(s, c) / chart.maxValue) *
                   plotH,
         ),
     ];
@@ -1813,11 +1863,8 @@ void _paintCombo(
     final v = chart.valueAt(0, c);
     canvas
       ..setFillColor(PdfColor.fromHex(chart.style.colorAt(0)))
-      ..drawRect(
-          plotX + slot * c + (slot - barW) / 2,
-          plotY + plotH - v / maxV * plotH,
-          barW,
-          v / maxV * plotH);
+      ..drawRect(plotX + slot * c + (slot - barW) / 2,
+          plotY + plotH - v / maxV * plotH, barW, v / maxV * plotH);
   }
   for (var s = 1; s < chart.series.length; s++) {
     canvas.setColor(PdfColor.fromHex(chart.style.colorAt(s)));

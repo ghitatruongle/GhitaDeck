@@ -48,8 +48,10 @@ class ImageLoadWarning {
 /// EXIF orientation is baked in, oversized images are downscaled, and large
 /// opaque PNGs may be re-encoded as JPEG ([allowJpeg]) to shrink the deck.
 class HtmlImageLoader {
-  static final RegExp _dataUriRegExp = RegExp(r'^data:image/([a-z0-9+.-]+);base64,(.+)$',
-      caseSensitive: false, dotAll: true);
+  static final RegExp _dataUriRegExp = RegExp(
+      r'^data:image/([a-z0-9+.-]+);base64,(.+)$',
+      caseSensitive: false,
+      dotAll: true);
 
   static final RegExp _imgSrcRegExp =
       RegExp(r"""<img[^>]+src=["']([^"']+)["']""", caseSensitive: false);
@@ -58,12 +60,18 @@ class HtmlImageLoader {
   static const Duration _remoteTimeout = Duration(seconds: 10);
   static const int _maxRemoteBytes = 10 * 1024 * 1024; // 10 MB
 
-  static const int _memoryCacheCapacity = 64;
+  static const int _rawCacheBudgetBytes = 40 * 1024 * 1024;
+  static const int _processedCacheBudgetBytes = 24 * 1024 * 1024;
 
   // ---- Caches -----------------------------------------------------------
 
-  static final Map<String, _RawImage> _rawCache = {}; // src → raw bytes
-  static final Map<String, LoadedImage> _processedCache = {}; // src|opts → result
+  static final _ByteBoundedCache<_RawImage> _rawCache =
+      _ByteBoundedCache<_RawImage>(_rawCacheBudgetBytes);
+  static final _ByteBoundedCache<LoadedImage> _processedCache =
+      _ByteBoundedCache<LoadedImage>(_processedCacheBudgetBytes);
+
+  static int get debugCacheBytesTotal =>
+      _rawCache.byteSize + _processedCache.byteSize;
 
   /// Test override for the disk-cache directory (defaults to the app cache).
   static String? debugCacheDir;
@@ -156,7 +164,7 @@ class HtmlImageLoader {
   }
 
   static Future<void> _ensureRaw(String src) async {
-    if (_rawCache.containsKey(src)) return;
+    if (_rawCache.peek(src) != null) return;
     // B18: fetch first so a remote whose content changed on the server is
     // re-fetched for each export; the disk cache is only the OFFLINE
     // fallback when the fetch fails.
@@ -164,11 +172,11 @@ class HtmlImageLoader {
     if (fetched == null) {
       final cached = await _readDiskCache(src);
       if (cached != null) {
-        _rawCache[src] = cached;
+        _rawCache.put(src, cached, cached.bytes.length);
       }
       return; // warning already recorded
     }
-    _rawCache[src] = fetched;
+    _rawCache.put(src, fetched, fetched.bytes.length);
     await _writeDiskCache(src, fetched);
   }
 
@@ -176,9 +184,8 @@ class HtmlImageLoader {
   static Future<_RawImage?> _fetchRemote(String src) async {
     final client = HttpClient()..connectionTimeout = _remoteTimeout;
     try {
-      final request = await client
-          .getUrl(Uri.parse(src))
-          .timeout(_remoteTimeout);
+      final request =
+          await client.getUrl(Uri.parse(src)).timeout(_remoteTimeout);
       final response = await request.close().timeout(_remoteTimeout);
       if (response.statusCode != 200) {
         _warn(src, 'HTTP ${response.statusCode}');
@@ -197,7 +204,8 @@ class HtmlImageLoader {
         }
       }
       final bytes = builder.takeBytes();
-      final ext = _extFromResponse(src, response.headers.contentType?.mimeType, bytes);
+      final ext =
+          _extFromResponse(src, response.headers.contentType?.mimeType, bytes);
       if (ext == null) {
         _warn(src, 'not an image (image/* expected)');
         return null;
@@ -211,7 +219,8 @@ class HtmlImageLoader {
     }
   }
 
-  static String? _extFromResponse(String src, String? mimeType, Uint8List bytes) {
+  static String? _extFromResponse(
+      String src, String? mimeType, Uint8List bytes) {
     // An explicit non-image content-type wins over every fallback.
     if (mimeType != null && !mimeType.startsWith('image/')) return null;
     if (mimeType != null) {
@@ -227,7 +236,10 @@ class HtmlImageLoader {
         bytes[3] == 0x47) {
       return 'png';
     }
-    if (bytes.length >= 3 && bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) {
+    if (bytes.length >= 3 &&
+        bytes[0] == 0xFF &&
+        bytes[1] == 0xD8 &&
+        bytes[2] == 0xFF) {
       return 'jpg';
     }
     if (bytes.length >= 6 &&
@@ -239,17 +251,24 @@ class HtmlImageLoader {
     }
     // RIFF....WEBP (WebP), "BM" (BMP), "<svg"/"<?xml" (SVG).
     if (bytes.length >= 12 &&
-        bytes[0] == 0x52 && bytes[1] == 0x49 &&
-        bytes[2] == 0x46 && bytes[3] == 0x46 &&
-        bytes[8] == 0x57 && bytes[9] == 0x45 &&
-        bytes[10] == 0x42 && bytes[11] == 0x50) {
+        bytes[0] == 0x52 &&
+        bytes[1] == 0x49 &&
+        bytes[2] == 0x46 &&
+        bytes[3] == 0x46 &&
+        bytes[8] == 0x57 &&
+        bytes[9] == 0x45 &&
+        bytes[10] == 0x42 &&
+        bytes[11] == 0x50) {
       return 'webp';
     }
     if (bytes.length >= 2 && bytes[0] == 0x42 && bytes[1] == 0x4D) {
       return 'bmp';
     }
     if (bytes.length >= 4 &&
-        (bytes[0] == 0x3C && bytes[1] == 0x73 && bytes[2] == 0x76 && bytes[3] == 0x67)) {
+        (bytes[0] == 0x3C &&
+            bytes[1] == 0x73 &&
+            bytes[2] == 0x76 &&
+            bytes[3] == 0x67)) {
       return 'svg';
     }
     // Last resort: trust the URL extension only when nothing says otherwise.
@@ -277,8 +296,7 @@ class HtmlImageLoader {
     return null;
   }
 
-  static String _diskPath(String src) =>
-      '${_cacheDir()}\\${_sha256Hex(src)}';
+  static String _diskPath(String src) => '${_cacheDir()}\\${_sha256Hex(src)}';
 
   static Future<_RawImage?> _readDiskCache(String src) async {
     try {
@@ -337,8 +355,9 @@ class HtmlImageLoader {
 
     // N2 beta: with the flag on the configured quality drives the PNG→JPEG
     // re-encode (and savings are tallied); off runs exactly as before.
-    final effectiveQuality =
-        ImageOptimizerConfig.betaEnabled ? ImageOptimizerConfig.quality : jpegQuality;
+    final effectiveQuality = ImageOptimizerConfig.betaEnabled
+        ? ImageOptimizerConfig.quality
+        : jpegQuality;
 
     // B18: content-addressed cache key — the raw BYTES (not the src string)
     // decide identity, so an edited local file or a re-fetched remote always
@@ -348,11 +367,10 @@ class HtmlImageLoader {
     final raw = _rawFor(trimmed);
     if (raw == null) return null;
     final backendTag = dartOnly ? 'dart' : ImageEngineConfig.backendTag;
-    final optionsKey =
-        '${_fnv1aHex(raw.bytes)}\u0000$maxWidth\u0000$allowJpeg'
+    final optionsKey = '${_fnv1aHex(raw.bytes)}\u0000$maxWidth\u0000$allowJpeg'
         '\u0000$effectiveQuality\u0000${ImageOptimizerConfig.betaEnabled ? 1 : 0}'
         '\u0000$backendTag';
-    final cachedResult = _processedCache[optionsKey];
+    final cachedResult = _processedCache.get(optionsKey);
     if (cachedResult != null) {
       _recordHit(optionsKey, raw, cachedResult);
       return cachedResult;
@@ -384,7 +402,8 @@ class HtmlImageLoader {
   /// "0 savings". [_talliedKeys] stops an in-session double count (the miss
   /// that produced the entry already tallied it). Zero-cost for non-savings:
   /// [ImageOptimizationStats.record] ignores after >= before.
-  static void _recordHit(String optionsKey, _RawImage raw, LoadedImage processed) {
+  static void _recordHit(
+      String optionsKey, _RawImage raw, LoadedImage processed) {
     if (!ImageOptimizerConfig.betaEnabled) return;
     if (_talliedKeys.contains(optionsKey)) return;
     if (processed.bytes.length < raw.bytes.length) {
@@ -463,15 +482,12 @@ class HtmlImageLoader {
     try {
       final dir = Directory(_cacheDir());
       if (!dir.existsSync()) return;
-      final entries = dir
-          .listSync()
-          .whereType<File>()
-          .where((f) {
-            final name = f.uri.pathSegments.last;
-            return name.startsWith('proc_') && !name.endsWith('.json') &&
-                !name.endsWith('.tmp');
-          })
-          .toList()
+      final entries = dir.listSync().whereType<File>().where((f) {
+        final name = f.uri.pathSegments.last;
+        return name.startsWith('proc_') &&
+            !name.endsWith('.json') &&
+            !name.endsWith('.tmp');
+      }).toList()
         ..sort((a, b) => a.lastModifiedSync().compareTo(b.lastModifiedSync()));
       final excess = entries.length - _processedDiskMaxEntries;
       if (excess <= 0) return;
@@ -493,18 +509,18 @@ class HtmlImageLoader {
   static _RawImage? _rawFor(String src) {
     final dataMatch = _dataUriRegExp.firstMatch(src);
     if (dataMatch != null) {
-      final cached = _rawCache[src];
+      final cached = _rawCache.get(src);
       if (cached != null) return cached;
       try {
-        final bytes = base64Decode(dataMatch.group(2)!.replaceAll(RegExp(r'\s'), ''));
+        final bytes =
+            base64Decode(dataMatch.group(2)!.replaceAll(RegExp(r'\s'), ''));
         final ext = _extFromMime(dataMatch.group(1)!);
         if (ext == null) {
           _warn(src, 'unsupported image mime: ${dataMatch.group(1)}');
           return null;
         }
         final raw = _RawImage(bytes, ext);
-        if (_rawCache.length >= _memoryCacheCapacity) _rawCache.remove(_rawCache.keys.first);
-        _rawCache[src] = raw;
+        _rawCache.put(src, raw, raw.bytes.length);
         return raw;
       } catch (_) {
         _warn(src, 'invalid base64 data URI');
@@ -512,15 +528,12 @@ class HtmlImageLoader {
       }
     }
     if (src.startsWith('http://') || src.startsWith('https://')) {
-      final cached = _rawCache[src];
+      final cached = _rawCache.get(src);
       if (cached != null) return cached;
       // Fall back to the disk cache (populated by a previous session).
       final onDisk = _readDiskCacheSync(src);
       if (onDisk != null) {
-        if (_rawCache.length >= _memoryCacheCapacity) {
-          _rawCache.remove(_rawCache.keys.first);
-        }
-        _rawCache[src] = onDisk;
+        _rawCache.put(src, onDisk, onDisk.bytes.length);
         return onDisk;
       }
       _warn(src, 'not prefetched (remote images load before export)');
@@ -562,18 +575,20 @@ class HtmlImageLoader {
     // B21: WebP/BMP/SVG are recognized but cannot be embedded — drop them
     // with an ACCURATE warning instead of "file not found" / "not an image".
     if (!const ['png', 'jpg', 'gif'].contains(raw.ext)) {
-      _warn('image bytes (${raw.ext})',
+      _warn(
+          'image bytes (${raw.ext})',
           'unsupported format ${raw.ext} — only PNG/JPEG/GIF can be embedded; '
-          'dropped');
+              'dropped');
       return null;
     }
     // B19: reject decompression bombs by the HEADER dimensions — decoding a
     // 40000×40000 PNG first would OOM the worker (~6 GB of RGBA).
     final capCheck = _tooLargeForDecode(raw.bytes);
     if (capCheck != null) {
-      _warn('image bytes (${raw.ext})',
+      _warn(
+          'image bytes (${raw.ext})',
           'larger than the ${_maxImagePixels ~/ (1024 * 1024)}M-pixel cap '
-          '($capCheck) — skipped (decompression bomb)');
+              '($capCheck) — skipped (decompression bomb)');
       return null;
     }
     ImageCodecResult processed;
@@ -629,10 +644,7 @@ class HtmlImageLoader {
   }
 
   static void _cacheProcessed(String key, LoadedImage value) {
-    if (_processedCache.length >= _memoryCacheCapacity) {
-      _processedCache.remove(_processedCache.keys.first);
-    }
-    _processedCache[key] = value;
+    _processedCache.put(key, value, value.bytes.length);
   }
 
   /// B19: pixel cap for a single decoded image (~64 M px ≈ 8192×8192, a
@@ -643,14 +655,18 @@ class HtmlImageLoader {
   /// segment — no allocation, no decode. Returns "WxH" when over the cap.
   static String? _tooLargeForDecode(Uint8List bytes) {
     if (bytes.length >= 24 &&
-        bytes[0] == 0x89 && bytes[1] == 0x50 &&
-        bytes[2] == 0x4E && bytes[3] == 0x47) {
+        bytes[0] == 0x89 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x4E &&
+        bytes[3] == 0x47) {
       final w = ByteData.sublistView(bytes).getUint32(16);
       final h = ByteData.sublistView(bytes).getUint32(20);
       return _overCap(w, h);
     }
     if (bytes.length >= 10 &&
-        bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46) {
+        bytes[0] == 0x47 &&
+        bytes[1] == 0x49 &&
+        bytes[2] == 0x46) {
       final w = ByteData.sublistView(bytes).getUint16(6, Endian.little);
       final h = ByteData.sublistView(bytes).getUint16(8, Endian.little);
       return _overCap(w, h);
@@ -727,4 +743,46 @@ class _RawImage {
 
   final Uint8List bytes;
   final String ext;
+}
+
+class _CacheEntry<T> {
+  const _CacheEntry(this.value, this.byteSize);
+
+  final T value;
+  final int byteSize;
+}
+
+class _ByteBoundedCache<T> {
+  _ByteBoundedCache(this.budgetBytes);
+
+  final int budgetBytes;
+  final _entries = <String, _CacheEntry<T>>{};
+  int _bytes = 0;
+
+  int get byteSize => _bytes;
+
+  T? get(String key) {
+    final entry = _entries.remove(key);
+    if (entry == null) return null;
+    _entries[key] = entry;
+    return entry.value;
+  }
+
+  T? peek(String key) => _entries[key]?.value;
+
+  void put(String key, T value, int byteSize) {
+    final existing = _entries.remove(key);
+    if (existing != null) _bytes -= existing.byteSize;
+    while (_bytes + byteSize > budgetBytes && _entries.isNotEmpty) {
+      final oldestKey = _entries.keys.first;
+      _bytes -= _entries.remove(oldestKey)!.byteSize;
+    }
+    _entries[key] = _CacheEntry<T>(value, byteSize);
+    _bytes += byteSize;
+  }
+
+  void clear() {
+    _entries.clear();
+    _bytes = 0;
+  }
 }

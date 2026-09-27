@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ghita_ppt_converter/core/html/html_parser.dart';
 import 'package:ghita_ppt_converter/services/export_job.dart';
 import 'package:ghita_ppt_converter/services/export_primitives.dart';
 import 'package:ghita_ppt_converter/services/ppt_generator.dart';

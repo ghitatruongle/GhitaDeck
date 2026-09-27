@@ -83,7 +83,7 @@ void main() {
       final archive = await exportPptx(actionDiv(btn));
       final slideXml = part(archive, 'ppt/slides/slide1.xml');
       expect(slideXml, contains('name="ActionButton next"'));
-      expect(slideXml, contains('ppaction://hlinksldjump'));
+      expect(slideXml, contains('ppaction://hlinkshowjump?jump=nextslide'));
       expect(slideXml, contains('prst="chevron"'));
     });
 

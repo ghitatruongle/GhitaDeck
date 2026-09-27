@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.0.5-beta.3] - 2026-09-03 — T18: Installer chuẩn + uninstaller hoàn chỉnh
+
+- **Tuỳ chọn vị trí cài:** trang chọn thư mục **luôn hiện**; nâng cấp gợi ý đúng thư mục đã chọn trước đó (`UsePreviousAppDir`); chế độ per-user (không cần admin) **đã kiểm chứng thật** trên shell không quyền admin.
+- **Tuỳ chọn cài mới:** khởi động cùng Windows (**mặc định TẮT**, chỉ ghi `HKCU\...\Run` khi người dùng tick, tự xoá khi gỡ) · shortcut Desktop (mặc định tắt, như cũ) · **cảnh báo dung lượng trống <300 MB** trước khi copy.
+- **Wizard tiếng Việt** (mặc định), English vẫn chọn được — Inno không có sẵn .isl tiếng Việt nên chuỗi hiển thị được override trong `[Messages]`.
+- **Uninstaller hoàn chỉnh — hợp đồng 2 nhóm dữ liệu:**
+  - *Nhóm A (mặc định GIỮ LẠI):* `Documents\GhitaPPT` (decks/audio/drafts) + `%APPDATA%\Ghita\GhitaPPT Converter` (cài đặt + **API key** trong `flutter_secure_storage.dat`).
+  - *Nhóm B (LUÔN dọn):* `%LOCALAPPDATA%\GhitaPPT\image_cache` + `%APPDATA%\GhitaPPT\engine.log`.
+  - Hộp thoại gỡ hỏi rõ; mặc định **giữ dữ liệu**; gỡ silent **luôn giữ** (không bao giờ phá tài liệu khi chạy tự động).
+- **Verify tự động mở rộng** (`verify_release.ps1 -SmokeInstall -SmokeLaunch`): assert cây cài đặt, metadata exe, auto-start phải tắt, và sau khi gỡ — thư mục cài biến mất, **Nhóm A còn nguyên**, **Nhóm B đã sạch**, Run key đã xoá. Kết quả: **Passed**.
+- **Test hợp đồng** `test/installer_contract_test.dart` (8 test) khoá các bất biến của `.iss` để sửa nhầm sau này không thể âm thầm xoá dữ liệu người dùng.
+- **Docs** `installer/README.md`: tuỳ chọn cài, luồng gỡ, chỗ lưu dữ liệu, cách verify, SmartScreen/NotSigned.
+
 ## [2.0.5-beta.2] - 2026-09-02 — T16: Quality & Ship beta2
 
 - **Coverage 52,7%** (ex-generated l10n, ≥52.5% gate) — từ 52,1% baseline, nhờ ~25 test hồi quy mới (B1–B24, T14, T15).

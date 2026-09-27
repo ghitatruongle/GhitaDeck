@@ -105,6 +105,33 @@ if ($SmokeInstall) {
         throw "Installed EXE metadata validation failed."
     }
 
+    # T18.3: auto-start stays OFF unless the task was explicitly selected.
+    $runKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+    $autoStartValue = (Get-ItemProperty -LiteralPath $runKey -ErrorAction SilentlyContinue)."GhitaPPT Converter"
+    if ($autoStartValue) {
+        throw "Auto-start registry value exists after a silent install that did not select the task."
+    }
+
+    # T18.7 — data-group contract. Group A (user data) must survive the
+    # default uninstall; Group B (regenerable cache) must be cleaned.
+    $groupADocs = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'GhitaPPT'
+    $groupAPrefs = Join-Path $env:APPDATA 'Ghita\GhitaPPT Converter'
+    $groupBCache = Join-Path $env:LOCALAPPDATA 'GhitaPPT\image_cache'
+    $groupBLog = Join-Path $env:APPDATA 'GhitaPPT\engine.log'
+
+    # Seed a marker in each group so the assertions below are meaningful
+    # (a real user would already have these after using the app).
+    New-Item -ItemType Directory -Path $groupADocs -Force | Out-Null
+    $markerDoc = Join-Path $groupADocs 'verify_marker.txt'
+    Set-Content -LiteralPath $markerDoc -Value 'group A marker' -NoNewline
+    New-Item -ItemType Directory -Path $groupAPrefs -Force | Out-Null
+    $markerPref = Join-Path $groupAPrefs 'verify_marker.json'
+    Set-Content -LiteralPath $markerPref -Value '{}' -NoNewline
+    New-Item -ItemType Directory -Path $groupBCache -Force | Out-Null
+    Set-Content -LiteralPath (Join-Path $groupBCache 'verify_marker.bin') -Value 'x' -NoNewline
+    New-Item -ItemType Directory -Path (Split-Path -Parent $groupBLog) -Force | Out-Null
+    Set-Content -LiteralPath $groupBLog -Value 'marker' -NoNewline
+
     if ($SmokeLaunch) {
         $installedExe = Join-Path $smokeRoot "ghita_ppt_converter.exe"
         $application = $null
@@ -126,6 +153,29 @@ if ($SmokeInstall) {
     $uninstall = Start-Process -FilePath $uninstaller -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART" -Wait -PassThru
     if ($uninstall.ExitCode -ne 0) { throw "Uninstaller smoke test failed with exit code $($uninstall.ExitCode)." }
     if (Test-Path -LiteralPath $smokeRoot) { throw "Smoke-test installation directory remains after uninstall: $smokeRoot" }
+
+    # T18.7 — default uninstall: Group A survives, Group B is gone.
+    if (-not (Test-Path -LiteralPath $markerDoc)) {
+        throw "Group A (documents) was removed by a default uninstall - user data must be preserved."
+    }
+    if (-not (Test-Path -LiteralPath $markerPref)) {
+        throw "Group A (preferences / API keys) was removed by a default uninstall; must be preserved."
+    }
+    if (Test-Path -LiteralPath (Join-Path $groupBCache 'verify_marker.bin')) {
+        throw "Group B (image cache) survived the uninstall; it must be cleaned."
+    }
+    if (Test-Path -LiteralPath $groupBLog) {
+        throw "Group B (engine log) survived the uninstall; it must be cleaned."
+    }
+    if ((Get-ItemProperty -LiteralPath $runKey -ErrorAction SilentlyContinue)."GhitaPPT Converter") {
+        throw "Auto-start registry value survived the uninstall."
+    }
+
+    # Cleanup of the Group A markers this smoke run created (never touches
+    # real user files — only the two marker files it wrote above).
+    Remove-Item -LiteralPath $markerDoc -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $markerPref -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath (Join-Path $groupBCache 'verify_marker.bin') -Force -ErrorAction SilentlyContinue
 }
 
 [pscustomobject]@{

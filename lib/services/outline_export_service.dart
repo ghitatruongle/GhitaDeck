@@ -8,7 +8,7 @@ library;
 
 import 'dart:io';
 
-import 'ppt_generator.dart';
+import '../core/html/html_parser.dart';
 
 class OutlineExportService {
   OutlineExportService._();
@@ -28,7 +28,7 @@ class OutlineExportService {
       final body = <String>[];
       final html = (slide['htmlContent'] ?? '').toString();
       if (html.trim().isNotEmpty) {
-        for (final block in PPTGenerator.parseHtmlContentFull(html)) {
+        for (final block in HtmlParseCore.parseHtmlContentFull(html)) {
           final type = block['type'];
           if (type == 'text') {
             for (final run in (block['paragraphs'] as List? ?? const [])

@@ -7,6 +7,7 @@ import 'export_primitives.dart';
 import 'html_export_service.dart';
 import 'html_image_loader.dart';
 import 'pdf_export_service.dart';
+import '../core/html/html_parser.dart';
 import 'ppt_generator.dart';
 
 /// Standardized export pipeline (Track 01).

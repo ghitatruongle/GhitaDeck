@@ -13,7 +13,7 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 
 import 'html_image_loader.dart';
-import 'ppt_generator.dart';
+import '../core/html/html_parser.dart';
 
 class OdpExportService {
   OdpExportService._();
@@ -63,7 +63,7 @@ class OdpExportService {
       var blockTop = 2.4;
       final html = (slide['htmlContent'] ?? '').toString();
       if (html.trim().isNotEmpty) {
-        for (final block in PPTGenerator.parseHtmlContentFull(html)) {
+        for (final block in HtmlParseCore.parseHtmlContentFull(html)) {
           final type = block['type'];
           if (type == 'text') {
             final paras = (block['paragraphs'] as List? ?? const [])
@@ -99,7 +99,7 @@ class OdpExportService {
               src,
               maxWidth: 1600,
               allowJpeg: true,
-              jpegQuality: PPTGenerator.jpegQualityForMaxWidth(1600),
+              jpegQuality: HtmlParseCore.jpegQualityForMaxWidth(1600),
             );
             if (loaded != null) {
               final path = 'Pictures/${++imgCounter}.${loaded.ext}';

@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
-import 'package:ghita_ppt_converter/services/image_editor_service.dart';
+import 'package:ghita_deck/services/image_editor_service.dart';
 
 /// Build a solid-colour test image (default white background with a dark
 /// centre block so flood-fill / crop / corrections have something to act on).

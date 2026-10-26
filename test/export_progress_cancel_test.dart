@@ -4,13 +4,13 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/export_options.dart';
+import 'package:ghita_deck/models/export_options.dart';
 
-import 'package:ghita_ppt_converter/providers/presentation_state.dart';
-import 'package:ghita_ppt_converter/services/export_isolate.dart';
-import 'package:ghita_ppt_converter/services/export_primitives.dart';
-import 'package:ghita_ppt_converter/services/html_export_service.dart';
-import 'package:ghita_ppt_converter/services/html_image_loader.dart';
+import 'package:ghita_deck/providers/presentation_state.dart';
+import 'package:ghita_deck/services/export_isolate.dart';
+import 'package:ghita_deck/services/export_primitives.dart';
+import 'package:ghita_deck/services/html_export_service.dart';
+import 'package:ghita_deck/services/html_image_loader.dart';
 import 'package:image/image.dart' as img;
 import 'package:shared_preferences/shared_preferences.dart';
 

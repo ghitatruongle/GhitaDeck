@@ -1,4 +1,4 @@
-// Material Design Icons v7.4.47 — subset (1000 icons) bundled for the GhitaPPT icon library.
+// Material Design Icons v7.4.47 — subset (1000 icons) bundled for the GhitaDeck icon library.
 //
 // Licensed under the Apache License 2.0 — https://www.apache.org/licenses/LICENSE-2.0
 // Source dataset: https://pictogrammers.com/library/mdi/ (Pictogrammers)

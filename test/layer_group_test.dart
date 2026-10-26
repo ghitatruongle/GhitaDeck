@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/drawn_shape.dart';
-import 'package:ghita_ppt_converter/models/layer.dart';
-import 'package:ghita_ppt_converter/models/slide.dart';
-import 'package:ghita_ppt_converter/services/group_service.dart';
-import 'package:ghita_ppt_converter/services/layer_service.dart';
+import 'package:ghita_deck/models/drawn_shape.dart';
+import 'package:ghita_deck/models/layer.dart';
+import 'package:ghita_deck/models/slide.dart';
+import 'package:ghita_deck/services/group_service.dart';
+import 'package:ghita_deck/services/layer_service.dart';
 
 void main() {
   group('Track 26 — LayerService', () {

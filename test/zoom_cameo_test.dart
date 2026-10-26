@@ -3,12 +3,12 @@ import 'dart:io';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/deck_section.dart';
-import 'package:ghita_ppt_converter/services/cameo_service.dart';
-import 'package:ghita_ppt_converter/services/zoom_feature_service.dart';
-import 'package:ghita_ppt_converter/services/html_export_service.dart';
-import 'package:ghita_ppt_converter/services/pdf_export_service.dart';
-import 'package:ghita_ppt_converter/services/ppt_generator.dart';
+import 'package:ghita_deck/models/deck_section.dart';
+import 'package:ghita_deck/services/cameo_service.dart';
+import 'package:ghita_deck/services/zoom_feature_service.dart';
+import 'package:ghita_deck/services/html_export_service.dart';
+import 'package:ghita_deck/services/pdf_export_service.dart';
+import 'package:ghita_deck/services/ppt_generator.dart';
 
 /// Track 20 tests — Slide Zoom & Cameo (FEAT 22, 23).
 void main() {

@@ -4,8 +4,8 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/export_job.dart';
-import 'package:ghita_ppt_converter/services/export_primitives.dart';
+import 'package:ghita_deck/services/export_job.dart';
+import 'package:ghita_deck/services/export_primitives.dart';
 import 'package:image/image.dart' as img;
 
 /// T13.6b profile: how much of total PPTX export is the ZIP stage, and does

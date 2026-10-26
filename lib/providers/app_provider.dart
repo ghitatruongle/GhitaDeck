@@ -34,7 +34,7 @@ class AppProvider with ChangeNotifier {
       case 4:
         return 'Cài Đặt Hệ Thống';
       default:
-        return 'Ghita PPT Ultimate';
+        return 'GhitaDeck';
     }
   }
 

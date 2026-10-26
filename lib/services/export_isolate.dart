@@ -101,6 +101,7 @@ Future<String> runDocxExportInIsolate(
     'outputPath': outputPath,
     'includeNotes': includeNotes,
     'includeSlideList': includeSlideList,
+    'engineRustPreferred': ZipEngineConfig.preferredRust,
   }, onProgress: onProgress, cancelToken: cancelToken);
   if (result['ok'] == true) {
     return result['path'] as String;
@@ -146,6 +147,7 @@ Future<String> runPdfExportInIsolate(
     'includeHiddenSlides': includeHiddenSlides,
     'optimizeImages': ImageOptimizerConfig.betaEnabled,
     'imageJpegQuality': ImageOptimizerConfig.quality,
+    'engineRustPreferred': ZipEngineConfig.preferredRust,
   }, onProgress: onProgress, cancelToken: cancelToken);
   if (result['ok'] == true) {
     ImageOptimizationStats.importWorkerSummary(
@@ -182,6 +184,7 @@ Future<String> runHtmlExportInIsolate(
     'playerLocale': playerLocale,
     'optimizeImages': ImageOptimizerConfig.betaEnabled,
     'imageJpegQuality': ImageOptimizerConfig.quality,
+    'engineRustPreferred': ZipEngineConfig.preferredRust,
   }, onProgress: onProgress, cancelToken: cancelToken);
   if (result['ok'] == true) {
     ImageOptimizationStats.importWorkerSummary(

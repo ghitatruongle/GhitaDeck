@@ -1,14 +1,14 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/providers/ai_provider_manager.dart';
-import 'package:ghita_ppt_converter/services/ai_html_guard.dart';
-import 'package:ghita_ppt_converter/services/ai_pipeline_service.dart';
-import 'package:ghita_ppt_converter/services/compare_merge_service.dart';
-import 'package:ghita_ppt_converter/services/copilot_service.dart';
-import 'package:ghita_ppt_converter/services/deck_translation_service.dart';
-import 'package:ghita_ppt_converter/services/designer_service.dart';
-import 'package:ghita_ppt_converter/services/dictation_service.dart';
-import 'package:ghita_ppt_converter/services/reuse_slide_service.dart';
+import 'package:ghita_deck/providers/ai_provider_manager.dart';
+import 'package:ghita_deck/services/ai_html_guard.dart';
+import 'package:ghita_deck/services/ai_pipeline_service.dart';
+import 'package:ghita_deck/services/compare_merge_service.dart';
+import 'package:ghita_deck/services/copilot_service.dart';
+import 'package:ghita_deck/services/deck_translation_service.dart';
+import 'package:ghita_deck/services/designer_service.dart';
+import 'package:ghita_deck/services/dictation_service.dart';
+import 'package:ghita_deck/services/reuse_slide_service.dart';
 
 void main() {
   // -------------------------------------------------------------------------

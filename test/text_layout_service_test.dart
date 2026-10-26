@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/text_layout_service.dart';
+import 'package:ghita_deck/services/text_layout_service.dart';
 
 void main() {
   group('Track 28 — Replace font', () {

@@ -4,8 +4,8 @@
 // deduplication (identical keyframe bodies emit one @keyframes and alias the
 // rest), category grouping exhaustiveness, and PPTX transition mapping.
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/slide.dart';
-import 'package:ghita_ppt_converter/services/effect_preview_service.dart';
+import 'package:ghita_deck/models/slide.dart';
+import 'package:ghita_deck/services/effect_preview_service.dart';
 
 void main() {
   group('generateEffectCss', () {

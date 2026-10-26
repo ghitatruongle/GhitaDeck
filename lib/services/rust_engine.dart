@@ -71,6 +71,7 @@ class RustEngineService extends ChangeNotifier {
     _preferred = stored == 'rust' ? EngineKind.rust : EngineKind.dart;
     ZipEngineConfig.setPreferredRust(_preferred == EngineKind.rust);
     ImageEngineConfig.setPreferredRust(_preferred == EngineKind.rust);
+    HtmlParseEngineConfig.setPreferredRust(_preferred == EngineKind.rust);
     notifyListeners();
   }
 
@@ -133,6 +134,7 @@ class RustEngineService extends ChangeNotifier {
     _preferred = kind;
     ZipEngineConfig.setPreferredRust(kind == EngineKind.rust);
     ImageEngineConfig.setPreferredRust(kind == EngineKind.rust);
+    HtmlParseEngineConfig.setPreferredRust(kind == EngineKind.rust);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(prefKey, kind.name);
     if (kind == EngineKind.rust && _status != EngineStatus.rustReady) {

@@ -171,9 +171,9 @@ class PdfExportService {
     final doc = pw.Document(
       theme: theme,
       title: firstTitle,
-      author: 'Ghita PPT Converter',
-      creator: 'Ghita PPT Converter',
-      subject: 'Exported from GhitaPPT',
+      author: 'GhitaDeck',
+      creator: 'GhitaDeck',
+      subject: 'Exported from GhitaDeck',
     );
     final selectedRatio = aspectRatio ??
         (widescreen
@@ -1549,14 +1549,16 @@ class PdfExportService {
           current.write(s[j]);
           j++;
         }
-        if (j < s.length) {
-          current.write('>');
-          if (closing) depth--;
-          i = j;
-          if (depth == 0) {
-            parts.add(current.toString().trim());
-            current = StringBuffer();
-          }
+        if (j >= s.length) {
+          i = s.length;
+          break;
+        }
+        current.write('>');
+        if (closing) depth--;
+        i = j;
+        if (depth == 0) {
+          parts.add(current.toString().trim());
+          current = StringBuffer();
         }
       } else {
         current.write(c);
@@ -1735,7 +1737,8 @@ void _paintSmartArt(PdfGraphics canvas, PdfPoint size, SmartArtGraph graph) {
 
 /// Mix [hex] toward white (used for translucent-looking area fills).
 PdfColor _lighten(String hex) {
-  final value = int.parse(hex, radix: 16);
+  final cleaned = hex.replaceAll('#', '').trim();
+  final value = int.tryParse(cleaned, radix: 16) ?? 0xFFFFFF;
   final r = (value >> 16) & 0xFF, g = (value >> 8) & 0xFF, b = value & 0xFF;
   int mix(int v) => v + ((255 - v) * 2 ~/ 3);
   return PdfColor.fromInt(0xFF000000 | (mix(r) << 16) | (mix(g) << 8) | mix(b));

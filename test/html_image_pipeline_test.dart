@@ -4,11 +4,11 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/export_job.dart';
-import 'package:ghita_ppt_converter/services/html_image_loader.dart';
-import 'package:ghita_ppt_converter/services/image_codec.dart';
-import 'package:ghita_ppt_converter/services/image_optimizer_service.dart';
-import 'package:ghita_ppt_converter/services/ppt_generator.dart';
+import 'package:ghita_deck/services/export_job.dart';
+import 'package:ghita_deck/services/html_image_loader.dart';
+import 'package:ghita_deck/services/image_codec.dart';
+import 'package:ghita_deck/services/image_optimizer_service.dart';
+import 'package:ghita_deck/services/ppt_generator.dart';
 import 'package:image/image.dart' as img;
 
 /// Track 03 tests — image pipeline: dedupe, re-encode, remote embedding.

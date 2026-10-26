@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/html_image_loader.dart';
+import 'package:ghita_deck/services/html_image_loader.dart';
 
 Uint8List _pngBytes(int fill, int sizeKb) {
   final out = BytesBuilder();

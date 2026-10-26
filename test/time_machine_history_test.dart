@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/slide.dart';
-import 'package:ghita_ppt_converter/services/time_machine_history_service.dart';
+import 'package:ghita_deck/models/slide.dart';
+import 'package:ghita_deck/services/time_machine_history_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

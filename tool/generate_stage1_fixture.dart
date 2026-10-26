@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:ghita_ppt_converter/models/slide.dart';
-import 'package:ghita_ppt_converter/services/ppt_generator.dart';
+import 'package:ghita_deck/models/slide.dart';
+import 'package:ghita_deck/services/ppt_generator.dart';
 
 Future<void> main(List<String> args) async {
   if (args.isEmpty || args.length > 2) {

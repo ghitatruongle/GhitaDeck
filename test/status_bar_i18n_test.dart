@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/l10n/app_localizations.dart';
-import 'package:ghita_ppt_converter/screens/widgets/status_bar.dart';
+import 'package:ghita_deck/l10n/app_localizations.dart';
+import 'package:ghita_deck/screens/widgets/status_bar.dart';
 
 /// T15 (2026-09-02): the status bar must render the ACTIVE locale — the
 /// export indicator and language badge used to be hard-coded Vietnamese even

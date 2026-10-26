@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/l10n/app_localizations.dart';
-import 'package:ghita_ppt_converter/main.dart';
-import 'package:ghita_ppt_converter/screens/widgets/collaboration_panel.dart';
-import 'package:ghita_ppt_converter/services/collaboration_service.dart';
+import 'package:ghita_deck/l10n/app_localizations.dart';
+import 'package:ghita_deck/main.dart';
+import 'package:ghita_deck/screens/widgets/collaboration_panel.dart';
+import 'package:ghita_deck/services/collaboration_service.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

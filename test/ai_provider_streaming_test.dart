@@ -14,7 +14,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 // ignore: avoid_types_on_closure_parameters
-import 'package:ghita_ppt_converter/providers/ai_provider_manager.dart';
+import 'package:ghita_deck/providers/ai_provider_manager.dart';
 
 /// Serves a scripted sequence of raw byte-chunks as an SSE response.
 Future<HttpServer> _serveChunks(List<List<int>> chunks,

@@ -3,9 +3,9 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/export_isolate.dart';
-import 'package:ghita_ppt_converter/services/html_image_loader.dart';
-import 'package:ghita_ppt_converter/services/image_codec.dart';
+import 'package:ghita_deck/services/export_isolate.dart';
+import 'package:ghita_deck/services/html_image_loader.dart';
+import 'package:ghita_deck/services/image_codec.dart';
 import 'package:image/image.dart' as img;
 
 /// T19 — RAM profiling of the export pipeline (deterministic, no DevTools).

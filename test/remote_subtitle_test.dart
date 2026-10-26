@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/remote_control_service.dart';
-import 'package:ghita_ppt_converter/services/subtitle_service.dart';
+import 'package:ghita_deck/services/remote_control_service.dart';
+import 'package:ghita_deck/services/subtitle_service.dart';
 
 /// Track 37 tests — Remote control & live subtitles (FEAT 61, 62).
 void main() {

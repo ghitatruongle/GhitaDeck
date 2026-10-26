@@ -126,7 +126,9 @@ class AIProviderConfig {
 
   /// v1.2.0: Safe health status parsing with bounds check.
   static ProviderHealthStatus _parseHealthStatus(dynamic value) {
-    final idx = (value as int?) ?? 0;
+    final idx = value is num
+        ? value.toInt()
+        : (value is String ? int.tryParse(value) : null) ?? 0;
     if (idx >= 0 && idx < ProviderHealthStatus.values.length) {
       return ProviderHealthStatus.values[idx];
     }
@@ -452,6 +454,20 @@ class AIProviderManager with ChangeNotifier {
     }
   }
 
+  void _patchProviderLive(
+    String providerId, AIProviderConfig Function(AIProviderConfig) patch) {
+    if (_disposed) return;
+    final index = _providers.indexWhere((p) => p.id == providerId);
+    if (index == -1) return;
+    final next = patch(_providers[index]);
+    _providers[index] = next;
+    if (_selectedProvider?.id == providerId) {
+      _selectedProvider = next;
+    }
+    unawaited(_configService.saveProviders(_providers));
+    notifyListeners();
+  }
+
   void removeProvider(String providerId) {
     _providers.removeWhere((p) => p.id == providerId);
     if (_selectedProvider?.id == providerId) {
@@ -520,11 +536,13 @@ class AIProviderManager with ChangeNotifier {
       stopwatch.stop();
 
       final status = isValid ? ProviderHealthStatus.healthy : ProviderHealthStatus.failed;
-      final updated = config.copyWith(
-        healthStatus: status,
-        lastHealthCheck: DateTime.now(),
+      _patchProviderLive(
+        config.id,
+        (live) => live.copyWith(
+          healthStatus: status,
+          lastHealthCheck: DateTime.now(),
+        ),
       );
-      updateProvider(updated);
 
       return PingResult(
         isSuccess: isValid,
@@ -532,11 +550,13 @@ class AIProviderManager with ChangeNotifier {
       );
     } catch (e) {
       stopwatch.stop();
-      final updated = config.copyWith(
-        healthStatus: ProviderHealthStatus.failed,
-        lastHealthCheck: DateTime.now(),
+      _patchProviderLive(
+        config.id,
+        (live) => live.copyWith(
+          healthStatus: ProviderHealthStatus.failed,
+          lastHealthCheck: DateTime.now(),
+        ),
       );
-      updateProvider(updated);
 
       return PingResult(
         isSuccess: false,
@@ -621,8 +641,8 @@ class AIProviderManager with ChangeNotifier {
           headers['Authorization'] = 'Bearer ${config.apiKey}';
         }
         if (base.contains('openrouter.ai')) {
-          headers['HTTP-Referer'] = 'https://ghitappt.com';
-          headers['X-Title'] = 'GhitaPPT';
+          headers['HTTP-Referer'] = 'https://ghitadeck.com';
+          headers['X-Title'] = 'GhitaDeck';
         }
 
         try {
@@ -669,15 +689,20 @@ class AIProviderManager with ChangeNotifier {
 
       if (fetchedModels.isNotEmpty) {
         final uniqueModels = fetchedModels.toSet().toList();
-        final updated = config.copyWith(
-          availableModels: uniqueModels,
-          selectedModel: uniqueModels.contains(config.selectedModel)
-              ? config.selectedModel
-              : uniqueModels.first,
-          healthStatus: ProviderHealthStatus.healthy,
-          lastHealthCheck: DateTime.now(),
+        _patchProviderLive(
+          config.id,
+          (live) => live.copyWith(
+            availableModels: uniqueModels,
+            selectedModel:
+                uniqueModels.contains(live.selectedModel) || live.selectedModel.isEmpty
+                    ? live.selectedModel.isEmpty
+                        ? uniqueModels.first
+                        : live.selectedModel
+                    : uniqueModels.first,
+            healthStatus: ProviderHealthStatus.healthy,
+            lastHealthCheck: DateTime.now(),
+          ),
         );
-        updateProvider(updated);
         return uniqueModels;
       }
     } catch (e) {

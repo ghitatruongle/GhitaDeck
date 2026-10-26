@@ -9,7 +9,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/local_ai_detector_service.dart';
+import 'package:ghita_deck/services/local_ai_detector_service.dart';
 
 Future<HttpServer> _serve(int port, Map<String, Object?> Function() payload) =>
     HttpServer.bind(InternetAddress.anyIPv6, port, v6Only: false).then((server) {

@@ -11,8 +11,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/providers/ai_provider_manager.dart';
-import 'package:ghita_ppt_converter/services/api_fallback_cascade_service.dart';
+import 'package:ghita_deck/providers/ai_provider_manager.dart';
+import 'package:ghita_deck/services/api_fallback_cascade_service.dart';
 import 'package:http/http.dart' as http;
 
 AIProviderConfig _provider(String id, String name, String baseUrl,

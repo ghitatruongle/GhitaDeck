@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/object_animation.dart';
-import 'package:ghita_ppt_converter/services/animation_engine.dart';
-import 'package:ghita_ppt_converter/services/html_export_service.dart';
+import 'package:ghita_deck/models/object_animation.dart';
+import 'package:ghita_deck/services/animation_engine.dart';
+import 'package:ghita_deck/services/html_export_service.dart';
 
 void main() {
   group('Track 31 — Motion path presets', () {

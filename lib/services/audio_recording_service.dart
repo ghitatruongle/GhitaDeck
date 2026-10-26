@@ -34,7 +34,7 @@ class AudioRecordingService {
   /// The directory holding slide narration files.
   static Future<Directory> narrationDir() async {
     final dir = await getApplicationDocumentsDirectory();
-    final audioDir = Directory(p.join(dir.path, 'GhitaPPT', 'audio'));
+    final audioDir = Directory(p.join(dir.path, 'GhitaDeck', 'audio'));
     if (!await audioDir.exists()) {
       await audioDir.create(recursive: true);
     }
@@ -106,12 +106,13 @@ class AudioRecordingService {
       _durationStreamController = null;
 
       debugPrint('AudioRecordingService: Stopped recording at $path');
-      // v1.2.0: verify file exists before returning path
       if (path != null) {
         final file = File(path);
         if (await file.exists()) return path;
       }
-      return _currentPath; // fallback
+      final current = _currentPath;
+      if (current != null && await File(current).exists()) return current;
+      return null;
     } catch (e) {
       // The recorder threw (mic unplugged, device error) — release the timer
       // and controller here too, otherwise the periodic timer keeps firing
@@ -166,6 +167,7 @@ class AudioRecordingService {
   static Future<String> transcodeToM4a(String wavPath) async {
     if (!await VideoEmbedService.ffmpegAvailable()) return wavPath;
     final m4aPath = wavPath.replaceAll(RegExp(r'\.wav$', caseSensitive: false), '.m4a');
+    if (p.equals(m4aPath, wavPath)) return wavPath;
     try {
       final r = await Process.run('ffmpeg', [
         '-y', '-i', wavPath,
@@ -190,8 +192,7 @@ class AudioRecordingService {
     double end,
   ) async {
     if (!await VideoEmbedService.ffmpegAvailable() || end <= start) return null;
-    final dir = Directory('${Directory.systemTemp.path}/ghita_atrim_${DateTime.now().millisecondsSinceEpoch}');
-    await dir.create(recursive: true);
+    final dir = await Directory.systemTemp.createTemp('ghita_atrim_');
     final out = p.join(dir.path, 'trim.m4a');
     try {
       var r = await Process.run('ffmpeg', [

@@ -93,7 +93,7 @@ class HtmlImageLoader {
     if (override != null && override.isNotEmpty) return override;
     final localAppData = Platform.environment['LOCALAPPDATA'];
     if (localAppData != null && localAppData.isNotEmpty) {
-      return '$localAppData\\GhitaPPT\\image_cache';
+      return '$localAppData\\GhitaDeck\\image_cache';
     }
     return '${Directory.systemTemp.path}/ghita_image_cache';
   }
@@ -547,10 +547,11 @@ class HtmlImageLoader {
         return null;
       }
       final bytes = file.readAsBytesSync();
-      final dotIndex = src.lastIndexOf('.');
+      final fileName = src.split(RegExp(r'[/\\]')).last;
+      final dotIndex = fileName.lastIndexOf('.');
       final ext = dotIndex == -1
           ? null
-          : _normalizeExt(src.substring(dotIndex + 1).toLowerCase());
+          : _normalizeExt(fileName.substring(dotIndex + 1).toLowerCase());
       if (ext == null || !const ['png', 'jpg', 'gif'].contains(ext)) {
         _warn(src, 'unsupported image extension');
         return null;
@@ -679,10 +680,12 @@ class HtmlImageLoader {
           continue;
         }
         final marker = bytes[i + 1];
-        if (marker == 0xD8 ||
+        if (marker == 0xFF ||
+            marker == 0x00 ||
+            marker == 0xD8 ||
             marker == 0x01 ||
             (marker >= 0xD0 && marker <= 0xD7)) {
-          i += 2; // SOI / TEM / RSTn — no length field
+          i += 2;
           continue;
         }
         final length = (bytes[i + 2] << 8) | bytes[i + 3];

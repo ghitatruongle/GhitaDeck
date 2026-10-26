@@ -1,7 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/main.dart';
-import 'package:ghita_ppt_converter/screens/widgets/collaboration_panel.dart';
+import 'package:ghita_deck/main.dart';
+import 'package:ghita_deck/screens/widgets/collaboration_panel.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

@@ -43,7 +43,7 @@ class ChartStyle {
   final bool stacked;
 
   String colorAt(int index) =>
-      colors[index % colors.length].toUpperCase();
+      colors.isEmpty ? '4472C4' : colors[index % colors.length].toUpperCase();
 
   Map<String, dynamic> toMap() => {
         'colors': colors,
@@ -52,19 +52,25 @@ class ChartStyle {
         'stacked': stacked,
       };
 
+  static const List<String> defaultColors = [
+    '4472C4',
+    'ED7D31',
+    'A5A5A5',
+    'FFC000',
+    '5B9BD5',
+    '70AD47',
+  ];
+
   static ChartStyle fromMap(Map<String, dynamic> map) {
     final rawColors = map['colors'];
+    final parsed = rawColors is List
+        ? rawColors
+            .map((e) => e.toString().trim())
+            .where((e) => e.isNotEmpty)
+            .toList()
+        : const <String>[];
     return ChartStyle(
-      colors: rawColors is List
-          ? rawColors.map((e) => e.toString()).toList()
-          : const [
-              '4472C4',
-              'ED7D31',
-              'A5A5A5',
-              'FFC000',
-              '5B9BD5',
-              '70AD47',
-            ],
+      colors: parsed.isEmpty ? defaultColors : parsed,
       showLegend: map['showLegend'] != false,
       showDataLabels: map['showDataLabels'] == true,
       stacked: map['stacked'] == true,

@@ -5,8 +5,8 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/src/rust/api/zip.dart' as rust_zip;
-import 'package:ghita_ppt_converter/src/rust/frb_generated.dart' as frb;
+import 'package:ghita_deck/src/rust/api/zip.dart' as rust_zip;
+import 'package:ghita_deck/src/rust/frb_generated.dart' as frb;
 import 'package:image/image.dart' as img;
 
 /// Track 02 (ghita_zip) benchmark — media-heavy deck.
@@ -217,8 +217,8 @@ const String coreXml =
     '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/'
     '2006/metadata/core-properties" '
     'xmlns:dc="http://purl.org/dc/elements/1.1/">'
-    '<dc:title>GhitaPPT benchmark deck</dc:title>'
-    '<dc:creator>GhitaPPT</dc:creator>'
+    '<dc:title>GhitaDeck benchmark deck</dc:title>'
+    '<dc:creator>GhitaDeck</dc:creator>'
     '<cp:revision>1</cp:revision></cp:coreProperties>';
 
 const String contentTypesXml =

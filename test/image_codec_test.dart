@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/image_codec.dart';
+import 'package:ghita_deck/services/image_codec.dart';
 import 'package:image/image.dart' as img;
 
 /// T06 — ghita_image contract tests.

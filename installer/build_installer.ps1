@@ -11,8 +11,8 @@ $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $InstallerDir = Join-Path $ProjectRoot "installer"
 $OutputDir = Join-Path $InstallerDir "output"
 $ReleaseDir = Join-Path $ProjectRoot "build\windows\x64\runner\Release"
-$ReleaseExe = Join-Path $ReleaseDir "ghita_ppt_converter.exe"
-$IssPath = Join-Path $InstallerDir "ghita_ppt_installer.iss"
+$ReleaseExe = Join-Path $ReleaseDir "ghita_deck.exe"
+$IssPath = Join-Path $InstallerDir "ghita_deck_installer.iss"
 $PubspecPath = Join-Path $ProjectRoot "pubspec.yaml"
 
 function Read-ProjectVersion {
@@ -125,7 +125,7 @@ function Get-SignatureInfo {
 }
 
 $projectVersion = Read-ProjectVersion
-$expectedInstallerName = "GhitaPPT-Setup-$($projectVersion.FileBase).exe"
+$expectedInstallerName = "GhitaDeck-Setup-$($projectVersion.FileBase).exe"
 $expectedInstallerPath = Join-Path $OutputDir $expectedInstallerName
 $sourceRevision = (& git -C $ProjectRoot rev-parse HEAD).Trim()
 $sourceStatus = (& git -C $ProjectRoot status --porcelain | Out-String).Trim()
@@ -153,7 +153,7 @@ if (-not $innoSetup) {
 
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor White
-Write-Host "  GhitaPPT Installer Builder v$($projectVersion.Display)" -ForegroundColor White
+Write-Host "  GhitaDeck Installer Builder v$($projectVersion.Display)" -ForegroundColor White
 Write-Host "============================================================" -ForegroundColor White
 Write-Host "Using Inno Setup: $innoSetup" -ForegroundColor Green
 Write-Host "Source revision: $sourceRevision (dirty: $sourceDirty)" -ForegroundColor Cyan
@@ -163,7 +163,7 @@ if (-not (Test-Path -LiteralPath $OutputDir)) {
 }
 if ($Clean) {
     Write-Host "Cleaning generated release artifacts..." -ForegroundColor Yellow
-    foreach ($pattern in @("GhitaPPT-Setup-*.exe", "GhitaPPT-Setup-*.sha256", "GhitaPPT-Setup-*.release.json")) {
+    foreach ($pattern in @("GhitaDeck-Setup-*.exe", "GhitaDeck-Setup-*.sha256", "GhitaDeck-Setup-*.release.json", "GhitaPPT-Setup-*.exe", "GhitaPPT-Setup-*.sha256", "GhitaPPT-Setup-*.release.json")) {
         Get-ChildItem -LiteralPath $OutputDir -Filter $pattern -File -ErrorAction SilentlyContinue |
             Remove-Item -Force
     }
@@ -203,7 +203,7 @@ $metadataPath = Join-Path $OutputDir "$($setupItem.BaseName).release.json"
 Set-Content -LiteralPath $checksumPath -Value "$setupHash *$($setupItem.Name)" -NoNewline -Encoding ascii
 $metadata = [ordered]@{
     schemaVersion = 1
-    product = "GhitaPPT Converter"
+    product = "GhitaDeck"
     version = $projectVersion.Display
     numericVersion = $projectVersion.Numeric
     installer = $setupItem.Name

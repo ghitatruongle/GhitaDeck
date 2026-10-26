@@ -7,8 +7,8 @@
 // sign-off checklist — dart tests cannot measure process RSS portably.
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/screens/present_screen.dart';
-import 'package:ghita_ppt_converter/services/html_export_service.dart';
+import 'package:ghita_deck/screens/present_screen.dart';
+import 'package:ghita_deck/services/html_export_service.dart';
 
 void main() {
   group('present poll cadence (P3 backoff)', () {

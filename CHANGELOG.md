@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.0-preview] - 2026-10-11 — Đổi tên GhitaDeck, khởi động lại chuỗi version
+
+- **Tên mới: GhitaDeck.** Toàn bộ nhận diện sản phẩm — exe (`ghita_deck.exe`), cửa sổ, installer (`GhitaDeck-Setup-0.0.0-preview.exe`), metadata mọi định dạng xuất, thư mục dữ liệu (`Documents\GhitaDeck`, `%APPDATA%\Ghita\GhitaDeck`) — đổi từ GhitaPPT Converter sang GhitaDeck. Chuỗi version bắt đầu lại từ `0.0.0-preview` cho dòng GhitaDeck; `coreVersion` (Rust engine) giữ `2.0.5-beta.3` vì engine không đổi.
+- **Cài đè được mọi bản GhitaPPT Converter trước đó** (demo, beta.1, beta.2, beta.3): AppId Inno giữ nguyên GUID qua tất cả các bản — setup mới nhận diện, gỡ bản cũ và cài vào đúng thư mục cũ; `UsePreviousAppDir` được khoá bằng test hợp đồng.
+- **Dữ liệu tự chuyển nhà:** lần chạy đầu, `%APPDATA%\Ghita\GhitaPPT Converter` (cài đặt + API key) và `Documents\GhitaPPT` (deck/nháp/ghi âm) được di chuyển sang thư mục GhitaDeck tương ứng; file draft đổi tên theo; chỉ xoá thư mục cũ khi mọi file đã chuyển thành công.
+- **Sạch trace bản cũ khi nâng cấp:** autostart Run key tên "GhitaPPT Converter" bị xoá lúc cài; uninstaller dọn cả hai thế hệ thư mục cache/log.
+- **Định dạng không đổi:** `.ghita` bundle schema 2, giao thức LAN v2, PPTX/PDF/ODP/HTML/DOCX xuất như cũ — deck làm dở của bản cũ mở dùng tiếp.
+
 ## [2.0.5-beta.3] - 2026-09-03 — T18: Installer chuẩn + uninstaller hoàn chỉnh
 
 - **Tuỳ chọn vị trí cài:** trang chọn thư mục **luôn hiện**; nâng cấp gợi ý đúng thư mục đã chọn trước đó (`UsePreviousAppDir`); chế độ per-user (không cần admin) **đã kiểm chứng thật** trên shell không quyền admin.

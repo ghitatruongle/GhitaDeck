@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'bench_common.dart';
-import 'package:ghita_ppt_converter/services/html_export_service.dart';
+import 'package:ghita_deck/services/html_export_service.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:image/image.dart' as img;
 

@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/ppt_generator.dart';
-import 'package:ghita_ppt_converter/services/text_metrics_service.dart';
+import 'package:ghita_deck/services/ppt_generator.dart';
+import 'package:ghita_deck/services/text_metrics_service.dart';
 
 const _contentWidthEmu = 8229600;
 const _pxPerEmu = 9525;

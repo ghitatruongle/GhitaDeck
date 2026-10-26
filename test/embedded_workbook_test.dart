@@ -3,11 +3,11 @@ import 'dart:io';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/chart_data.dart';
-import 'package:ghita_ppt_converter/screens/widgets/chart_data_grid.dart';
-import 'package:ghita_ppt_converter/services/chart_service.dart';
-import 'package:ghita_ppt_converter/services/embedded_workbook_service.dart';
-import 'package:ghita_ppt_converter/services/ppt_generator.dart';
+import 'package:ghita_deck/models/chart_data.dart';
+import 'package:ghita_deck/screens/widgets/chart_data_grid.dart';
+import 'package:ghita_deck/services/chart_service.dart';
+import 'package:ghita_deck/services/embedded_workbook_service.dart';
+import 'package:ghita_deck/services/ppt_generator.dart';
 import 'package:xml/xml.dart' as xml;
 
 /// Track 09 tests — Excel-style data grid + embedded workbook (FEAT 3).

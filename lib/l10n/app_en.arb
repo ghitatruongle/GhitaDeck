@@ -1,6 +1,6 @@
 {
   "@@locale": "en",
-  "appTitle": "Ghita PPT Converter",
+  "appTitle": "GhitaDeck",
   "@appTitle": {
     "description": "Application title"
   },
@@ -387,7 +387,7 @@
     }
   },
   "slideSemanticHint": "Activate to edit. Long press for more actions.",
-  "workspaceSemantics": "GhitaPPT presentation workspace",
+  "workspaceSemantics": "GhitaDeck presentation workspace",
   "exportProgress": "Exporting… {done}/{total}",
   "@exportProgress": {
     "description": "Export progress indicator with the current slide number and the deck size.",

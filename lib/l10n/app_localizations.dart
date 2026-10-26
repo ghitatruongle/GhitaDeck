@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// Application title
   ///
   /// In en, this message translates to:
-  /// **'Ghita PPT Converter'**
+  /// **'GhitaDeck'**
   String get appTitle;
 
   /// No description provided for @homeTitle.
@@ -1637,7 +1637,7 @@ abstract class AppLocalizations {
   /// No description provided for @workspaceSemantics.
   ///
   /// In en, this message translates to:
-  /// **'GhitaPPT presentation workspace'**
+  /// **'GhitaDeck presentation workspace'**
   String get workspaceSemantics;
 
   /// Export progress indicator with the current slide number and the deck size.

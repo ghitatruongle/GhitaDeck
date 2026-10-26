@@ -1,17 +1,17 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/config/build_info.dart';
-import 'package:ghita_ppt_converter/models/slide.dart';
-import 'package:ghita_ppt_converter/services/project_bundle_service.dart';
+import 'package:ghita_deck/config/build_info.dart';
+import 'package:ghita_deck/models/slide.dart';
+import 'package:ghita_deck/services/project_bundle_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('v2.0.1 stable release contract', () {
     test('central metadata has independent app, protocol and schema versions', () {
-      expect(BuildInfo.appVersion, '2.0.5-beta.3');
-      expect(BuildInfo.displayVersion, '2.0.5-beta.3+7');
+      expect(BuildInfo.appVersion, '0.0.0-preview');
+      expect(BuildInfo.displayVersion, '0.0.0-preview+1');
       expect(BuildInfo.coreVersion, '2.0.5-beta.3');
       expect(BuildInfo.collaborationProtocolVersion, 2);
       expect(BuildInfo.bundleSchemaVersion, 2);

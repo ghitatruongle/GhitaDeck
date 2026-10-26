@@ -3,11 +3,11 @@ import 'dart:io';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/model3d_item.dart';
-import 'package:ghita_ppt_converter/services/html_export_service.dart';
-import 'package:ghita_ppt_converter/services/model3d_service.dart';
-import 'package:ghita_ppt_converter/services/pdf_export_service.dart';
-import 'package:ghita_ppt_converter/services/ppt_generator.dart';
+import 'package:ghita_deck/models/model3d_item.dart';
+import 'package:ghita_deck/services/html_export_service.dart';
+import 'package:ghita_deck/services/model3d_service.dart';
+import 'package:ghita_deck/services/pdf_export_service.dart';
+import 'package:ghita_deck/services/ppt_generator.dart';
 import 'package:xml/xml.dart' as xml;
 
 /// Track 14 tests — 3D Models (FEAT 10).

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/l10n/app_localizations.dart';
-import 'package:ghita_ppt_converter/providers/presentation_state.dart';
-import 'package:ghita_ppt_converter/screens/editor/editor_state.dart';
-import 'package:ghita_ppt_converter/screens/editor/html_editor_panel.dart';
-import 'package:ghita_ppt_converter/screens/widgets/ribbon_toolbar.dart';
+import 'package:ghita_deck/l10n/app_localizations.dart';
+import 'package:ghita_deck/providers/presentation_state.dart';
+import 'package:ghita_deck/screens/editor/editor_state.dart';
+import 'package:ghita_deck/screens/editor/html_editor_panel.dart';
+import 'package:ghita_deck/screens/widgets/ribbon_toolbar.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

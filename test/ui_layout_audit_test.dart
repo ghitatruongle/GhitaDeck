@@ -10,20 +10,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/config/build_info.dart';
-import 'package:ghita_ppt_converter/l10n/app_localizations.dart';
-import 'package:ghita_ppt_converter/providers/ai_provider_manager.dart';
-import 'package:ghita_ppt_converter/providers/locale_provider.dart';
-import 'package:ghita_ppt_converter/providers/app_provider.dart';
-import 'package:ghita_ppt_converter/providers/presentation_state.dart';
-import 'package:ghita_ppt_converter/providers/shortcuts_provider.dart';
-import 'package:ghita_ppt_converter/providers/theme_provider.dart';
-import 'package:ghita_ppt_converter/screens/editor/editor_shell.dart';
-import 'package:ghita_ppt_converter/services/rust_engine.dart';
-import 'package:ghita_ppt_converter/screens/editor/editor_state.dart';
-import 'package:ghita_ppt_converter/screens/recent_projects_screen.dart';
-import 'package:ghita_ppt_converter/screens/settings_screen.dart';
-import 'package:ghita_ppt_converter/screens/theme_settings_screen.dart';
+import 'package:ghita_deck/config/build_info.dart';
+import 'package:ghita_deck/l10n/app_localizations.dart';
+import 'package:ghita_deck/providers/ai_provider_manager.dart';
+import 'package:ghita_deck/providers/locale_provider.dart';
+import 'package:ghita_deck/providers/app_provider.dart';
+import 'package:ghita_deck/providers/presentation_state.dart';
+import 'package:ghita_deck/providers/shortcuts_provider.dart';
+import 'package:ghita_deck/providers/theme_provider.dart';
+import 'package:ghita_deck/screens/editor/editor_shell.dart';
+import 'package:ghita_deck/services/rust_engine.dart';
+import 'package:ghita_deck/screens/editor/editor_state.dart';
+import 'package:ghita_deck/screens/recent_projects_screen.dart';
+import 'package:ghita_deck/screens/settings_screen.dart';
+import 'package:ghita_deck/screens/theme_settings_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -161,10 +161,10 @@ void main() {
       }
     });
 
-    test('build info reports the stable release identity', () {
-      expect(BuildInfo.appVersion, '2.0.5-beta.3');
-      expect(BuildInfo.channel, 'stable');
-      expect(BuildInfo.numericVersion, '2.0.5.7');
+    test('build info reports the release identity', () {
+      expect(BuildInfo.appVersion, '0.0.0-preview');
+      expect(BuildInfo.channel, 'preview');
+      expect(BuildInfo.numericVersion, '0.0.0.1');
     });
   });
 }

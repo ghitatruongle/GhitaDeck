@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/export_options.dart';
-import 'package:ghita_ppt_converter/services/pdf_export_service.dart';
+import 'package:ghita_deck/models/export_options.dart';
+import 'package:ghita_deck/services/pdf_export_service.dart';
 
 const String kOnePixelPngBase64 =
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';

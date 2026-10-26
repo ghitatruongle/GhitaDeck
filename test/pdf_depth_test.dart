@@ -7,7 +7,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/pdf_export_service.dart';
+import 'package:ghita_deck/services/pdf_export_service.dart';
 
 void main() {
   final tmpDir = Directory.systemTemp.path;

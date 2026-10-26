@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/guide_settings.dart';
-import 'package:ghita_ppt_converter/services/alignment_service.dart';
+import 'package:ghita_deck/models/guide_settings.dart';
+import 'package:ghita_deck/services/alignment_service.dart';
 
 void main() {
   const a = Alignable(id: 'a', x: 10, y: 10, w: 20, h: 20);

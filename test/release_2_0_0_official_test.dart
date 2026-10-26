@@ -2,14 +2,14 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/slide.dart';
-import 'package:ghita_ppt_converter/config/build_info.dart';
-import 'package:ghita_ppt_converter/services/project_bundle_service.dart';
-import 'package:ghita_ppt_converter/services/wysiwyg_service.dart';
-import 'package:ghita_ppt_converter/services/designer_service.dart';
-import 'package:ghita_ppt_converter/services/advanced_import_service.dart';
-import 'package:ghita_ppt_converter/providers/ai_provider_manager.dart';
-import 'package:ghita_ppt_converter/screens/widgets/slide_preview.dart';
+import 'package:ghita_deck/models/slide.dart';
+import 'package:ghita_deck/config/build_info.dart';
+import 'package:ghita_deck/services/project_bundle_service.dart';
+import 'package:ghita_deck/services/wysiwyg_service.dart';
+import 'package:ghita_deck/services/designer_service.dart';
+import 'package:ghita_deck/services/advanced_import_service.dart';
+import 'package:ghita_deck/providers/ai_provider_manager.dart';
+import 'package:ghita_deck/screens/widgets/slide_preview.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -19,16 +19,17 @@ void main() {
       final pubspecFile = File('pubspec.yaml');
       expect(pubspecFile.existsSync(), isTrue);
       final content = pubspecFile.readAsStringSync();
-      expect(content, contains('version: 2.0.5-beta.3+7'));
-      expect(content, contains(BuildInfo.coreVersion));
+      expect(content, contains('version: 0.0.0-preview+1'));
+      expect(content, contains('name: ghita_deck'));
     });
 
     test('Installer definition uses the stable display version', () {
-      final issFile = File('installer/ghita_ppt_installer.iss');
+      final issFile = File('installer/ghita_deck_installer.iss');
       expect(issFile.existsSync(), isTrue);
       final content = issFile.readAsStringSync();
-      expect(content, contains('#define MyAppDisplayVersion "2.0.5-beta.3+7"'));
-      expect(content, contains('#define MyAppVersion "2.0.5.5"'));
+      expect(content, contains('#define MyAppDisplayVersion "0.0.0-preview+1"'));
+      expect(content, contains('#define MyAppVersion "0.0.0"'));
+      expect(content, contains('#define MyAppBuild "1"'));
     });
 
     test('ProjectBundleService manifest uses app and schema versions',

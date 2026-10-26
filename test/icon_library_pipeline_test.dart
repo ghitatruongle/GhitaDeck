@@ -3,11 +3,11 @@ import 'dart:io';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/icon_item.dart';
-import 'package:ghita_ppt_converter/services/icon_library_service.dart';
-import 'package:ghita_ppt_converter/services/html_export_service.dart';
-import 'package:ghita_ppt_converter/services/pdf_export_service.dart';
-import 'package:ghita_ppt_converter/services/ppt_generator.dart';
+import 'package:ghita_deck/models/icon_item.dart';
+import 'package:ghita_deck/services/icon_library_service.dart';
+import 'package:ghita_deck/services/html_export_service.dart';
+import 'package:ghita_deck/services/pdf_export_service.dart';
+import 'package:ghita_deck/services/ppt_generator.dart';
 
 /// Track 15 tests — Icon Library (FEAT 11).
 ///

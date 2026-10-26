@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/collaboration_service.dart';
+import 'package:ghita_deck/services/collaboration_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

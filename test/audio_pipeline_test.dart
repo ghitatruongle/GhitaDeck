@@ -4,11 +4,11 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/slide.dart';
-import 'package:ghita_ppt_converter/services/html_export_service.dart';
-import 'package:ghita_ppt_converter/services/ppt_generator.dart';
-import 'package:ghita_ppt_converter/services/project_bundle_service.dart';
-import 'package:ghita_ppt_converter/config/build_info.dart';
+import 'package:ghita_deck/models/slide.dart';
+import 'package:ghita_deck/services/html_export_service.dart';
+import 'package:ghita_deck/services/ppt_generator.dart';
+import 'package:ghita_deck/services/project_bundle_service.dart';
+import 'package:ghita_deck/config/build_info.dart';
 import 'package:xml/xml.dart' as xml;
 
 /// Track 13 tests — Audio & Narration gắn slide (FEAT 8, 9 + OPT 31).

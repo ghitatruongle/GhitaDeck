@@ -9,9 +9,9 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/drawn_shape.dart';
-import 'package:ghita_ppt_converter/providers/presentation_state.dart';
-import 'package:ghita_ppt_converter/screens/editor/editor_state.dart';
+import 'package:ghita_deck/models/drawn_shape.dart';
+import 'package:ghita_deck/providers/presentation_state.dart';
+import 'package:ghita_deck/screens/editor/editor_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

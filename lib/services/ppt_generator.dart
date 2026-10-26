@@ -346,6 +346,8 @@ class PPTGenerator {
     CustomShow? customShow,
     bool useEngineZip = false,
   }) async {
+    animationWarnings.clear();
+    transitionWarnings.clear();
     final geometry = _PptGeometry(
       aspectRatio ??
           (widescreen
@@ -488,13 +490,13 @@ class PPTGenerator {
     final coreXml = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <dc:title>$docTitle</dc:title>
-  <dc:creator>Ghita PPT Converter</dc:creator>
-  <cp:lastModifiedBy>Ghita PPT Converter</cp:lastModifiedBy>
+  <dc:creator>GhitaDeck</dc:creator>
+  <cp:lastModifiedBy>GhitaDeck</cp:lastModifiedBy>
 </cp:coreProperties>''';
     _addTextFile(archive, 'docProps/core.xml', coreXml);
     final appXml = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">
-  <Application>Ghita PPT Converter</Application>
+  <Application>GhitaDeck</Application>
   <Slides>${slides.length}</Slides>
 </Properties>''';
     _addTextFile(archive, 'docProps/app.xml', appXml);
@@ -764,6 +766,11 @@ class PPTGenerator {
         '  <Default Extension="xlsx" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"/>\n',
       );
     }
+    if (mediaExtensions.contains('bin')) {
+      buffer.write(
+        '  <Default Extension="bin" ContentType="application/vnd.openxmlformats-officedocument.oleObject"/>\n',
+      );
+    }
     buffer.write(
       '  <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>\n',
     );
@@ -967,7 +974,8 @@ class PPTGenerator {
     String font(String name) {
       final trimmed = name.trim().replaceAll(RegExp(r'[\x00-\x1F\x7F]'), '');
       final safe = trimmed.isEmpty ? 'Calibri' : trimmed;
-      return _xmlEscape(safe.substring(0, safe.length > 64 ? 64 : safe.length));
+      final bounded = safe.runes.take(64).toList();
+      return _xmlEscape(String.fromCharCodes(bounded));
     }
 
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
@@ -1228,8 +1236,10 @@ class PPTGenerator {
       final isLast = blockIndex == layoutBlocks.length - 1;
       final blockHeight = isLast
           ? targetHeight - allocatedHeight
-          : (estimates[blockIndex] * targetHeight / desiredHeight)
-              .floor()
+          : (desiredHeight <= 0
+                  ? 0
+                  : (estimates[blockIndex] * targetHeight / desiredHeight)
+                      .floor())
               .clamp(1, targetHeight - allocatedHeight)
               .toInt();
       allocatedHeight += blockHeight;
@@ -1700,7 +1710,7 @@ class PPTGenerator {
                 ? button.url
                 : (button.action == ActionType.file ? 'file:///' : '');
             if (target.isNotEmpty) {
-              final rid = rels?.addHyperlink(target) ?? '';
+              final rid = rels?.addHyperlink(_xmlEscape(target)) ?? '';
               actionXml =
                   'r:id="$rid" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
             } else {
@@ -2166,6 +2176,7 @@ class PPTGenerator {
       jpegQuality: jpegQuality,
     );
     if (loaded == null) return;
+    if (loaded.width <= 0 || loaded.height <= 0) return;
 
     // Track 03, P4: dedupe by content (SHA-256 of the final bytes) — the
     // same image on several slides embeds one media part; every slide still

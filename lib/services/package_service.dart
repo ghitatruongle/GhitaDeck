@@ -10,6 +10,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
+import 'package:path/path.dart' as p;
 
 import 'ppt_generator.dart';
 
@@ -133,7 +134,7 @@ class PackageService {
   static String _readme(
       List<Map<String, dynamic>> slides, List<PackagedMedia> media, String deckName) {
     final b = StringBuffer()
-      ..writeln('GhitaPPT — packaged deck "$deckName"')
+      ..writeln('GhitaDeck — packaged deck "$deckName"')
       ..writeln('========================================')
       ..writeln('Slides : ${slides.length}')
       ..writeln('Media  : ${media.length} files (${_fmtBytes(media.fold<int>(0, (s, m) => s + m.bytes))})')
@@ -160,10 +161,13 @@ class PackageService {
 
   static Future<void> _zipDir(Directory dir, String outPath) async {
     final archive = Archive();
+    final outFull = p.normalize(p.absolute(outPath));
     await for (final entity in dir.list(recursive: true)) {
       if (entity is File) {
+        if (p.equals(p.normalize(p.absolute(entity.path)), outFull)) continue;
         final bytes = await entity.readAsBytes();
-        final rel = entity.path.substring(dir.path.length + 1)
+        final rel = p
+            .relative(p.normalize(p.absolute(entity.path)), from: dir.path)
             .replaceAll('\\', '/');
         archive.addFile(ArchiveFile(rel, bytes.length, bytes));
       }

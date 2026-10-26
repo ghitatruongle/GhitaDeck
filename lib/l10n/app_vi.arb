@@ -1,6 +1,6 @@
 {
   "@@locale": "vi",
-  "appTitle": "Ghita PPT Converter",
+  "appTitle": "GhitaDeck",
   "homeTitle": "Trang Chủ",
   "editorTitle": "Trình Soạn Thảo",
   "projectsTitle": "Dự Án",
@@ -349,7 +349,7 @@
     }
   },
   "slideSemanticHint": "Kích hoạt để chỉnh sửa. Nhấn giữ để xem thêm thao tác.",
-  "workspaceSemantics": "Không gian làm việc bài thuyết trình GhitaPPT",
+  "workspaceSemantics": "Không gian làm việc bài thuyết trình GhitaDeck",
   "exportProgress": "Đang xuất… {done}/{total}",
   "@exportProgress": {
     "description": "Chỉ báo tiến trình xuất với số slide hiện tại và tổng số slide.",

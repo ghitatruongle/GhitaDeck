@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ghita_ppt_converter/providers/presentation_state.dart';
+import 'package:ghita_deck/providers/presentation_state.dart';
 
 /// A pre-made HTML template for presentation slides.
 class SlideTemplate {

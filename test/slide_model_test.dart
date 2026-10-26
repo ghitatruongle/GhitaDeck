@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/slide.dart';
+import 'package:ghita_deck/models/slide.dart';
 
 void main() {
   group('Slide model', () {

@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/export_options.dart';
-import 'package:ghita_ppt_converter/models/slide.dart';
-import 'package:ghita_ppt_converter/services/ppt_generator.dart';
+import 'package:ghita_deck/models/export_options.dart';
+import 'package:ghita_deck/models/slide.dart';
+import 'package:ghita_deck/services/ppt_generator.dart';
 import 'package:xml/xml.dart' as xml;
 
 /// 1x1 black PNG used for image embedding tests.
@@ -649,7 +649,7 @@ void main() {
       expect(parts.keys, contains('ppt/notesMasters/notesMaster1.xml'));
       expect(parts.keys, contains('ppt/slideMasters/slideMaster1.xml'));
       expect(parts.keys, isNot(contains('ppt/slideMaster/slideMaster1.xml')));
-      expect(parts['docProps/app.xml'], contains('Ghita PPT Converter'));
+      expect(parts['docProps/app.xml'], contains('GhitaDeck'));
       expect(parts['docProps/core.xml'], contains('<dc:title>T</dc:title>'));
       expect(() => xml.XmlDocument.parse(parts['ppt/theme/theme1.xml']!),
           returnsNormally);

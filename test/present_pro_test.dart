@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/present_tools_service.dart';
-import 'package:ghita_ppt_converter/services/present_deck_commands.dart';
+import 'package:ghita_deck/services/present_tools_service.dart';
+import 'package:ghita_deck/services/present_deck_commands.dart';
 
 /// Track 35 tests — Present Pro tools (FEAT 55, 56, 57 + OPT 21, 22, 23).
 void main() {

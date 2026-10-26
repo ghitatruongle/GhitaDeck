@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/object_animation.dart';
-import 'package:ghita_ppt_converter/providers/presentation_state.dart';
+import 'package:ghita_deck/models/object_animation.dart';
+import 'package:ghita_deck/providers/presentation_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

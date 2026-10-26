@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/zip_codec.dart';
+import 'package:ghita_deck/services/zip_codec.dart';
 
 /// Track 02 — ghita_zip backend selection + output correctness.
 ///

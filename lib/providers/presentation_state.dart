@@ -58,6 +58,7 @@ class PresentationState with ChangeNotifier, DeckExportActions {
   // instead of guessing while the first asynchronous hydrate is in flight.
   bool _isHydrating = true;
   bool _isSaving = false;
+  bool _disposed = false;
   bool _hasUnsavedChanges = false;
   String? _lastPersistenceError;
   int _documentRevision = 0;
@@ -113,6 +114,7 @@ class PresentationState with ChangeNotifier, DeckExportActions {
       final raw = prefs.getString('custom_shows');
       if (raw != null && raw.isNotEmpty) {
         _customShows = CustomShowService.fromJsonList(raw);
+        if (_disposed) return;
         notifyListeners();
       }
     } catch (_) {}
@@ -240,7 +242,7 @@ class PresentationState with ChangeNotifier, DeckExportActions {
       debugPrint('$stack');
     } finally {
       _isHydrating = false;
-      notifyListeners();
+      if (!_disposed) notifyListeners();
     }
   }
 
@@ -248,6 +250,7 @@ class PresentationState with ChangeNotifier, DeckExportActions {
 
   Future<void> _loadAutoAdvance() async {
     final data = await _configService.loadAutoAdvance();
+    if (_disposed) return;
     _autoAdvance = data.enabled;
     _autoAdvanceSeconds = data.seconds;
     notifyListeners();
@@ -354,13 +357,13 @@ class PresentationState with ChangeNotifier, DeckExportActions {
 
   @override
   void dispose() {
-    final pending = _saveDebounce;
+    final hadPendingSave = _saveDebounce?.isActive ?? false;
     _saveDebounce?.cancel();
     _saveDebounce = null;
-    // Flush any pending debounced save so the last edits aren't lost on close.
-    if (pending != null && pending.isActive) {
-      unawaited(savePresentation());
+    if (hadPendingSave) {
+      unawaited(savePresentation().catchError((Object _) {}));
     }
+    _disposed = true;
     _exportStatusTimer?.cancel();
     super.dispose();
   }
@@ -1046,12 +1049,14 @@ class PresentationState with ChangeNotifier, DeckExportActions {
   // ---- Persistence ----
 
   Future<void> savePresentation([String? title]) async {
+    if (_disposed) return;
     final revisionBeingSaved = _documentRevision;
     _isSaving = true;
     notifyListeners();
     try {
       await _configService.saveSlides(
           slideMaps(), _slideEffect.name, _deckMeta.toJson());
+      if (_disposed) return;
       _savedRevision = revisionBeingSaved;
       if (_documentRevision == revisionBeingSaved) {
         _hasUnsavedChanges = false;
@@ -1064,12 +1069,13 @@ class PresentationState with ChangeNotifier, DeckExportActions {
       rethrow;
     } finally {
       _isSaving = false;
-      notifyListeners();
+      if (!_disposed) notifyListeners();
     }
   }
 
   Future<void> loadPresentation([String? title]) async {
     final data = await _configService.loadSlides();
+    if (_disposed) return;
     _slides = (data['slides'] as List)
         .map((e) => Slide.fromMap(Map<String, dynamic>.from(e as Map)))
         .toList();

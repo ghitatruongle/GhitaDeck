@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/document_importer_service.dart';
+import 'package:ghita_deck/services/document_importer_service.dart';
 
 void main() {
   group('DocumentImporterService Tests', () {

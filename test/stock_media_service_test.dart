@@ -4,7 +4,7 @@
 // fallback" contract is simply: search works with no network, the category
 // index stays consistent, and the data-URI form round-trips the exact SVG.
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/stock_media_service.dart';
+import 'package:ghita_deck/services/stock_media_service.dart';
 
 void main() {
   group('library index', () {

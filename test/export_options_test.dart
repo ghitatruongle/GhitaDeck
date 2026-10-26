@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/export_options.dart';
-import 'package:ghita_ppt_converter/services/html_image_loader.dart';
+import 'package:ghita_deck/models/export_options.dart';
+import 'package:ghita_deck/services/html_image_loader.dart';
 import 'package:image/image.dart' as image;
 
 void main() {

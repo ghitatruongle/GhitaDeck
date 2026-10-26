@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/odp_export_service.dart';
+import 'package:ghita_deck/services/odp_export_service.dart';
 import 'package:image/image.dart' as img;
 
 /// B17 (2026-09-02): ODP embeds re-encoded JPEGs for large opaque photo

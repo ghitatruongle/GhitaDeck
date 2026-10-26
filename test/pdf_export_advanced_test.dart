@@ -4,9 +4,9 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/export_options.dart';
-import 'package:ghita_ppt_converter/models/slide.dart';
-import 'package:ghita_ppt_converter/services/pdf_export_service.dart';
+import 'package:ghita_deck/models/export_options.dart';
+import 'package:ghita_deck/models/slide.dart';
+import 'package:ghita_deck/services/pdf_export_service.dart';
 import 'package:image/image.dart' as img;
 
 /// Concatenate the raw PDF text with every (inflated) stream so assertions
@@ -163,8 +163,8 @@ void main() {
     final text = pdfText(bytes);
     // The pdf package writes the Info dict compactly: /Key(value).
     expect(text, contains('/Title(Deck ABC)'));
-    expect(text, contains('/Author(Ghita PPT Converter)'));
-    expect(text, contains('/Creator(Ghita PPT Converter)'));
+    expect(text, contains('/Author(GhitaDeck)'));
+    expect(text, contains('/Creator(GhitaDeck)'));
     expect(text, contains('/CreationDate(D:'));
   });
 

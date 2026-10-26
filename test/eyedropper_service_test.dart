@@ -8,7 +8,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/eyedropper_service.dart';
+import 'package:ghita_deck/services/eyedropper_service.dart';
 
 const _colorPattern = r'^#[0-9A-F]{6}$';
 

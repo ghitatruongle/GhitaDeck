@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/utils/error_mapper.dart';
+import 'package:ghita_deck/utils/error_mapper.dart';
 
 /// ErrorMapper mapping table: technical errors → user-friendly VI/EN messages.
 void main() {

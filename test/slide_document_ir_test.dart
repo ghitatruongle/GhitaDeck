@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/core/document/slide_document.dart';
-import 'package:ghita_ppt_converter/core/html/html_parser.dart';
+import 'package:ghita_deck/core/document/slide_document.dart';
+import 'package:ghita_deck/core/html/html_parser.dart';
 
 const _chartPayload = '{"type":"bar","labels":["A","B"],"series":[{"name":"S","values":[1,2]}]}';
 

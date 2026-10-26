@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/utils/snackbar_helper.dart';
+import 'package:ghita_deck/utils/snackbar_helper.dart';
 
 /// F1 feedback (2026-08-31): snackbars must REPLACE each other instead of
 /// queueing — rapid actions previously piled up 4 s per snackbar and the final

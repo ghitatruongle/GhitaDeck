@@ -1,5 +1,5 @@
 param(
-    [string]$ExePath = "build\windows\x64\runner\Release\ghita_ppt_converter.exe",
+    [string]$ExePath = "build\windows\x64\runner\Release\ghita_deck.exe",
     [int]$DurationSeconds = 30,
     [int]$IntervalMs = 1000,
     [string]$Label = "run",

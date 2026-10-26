@@ -9,7 +9,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/html_export_service.dart';
+import 'package:ghita_deck/services/html_export_service.dart';
 
 // A real 1x1 PNG (same fixture the export tests use).
 const kTinyPngBase64 =

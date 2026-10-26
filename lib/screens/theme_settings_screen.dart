@@ -441,7 +441,7 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
                   const Icon(Icons.slideshow, color: Colors.white, size: 24),
                   const SizedBox(width: 12),
                   Text(
-                    'GhitaPPT Preview',
+                    'GhitaDeck Preview',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,

@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/screens/editor/editor_state.dart';
-import 'package:ghita_ppt_converter/services/screen_recorder_service.dart';
+import 'package:ghita_deck/screens/editor/editor_state.dart';
+import 'package:ghita_deck/services/screen_recorder_service.dart';
 
 /// Track 12 tests — Screen Recording (FEAT 7).
 ///

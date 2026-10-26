@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/wifi_broadcaster_service.dart';
+import 'package:ghita_deck/services/wifi_broadcaster_service.dart';
 
 /// Track 40 tests — Real-time broadcast via SSE (FEAT 64 + OPT 33).
 ///

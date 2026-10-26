@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/custom_show.dart';
-import 'package:ghita_ppt_converter/services/setup_show_service.dart';
-import 'package:ghita_ppt_converter/services/ppt_generator.dart';
+import 'package:ghita_deck/models/custom_show.dart';
+import 'package:ghita_deck/services/setup_show_service.dart';
+import 'package:ghita_deck/services/ppt_generator.dart';
 
 /// Track 36 tests — Set Up Show & Custom Shows (FEAT 58, 59, 60).
 void main() {

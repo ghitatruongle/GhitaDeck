@@ -143,7 +143,8 @@ class SlideFrameRenderer {
             final iw = loaded.width, ih = loaded.height;
             if (iw > 0 && ih > 0) {
               final targetW = math.min(contentW, w);
-              final targetH = (targetW * ih / iw).round().clamp(1, h ~/ 3);
+              final maxH = h ~/ 3 < 1 ? 1 : h ~/ 3;
+              final targetH = (targetW * ih / iw).round().clamp(1, maxH);
               final decoded = img.decodeImage(loaded.bytes);
               if (decoded != null) {
                 final resized = img.copyResize(decoded,

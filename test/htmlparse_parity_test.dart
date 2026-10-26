@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/ppt_generator.dart';
-import 'package:ghita_ppt_converter/src/rust/api/htmlparse.dart' as rust_api;
-import 'package:ghita_ppt_converter/src/rust/frb_generated.dart' as frb;
+import 'package:ghita_deck/services/ppt_generator.dart';
+import 'package:ghita_deck/src/rust/api/htmlparse.dart' as rust_api;
+import 'package:ghita_deck/src/rust/frb_generated.dart' as frb;
 
 /// T13.3 parity: the Rust tokenizer must produce the exact same block tree
 /// as the Dart parser for every corpus input. Corpus = the real templates +
@@ -63,6 +63,8 @@ void main() {
         '<span data-icon="star"></span><div data-smartart="x"></div>',
     'image_video':
         '<img src="a.png"/><video data-video="v.mp4" poster="p.jpg"></video>',
+    'video_src_attr':
+        '<video data-video=\'{"poster":"p.jpg"}\' src="clip.mp4"></video>',
     'div_blocks':
         '<div><h1>Tựa</h1><p>Nội dung</p><ul><li>N</li></ul></div>',
     'break_in_paragraph': '<p>Dòng một<br>dòng hai</p>',

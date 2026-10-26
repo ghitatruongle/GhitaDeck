@@ -87,6 +87,7 @@ class HtmlParseCodec {
   }
 
   static HtmlParseResult? parseToJson(String html) {
+    if (!HtmlParseEngineConfig.preferredRust) return null;
     if (!HtmlParseEngineConfig.rustReady) return null;
     try {
       final raw = rust_api.htmlparseBlocks(html: html);

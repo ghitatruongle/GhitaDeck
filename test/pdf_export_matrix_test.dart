@@ -10,12 +10,12 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/chart_data.dart';
-import 'package:ghita_ppt_converter/models/export_options.dart';
-import 'package:ghita_ppt_converter/services/action_button_service.dart';
-import 'package:ghita_ppt_converter/services/chart_service.dart';
-import 'package:ghita_ppt_converter/services/export_primitives.dart';
-import 'package:ghita_ppt_converter/services/pdf_export_service.dart';
+import 'package:ghita_deck/models/chart_data.dart';
+import 'package:ghita_deck/models/export_options.dart';
+import 'package:ghita_deck/services/action_button_service.dart';
+import 'package:ghita_deck/services/chart_service.dart';
+import 'package:ghita_deck/services/export_primitives.dart';
+import 'package:ghita_deck/services/pdf_export_service.dart';
 
 void main() {
   final tmpDirPath = Directory.systemTemp.path;

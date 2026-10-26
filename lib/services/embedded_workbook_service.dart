@@ -125,12 +125,12 @@ class EmbeddedWorkbookService {
     addText('xl/theme/theme1.xml', _themeXml);
     addText('docProps/core.xml', '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-<dc:creator>Ghita PPT Converter</dc:creator>
-<cp:lastModifiedBy>Ghita PPT Converter</cp:lastModifiedBy>
+<dc:creator>GhitaDeck</dc:creator>
+<cp:lastModifiedBy>GhitaDeck</cp:lastModifiedBy>
 </cp:coreProperties>''');
     addText('docProps/app.xml', '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">
-<Application>Ghita PPT Converter</Application>
+<Application>GhitaDeck</Application>
 </Properties>''');
 
     return Uint8List.fromList(ZipEncoder().encode(archive)!);

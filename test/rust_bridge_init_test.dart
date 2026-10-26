@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/rust_bridge_init.dart';
+import 'package:ghita_deck/services/rust_bridge_init.dart';
 
 /// B6c (2026-09-02): every component funnels its RustLib.init() through one
 /// single-flight hub — concurrent callers (zip + image + htmlparse race in

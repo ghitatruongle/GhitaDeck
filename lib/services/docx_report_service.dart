@@ -104,7 +104,7 @@ class DocxReportService {
         coreXml.text(_cleanText(title));
       });
       coreXml.element('dc:creator', nest: () {
-        coreXml.text('Ghita PPT Converter');
+        coreXml.text('GhitaDeck');
       });
     });
 

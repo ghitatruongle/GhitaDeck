@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/rehearse_service.dart';
-import 'package:ghita_ppt_converter/services/coach_service.dart';
+import 'package:ghita_deck/services/rehearse_service.dart';
+import 'package:ghita_deck/services/coach_service.dart';
 
 /// Track 38 tests — Rehearse timings & Presenter Coach (FEAT 54, 63).
 void main() {

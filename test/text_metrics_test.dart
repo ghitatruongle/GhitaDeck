@@ -3,8 +3,8 @@ import 'dart:io';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/ppt_generator.dart';
-import 'package:ghita_ppt_converter/services/text_metrics_service.dart';
+import 'package:ghita_deck/services/ppt_generator.dart';
+import 'package:ghita_deck/services/text_metrics_service.dart';
 
 /// Track 02 tests: real-font layout estimation.
 ///

@@ -7,8 +7,8 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/audio_recording_service.dart';
-import 'package:ghita_ppt_converter/services/video_embed_service.dart';
+import 'package:ghita_deck/services/audio_recording_service.dart';
+import 'package:ghita_deck/services/video_embed_service.dart';
 import 'package:integration_test/integration_test.dart';
 
 void main() {
@@ -30,7 +30,7 @@ void main() {
           'MIC_RECORDED: $m4a durationMs=$durationMs size=${File(m4a).lengthSync()}');
       expect(durationMs, greaterThan(1000), reason: 'a ~3s narration');
       // Artifact for the PPTX/HTML export verification.
-      final keep = File('D:/GhitaPPT/tool/real_mic.m4a');
+      final keep = File('E:/GhitaPPT/tool/real_mic.m4a');
       keep.parent.createSync(recursive: true);
       File(m4a).copySync(keep.path);
     } finally {

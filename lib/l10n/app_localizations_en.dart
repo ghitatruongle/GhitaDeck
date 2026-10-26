@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'Ghita PPT Converter';
+  String get appTitle => 'GhitaDeck';
 
   @override
   String get homeTitle => 'Home';
@@ -821,7 +821,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Activate to edit. Long press for more actions.';
 
   @override
-  String get workspaceSemantics => 'GhitaPPT presentation workspace';
+  String get workspaceSemantics => 'GhitaDeck presentation workspace';
 
   @override
   String exportProgress(int done, int total) {

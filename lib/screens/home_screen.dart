@@ -568,7 +568,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'GhitaPPT',
+                    'GhitaDeck',
                     style: TextStyle(
                       fontSize: 8,
                       fontWeight: FontWeight.w600,

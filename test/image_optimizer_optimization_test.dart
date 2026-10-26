@@ -6,10 +6,10 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/export_options.dart';
-import 'package:ghita_ppt_converter/services/html_image_loader.dart';
-import 'package:ghita_ppt_converter/services/image_optimizer_service.dart';
-import 'package:ghita_ppt_converter/services/ppt_generator.dart';
+import 'package:ghita_deck/models/export_options.dart';
+import 'package:ghita_deck/services/html_image_loader.dart';
+import 'package:ghita_deck/services/image_optimizer_service.dart';
+import 'package:ghita_deck/services/ppt_generator.dart';
 import 'package:image/image.dart' as img;
 
 /// Track 04 (N2) — image-optimizer beta flag: savings gate (≥40% on a

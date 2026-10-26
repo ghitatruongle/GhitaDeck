@@ -6,7 +6,7 @@
 // _MockHttpOverrides is harmless here.
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/providers/ai_provider_manager.dart';
+import 'package:ghita_deck/providers/ai_provider_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

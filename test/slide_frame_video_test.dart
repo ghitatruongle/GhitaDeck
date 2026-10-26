@@ -3,10 +3,10 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
-import 'package:ghita_ppt_converter/services/export_primitives.dart';
-import 'package:ghita_ppt_converter/services/slide_frame_renderer.dart';
-import 'package:ghita_ppt_converter/services/slide_image_export_service.dart';
-import 'package:ghita_ppt_converter/services/video_export_service.dart';
+import 'package:ghita_deck/services/export_primitives.dart';
+import 'package:ghita_deck/services/slide_frame_renderer.dart';
+import 'package:ghita_deck/services/slide_image_export_service.dart';
+import 'package:ghita_deck/services/video_export_service.dart';
 
 Map<String, dynamic> _slide({
   String title = 'Test Slide',

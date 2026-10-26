@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/slide.dart';
-import 'package:ghita_ppt_converter/models/slide_layout.dart';
-import 'package:ghita_ppt_converter/services/screenshot_service.dart';
+import 'package:ghita_deck/models/slide.dart';
+import 'package:ghita_deck/models/slide_layout.dart';
+import 'package:ghita_deck/services/screenshot_service.dart';
 
 /// Track 16 tests — Screenshot & Photo Album (FEAT 13, 14).
 

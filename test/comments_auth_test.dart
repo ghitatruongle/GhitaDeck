@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/comment.dart';
-import 'package:ghita_ppt_converter/models/user_profile.dart';
-import 'package:ghita_ppt_converter/services/auth_service.dart';
-import 'package:ghita_ppt_converter/services/comment_service.dart';
+import 'package:ghita_deck/models/comment.dart';
+import 'package:ghita_deck/models/user_profile.dart';
+import 'package:ghita_deck/services/auth_service.dart';
+import 'package:ghita_deck/services/comment_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

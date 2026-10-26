@@ -1,6 +1,6 @@
 // T03 (v2.0.1-beta.2) — SmartDraftManager tests (phases 3–4).
 //
-// The manager persists drafts under <documents>/GhitaPPT/drafts, so the tests
+// The manager persists drafts under <documents>/GhitaDeck/drafts, so the tests
 // point path_provider at a throwaway temp dir. Crash recovery is exercised by
 // loading through a fresh manager instance — the class is stateless on
 // purpose, everything lives in the files.
@@ -9,8 +9,8 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/slide.dart';
-import 'package:ghita_ppt_converter/services/smart_draft_manager.dart';
+import 'package:ghita_deck/models/slide.dart';
+import 'package:ghita_deck/services/smart_draft_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _pathProviderChannel = MethodChannel('plugins.flutter.io/path_provider');
@@ -91,14 +91,14 @@ void main() {
       await manager.saveDraft([bigSlide]);
 
       final draftFile = File(
-          '${tempDir.path}${Platform.pathSeparator}GhitaPPT'
+          '${tempDir.path}${Platform.pathSeparator}GhitaDeck'
           '${Platform.pathSeparator}drafts${Platform.pathSeparator}'
-          'ghita_ppt_unsaved_draft.json');
+          'ghita_deck_unsaved_draft.json');
       final pointer = jsonDecode(draftFile.readAsStringSync())
           as Map<String, dynamic>;
       expect(pointer.containsKey('slidesFile'), isTrue,
           reason: 'large decks keep only a pointer inline');
-      expect(pointer['slidesFile'], 'ghita_ppt_unsaved_draft.slides.json');
+      expect(pointer['slidesFile'], 'ghita_deck_unsaved_draft.slides.json');
       expect(pointer['slideCount'], 1);
 
       expect(await manager.hasRecoverableDraft(), isTrue);
@@ -109,10 +109,10 @@ void main() {
     test('a later small save removes the stale spill file', () async {
       final manager = SmartDraftManager();
       final draftsDir = Directory(
-          '${tempDir.path}${Platform.pathSeparator}GhitaPPT'
+          '${tempDir.path}${Platform.pathSeparator}GhitaDeck'
           '${Platform.pathSeparator}drafts');
       final spillFile = File('${draftsDir.path}'
-          '${Platform.pathSeparator}ghita_ppt_unsaved_draft.slides.json');
+          '${Platform.pathSeparator}ghita_deck_unsaved_draft.slides.json');
 
       await manager.saveDraft([Slide(title: 'Big', htmlContent: 'x' * 1100000)]);
       expect(spillFile.existsSync(), isTrue);
@@ -129,9 +129,9 @@ void main() {
       await manager.saveDraft([Slide(title: 'Big', htmlContent: 'x' * 1100000)]);
 
       final spillFile = File(
-          '${tempDir.path}${Platform.pathSeparator}GhitaPPT'
+          '${tempDir.path}${Platform.pathSeparator}GhitaDeck'
           '${Platform.pathSeparator}drafts${Platform.pathSeparator}'
-          'ghita_ppt_unsaved_draft.slides.json');
+          'ghita_deck_unsaved_draft.slides.json');
       spillFile.deleteSync();
 
       expect(await manager.hasRecoverableDraft(), isFalse);
@@ -144,7 +144,7 @@ void main() {
     test('purgeDraft removes both the pointer and the spill file', () async {
       final manager = SmartDraftManager();
       final draftsDir = Directory(
-          '${tempDir.path}${Platform.pathSeparator}GhitaPPT'
+          '${tempDir.path}${Platform.pathSeparator}GhitaDeck'
           '${Platform.pathSeparator}drafts');
 
       await manager.saveDraft([Slide(title: 'Big', htmlContent: 'x' * 1100000)]);
@@ -161,9 +161,9 @@ void main() {
       await manager.saveDraft([slide('Whatever')]);
       // Overwrite with garbage, simulating a torn write during a crash.
       final draftFile = File(
-          '${tempDir.path}${Platform.pathSeparator}GhitaPPT'
+          '${tempDir.path}${Platform.pathSeparator}GhitaDeck'
           '${Platform.pathSeparator}drafts${Platform.pathSeparator}'
-          'ghita_ppt_unsaved_draft.json');
+          'ghita_deck_unsaved_draft.json');
       draftFile.writeAsStringSync('{not json at all');
 
       expect(await manager.hasRecoverableDraft(), isFalse);

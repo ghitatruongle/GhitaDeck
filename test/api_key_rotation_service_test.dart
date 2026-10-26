@@ -10,7 +10,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/api_key_rotation_service.dart';
+import 'package:ghita_deck/services/api_key_rotation_service.dart';
 
 void main() {
   late HttpServer server;

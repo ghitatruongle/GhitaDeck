@@ -552,7 +552,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const Divider(height: 24),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Ghita PPT Converter'),
+                    title: const Text('GhitaDeck'),
                     subtitle: Text(l10n.versionInfo(BuildInfo.appVersion, '2026')),
                     trailing: const Chip(label: Text('v${BuildInfo.appVersion}')),
                   ),
@@ -589,7 +589,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final path = await FilePicker.platform.saveFile(
         dialogTitle: 'Save Backup',
         fileName:
-            'ghita_ppt_backup_${DateTime.now().millisecondsSinceEpoch}.json',
+            'ghita_deck_backup_${DateTime.now().millisecondsSinceEpoch}.json',
         type: FileType.custom,
         allowedExtensions: ['json'],
       );

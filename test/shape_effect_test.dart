@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/drawn_shape.dart';
-import 'package:ghita_ppt_converter/models/shape_effect.dart';
-import 'package:ghita_ppt_converter/services/shape_engine.dart';
+import 'package:ghita_deck/models/drawn_shape.dart';
+import 'package:ghita_deck/models/shape_effect.dart';
+import 'package:ghita_deck/services/shape_engine.dart';
 
 void main() {
   group('ShapeEffect — OOXML', () {

@@ -2,14 +2,14 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/accessibility_service.dart';
-import 'package:ghita_ppt_converter/services/addin_service.dart';
-import 'package:ghita_ppt_converter/services/read_aloud_service.dart';
-import 'package:ghita_ppt_converter/services/ribbon_config_service.dart';
-import 'package:ghita_ppt_converter/services/search_service.dart';
-import 'package:ghita_ppt_converter/services/spellcheck_service.dart';
-import 'package:ghita_ppt_converter/services/template_service.dart';
-import 'package:ghita_ppt_converter/services/vba_service.dart';
+import 'package:ghita_deck/services/accessibility_service.dart';
+import 'package:ghita_deck/services/addin_service.dart';
+import 'package:ghita_deck/services/read_aloud_service.dart';
+import 'package:ghita_deck/services/ribbon_config_service.dart';
+import 'package:ghita_deck/services/search_service.dart';
+import 'package:ghita_deck/services/spellcheck_service.dart';
+import 'package:ghita_deck/services/template_service.dart';
+import 'package:ghita_deck/services/vba_service.dart';
 
 void main() {
   // -------------------------------------------------------------------------

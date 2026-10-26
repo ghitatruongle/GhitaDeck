@@ -6,7 +6,7 @@
 // (null/empty), and the no-plugin case (MissingPluginException → false).
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/webview_runtime_service.dart';
+import 'package:ghita_deck/services/webview_runtime_service.dart';
 
 void _mockVersion(String? version) {
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger

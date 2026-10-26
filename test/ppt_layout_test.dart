@@ -3,10 +3,10 @@ import 'dart:io';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/slide.dart';
-import 'package:ghita_ppt_converter/models/slide_layout.dart';
-import 'package:ghita_ppt_converter/services/ppt_generator.dart';
-import 'package:ghita_ppt_converter/services/ppt_layout_registry.dart';
+import 'package:ghita_deck/models/slide.dart';
+import 'package:ghita_deck/models/slide_layout.dart';
+import 'package:ghita_deck/services/ppt_generator.dart';
+import 'package:ghita_deck/services/ppt_layout_registry.dart';
 import 'package:xml/xml.dart' as xml;
 
 /// Track 05 tests — Master & SlideLayout đa dạng.

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/drawn_shape.dart';
-import 'package:ghita_ppt_converter/services/format_painter_service.dart';
+import 'package:ghita_deck/models/drawn_shape.dart';
+import 'package:ghita_deck/services/format_painter_service.dart';
 
 void main() {
   group('FormatSnapshot — text (HTML)', () {

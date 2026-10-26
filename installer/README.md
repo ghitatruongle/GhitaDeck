@@ -1,4 +1,4 @@
-# Installer — GhitaPPT Converter
+# Installer — GhitaDeck
 
 Everything in this folder builds and verifies the Windows installer.
 
@@ -13,9 +13,9 @@ Produces in `installer/output/`:
 
 | File | Purpose |
 |---|---|
-| `GhitaPPT-Setup-<version>.exe` | x64 installer |
-| `GhitaPPT-Setup-<version>.sha256` | checksum for distribution |
-| `GhitaPPT-Setup-<version>.release.json` | manifest (version, hashes, signature status, source revision) |
+| `GhitaDeck-Setup-<version>.exe` | x64 installer |
+| `GhitaDeck-Setup-<version>.sha256` | checksum for distribution |
+| `GhitaDeck-Setup-<version>.release.json` | manifest (version, hashes, signature status, source revision) |
 
 Version numbers come from `pubspec.yaml` — never edit them in the `.iss`.
 
@@ -23,7 +23,7 @@ Version numbers come from `pubspec.yaml` — never edit them in the `.iss`.
 
 | Option | Default | Notes |
 |---|---|---|
-| Install location | `Program Files\GhitaPPT Converter` | The directory page is **always shown**; on upgrade the previously chosen directory is offered |
+| Install location | `Program Files\GhitaDeck` | The directory page is **always shown**; on upgrade the previously chosen directory is offered |
 | Per-user install (no admin) | off | Requires the wizard's "install for me only" choice; works on standard accounts |
 | Desktop shortcut | **off** (opt-in) | Tasks page |
 | Start with Windows | **off** (opt-in) | Writes `HKCU\...\Run` only when ticked; removed on uninstall |
@@ -41,18 +41,25 @@ The installer separates two data groups. **This is a contract with the user.**
 
 | Location | Contents |
 |---|---|
-| `Documents\GhitaPPT\decks` | saved decks |
-| `Documents\GhitaPPT\audio` | slide narration recordings |
-| `Documents\GhitaPPT\drafts` | auto-saved drafts (may hold unsaved work) |
-| `%APPDATA%\Ghita\GhitaPPT Converter\shared_preferences.json` | settings, theme, shortcuts |
-| `%APPDATA%\Ghita\GhitaPPT Converter\flutter_secure_storage.dat` | **AI provider API keys** |
+| `Documents\GhitaDeck\decks` | saved decks |
+| `Documents\GhitaDeck\audio` | slide narration recordings |
+| `Documents\GhitaDeck\drafts` | auto-saved drafts (may hold unsaved work) |
+| `%APPDATA%\Ghita\GhitaDeck\shared_preferences.json` | settings, theme, shortcuts |
+| `%APPDATA%\Ghita\GhitaDeck\flutter_secure_storage.dat` | **AI provider API keys** |
+| `Documents\GhitaPPT\*`, `%APPDATA%\Ghita\GhitaPPT Converter\*` | pre-rename locations — moved to the rows above automatically on first launch |
+
+The pre-rename "GhitaPPT" locations are migrated to the `GhitaDeck` locations on
+first launch of a renamed build (folders renamed when the target is empty, merged
+file-by-file otherwise). Both name sets are listed in Group A and both are
+removed when the user opts into deleting their data.
 
 ### Group B — regenerable data (ALWAYS removed)
 
 | Location | Contents |
 |---|---|
-| `%LOCALAPPDATA%\GhitaPPT\image_cache` | processed-image cache |
-| `%APPDATA%\GhitaPPT\engine.log` | engine audit log |
+| `%LOCALAPPDATA%\GhitaDeck\image_cache` | processed-image cache |
+| `%APPDATA%\GhitaDeck\engine.log` | engine audit log |
+| `%LOCALAPPDATA%\GhitaPPT\image_cache`, `%APPDATA%\GhitaPPT\engine.log` | pre-rename leftovers, cleaned too |
 
 ### Uninstall flows
 

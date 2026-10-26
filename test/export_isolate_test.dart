@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/export_options.dart';
-import 'package:ghita_ppt_converter/services/export_isolate.dart';
-import 'package:ghita_ppt_converter/services/export_primitives.dart';
+import 'package:ghita_deck/models/export_options.dart';
+import 'package:ghita_deck/services/export_isolate.dart';
+import 'package:ghita_deck/services/export_primitives.dart';
 
 /// End-to-end checks for the background-isolate export pipeline.
 ///
@@ -30,7 +30,7 @@ void main() {
       ];
 
   test('reports monotonic per-slide progress through the worker', () async {
-    final dir = await Directory.systemTemp.createTemp('ghita_ppt_prog_');
+    final dir = await Directory.systemTemp.createTemp('ghita_deck_prog_');
     final progress = <ExportProgress>[];
     try {
       await runPptExportInIsolate(
@@ -54,7 +54,7 @@ void main() {
 
   test('cancel mid-job through the worker, then the worker keeps working',
       () async {
-    final dir = await Directory.systemTemp.createTemp('ghita_ppt_cancel_');
+    final dir = await Directory.systemTemp.createTemp('ghita_deck_cancel_');
     final token = ExportCancelToken();
     try {
       // A large deck guarantees the worker is still mid-build when the
@@ -94,7 +94,7 @@ void main() {
   });
 
   test('runPptExportInIsolate builds a valid OOXML package', () async {
-    final dir = await Directory.systemTemp.createTemp('ghita_ppt_iso_');
+    final dir = await Directory.systemTemp.createTemp('ghita_deck_iso_');
     final out = '${dir.path}/out.pptx';
     try {
       final path = await runPptExportInIsolate(sampleSlides(), out);
@@ -112,7 +112,7 @@ void main() {
   });
 
   test('threads auto-advance timing into PPTX via the worker', () async {
-    final dir = await Directory.systemTemp.createTemp('ghita_ppt_iso2_');
+    final dir = await Directory.systemTemp.createTemp('ghita_deck_iso2_');
     final out = '${dir.path}/timed.pptx';
     try {
       final path = await runPptExportInIsolate(
@@ -134,7 +134,7 @@ void main() {
   });
 
   test('threads advanced export options into the worker', () async {
-    final dir = await Directory.systemTemp.createTemp('ghita_ppt_iso_options_');
+    final dir = await Directory.systemTemp.createTemp('ghita_deck_iso_options_');
     final out = '${dir.path}/options.pptx';
     try {
       await runPptExportInIsolate(
@@ -183,7 +183,7 @@ void main() {
   });
 
   test('reuses the persistent worker across consecutive exports', () async {
-    final dir = await Directory.systemTemp.createTemp('ghita_ppt_reuse_');
+    final dir = await Directory.systemTemp.createTemp('ghita_deck_reuse_');
     try {
       // Several PPT + HTML jobs run against the same long-lived worker.
       for (var i = 0; i < 3; i++) {

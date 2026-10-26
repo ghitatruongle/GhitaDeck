@@ -3,12 +3,12 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/doc_security_service.dart';
-import 'package:ghita_ppt_converter/services/odp_export_service.dart';
-import 'package:ghita_ppt_converter/services/outline_export_service.dart';
-import 'package:ghita_ppt_converter/services/package_format_service.dart';
-import 'package:ghita_ppt_converter/services/package_service.dart';
-import 'package:ghita_ppt_converter/services/print_service.dart';
+import 'package:ghita_deck/services/doc_security_service.dart';
+import 'package:ghita_deck/services/odp_export_service.dart';
+import 'package:ghita_deck/services/outline_export_service.dart';
+import 'package:ghita_deck/services/package_format_service.dart';
+import 'package:ghita_deck/services/package_service.dart';
+import 'package:ghita_deck/services/print_service.dart';
 
 Map<String, dynamic> _slide(String title, String body,
     {bool hidden = false}) {

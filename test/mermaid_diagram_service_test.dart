@@ -5,7 +5,7 @@
 // user text with quotes, angle brackets and ampersands must come out escaped,
 // never as live markup.
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/mermaid_diagram_service.dart';
+import 'package:ghita_deck/services/mermaid_diagram_service.dart';
 
 void main() {
   final service = MermaidDiagramService();

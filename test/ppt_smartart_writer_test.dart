@@ -5,8 +5,8 @@
 // diagram engine — and node/cxn model ids are id+1 with the document root at
 // 0. Every produced part must stay well-formed XML.
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/smartart.dart';
-import 'package:ghita_ppt_converter/services/ppt_smartart_writer.dart';
+import 'package:ghita_deck/models/smartart.dart';
+import 'package:ghita_deck/services/ppt_smartart_writer.dart';
 import 'package:xml/xml.dart';
 
 SmartArtGraph _graph({

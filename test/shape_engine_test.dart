@@ -3,11 +3,11 @@ import 'dart:io';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/drawn_shape.dart';
-import 'package:ghita_ppt_converter/services/shape_engine.dart';
-import 'package:ghita_ppt_converter/services/html_export_service.dart';
-import 'package:ghita_ppt_converter/services/pdf_export_service.dart';
-import 'package:ghita_ppt_converter/services/ppt_generator.dart';
+import 'package:ghita_deck/models/drawn_shape.dart';
+import 'package:ghita_deck/services/shape_engine.dart';
+import 'package:ghita_deck/services/html_export_service.dart';
+import 'package:ghita_deck/services/pdf_export_service.dart';
+import 'package:ghita_deck/services/ppt_generator.dart';
 
 /// Track 21 tests — Shape engine, Merge, Freeform (FEAT 25, 26).
 void main() {

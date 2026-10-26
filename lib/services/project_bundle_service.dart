@@ -167,7 +167,7 @@ class ProjectBundleService {
 
   /// Unpacks and loads a `.ghita` bundle file from [sourcePath]. Media
   /// entries are extracted to [extractDir] (default: the app documents
-  /// `GhitaPPT/audio/` dir); tests inject a temp dir.
+  /// `GhitaDeck/audio/` dir); tests inject a temp dir.
   Future<Map<String, dynamic>?> loadProjectBundle(
     String sourcePath, {
     String? extractDir,
@@ -268,7 +268,7 @@ htmlContent: HtmlSanitizerService.sanitize(slide.htmlContent).html,
             String dirPath = extractDir ?? '';
             if (dirPath.isEmpty) {
               final dir = await getApplicationDocumentsDirectory();
-              dirPath = p.join(dir.path, 'GhitaPPT', 'audio');
+              dirPath = p.join(dir.path, 'GhitaDeck', 'audio');
             }
             final audioDir = Directory(dirPath);
             if (!await audioDir.exists()) {

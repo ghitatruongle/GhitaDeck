@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/drawn_shape.dart';
-import 'package:ghita_ppt_converter/services/html_export_service.dart';
-import 'package:ghita_ppt_converter/services/morph_service.dart';
+import 'package:ghita_deck/models/drawn_shape.dart';
+import 'package:ghita_deck/services/html_export_service.dart';
+import 'package:ghita_deck/services/morph_service.dart';
 
 void main() {
   DrawnShape shape(String id, ShapeType type, double x, double y, double w, double h,

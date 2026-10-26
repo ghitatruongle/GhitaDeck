@@ -1,9 +1,9 @@
-# Ghita PPT Converter v2.0.5-beta1
+# GhitaDeck
 
 Flutter application for creating PowerPoint presentations with HTML support and AI-powered content generation.
 
 ## Version
-- **Current version:** `2.0.5-beta.1+5`
+- **Current version:** `0.0.0-preview+1` (GhitaDeck series — installs over every previous GhitaPPT Converter build)
 - **Release status:** Beta — demo (Rust core + DOCX report + image optimizer beta)
 
 ## Features
@@ -174,7 +174,7 @@ implementation underneath, and the engine choice is per-isolate:
   readiness decision at job start so one export never mixes backends.
 - **Fallback contract:** a missing/broken/old DLL never throws out of
   `ensure*ReadyOnce` — it resolves to "not usable" → the Dart path runs.
-  Debugging: `%APPDATA%\GhitaPPT\engine.log` (local, PII-free) records every
+  Debugging: `%APPDATA%\GhitaDeck\engine.log` (local, PII-free) records every
   init/fallback transition.
 - **UI-isolate rule:** anything that renders frames (the slide-frame
   renderer) uses `HtmlImageLoader.load(dartOnly: true)` — synchronous FRB

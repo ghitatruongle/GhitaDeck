@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/main.dart';
+import 'package:ghita_deck/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -15,7 +15,7 @@ void main() {
     await tester.pumpWidget(const MyApp());
     await tester.pumpAndSettle();
     expect(
-      find.bySemanticsLabel(RegExp(r'GhitaPPT presentation workspace')),
+      find.bySemanticsLabel(RegExp(r'GhitaDeck presentation workspace')),
       findsOneWidget,
     );
     // T15: the sidebar tooltip no longer claims a Ctrl+1 binding that does

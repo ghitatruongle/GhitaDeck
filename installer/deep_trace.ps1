@@ -1,5 +1,5 @@
 # ============================================================================
-# GhitaPPT Deep Trace Scanner
+# GhitaDeck Deep Trace Scanner
 # Finds ALL remaining traces anywhere on the system
 # REQUIRES: Administrator privileges
 # ============================================================================
@@ -8,7 +8,7 @@ $ErrorActionPreference = "SilentlyContinue"
 
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor White
-Write-Host "  GhitaPPT Deep Trace Scanner" -ForegroundColor White
+Write-Host "  GhitaDeck Deep Trace Scanner" -ForegroundColor White
 Write-Host "============================================================" -ForegroundColor White
 Write-Host ""
 
@@ -20,7 +20,7 @@ if (-not $isAdmin) {
 }
 
 $found = @()
-$searchTerms = @('ghita', 'GhitaPPT', 'GHITA')
+$searchTerms = @('ghita_deck', 'ghita_ppt', 'ghita', 'GhitaPPT', 'GHITA')
 
 function Search-Registry {
     param([string]$path, [string]$label)
@@ -132,7 +132,7 @@ Write-Host "============================================================" -Foreg
 Write-Host ""
 
 if ($found.Count -eq 0) {
-    Write-Host "  No traces of GhitaPPT found anywhere!" -ForegroundColor Green
+    Write-Host "  No traces of GhitaPPT/GhitaDeck found anywhere!" -ForegroundColor Green
 } else {
     Write-Host "  Found $($found.Count) items:" -ForegroundColor Yellow
     foreach ($item in $found) {

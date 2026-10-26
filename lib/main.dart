@@ -12,12 +12,15 @@ import 'providers/shortcuts_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
 import 'services/collaboration_service.dart';
+import 'services/legacy_path_migration.dart';
 import 'services/rust_engine.dart';
 import 'theme/app_theme.dart';
 import 'l10n/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await LegacyPathMigration.run();
 
   // window_manager must be initialized before runApp for the editor's
   // fullscreen toggle (View tab) and any window-level operations to work.
@@ -82,7 +85,7 @@ class MyApp extends StatelessWidget {
       child: Consumer3<AppProvider, ThemeProvider, LocaleProvider>(
         builder: (context, appProvider, themeProvider, localeProvider, _) {
           return MaterialApp(
-            title: 'Ghita PPT Converter',
+            title: 'GhitaDeck',
             debugShowCheckedModeBanner: false,
             locale: localeProvider.locale,
             supportedLocales: AppLocalizations.supportedLocales,

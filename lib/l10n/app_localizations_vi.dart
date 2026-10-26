@@ -9,7 +9,7 @@ class AppLocalizationsVi extends AppLocalizations {
   AppLocalizationsVi([String locale = 'vi']) : super(locale);
 
   @override
-  String get appTitle => 'Ghita PPT Converter';
+  String get appTitle => 'GhitaDeck';
 
   @override
   String get homeTitle => 'Trang Chủ';
@@ -822,7 +822,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get workspaceSemantics =>
-      'Không gian làm việc bài thuyết trình GhitaPPT';
+      'Không gian làm việc bài thuyết trình GhitaDeck';
 
   @override
   String exportProgress(int done, int total) {

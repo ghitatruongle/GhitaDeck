@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/object_animation.dart';
-import 'package:ghita_ppt_converter/services/animation_ooxml.dart';
+import 'package:ghita_deck/models/object_animation.dart';
+import 'package:ghita_deck/services/animation_ooxml.dart';
 
 void main() {
   group('Track 32 — p:timing OOXML tree', () {

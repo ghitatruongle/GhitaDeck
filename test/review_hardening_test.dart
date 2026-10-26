@@ -13,8 +13,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/providers/ai_provider_manager.dart';
-import 'package:ghita_ppt_converter/services/ppt_generator.dart';
+import 'package:ghita_deck/providers/ai_provider_manager.dart';
+import 'package:ghita_deck/services/ppt_generator.dart';
 
 void main() {
   group('AIProviderConfig.fromMap hardening', () {

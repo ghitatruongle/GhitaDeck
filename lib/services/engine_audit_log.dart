@@ -1,9 +1,11 @@
 import 'dart:io';
 
+import 'package:path/path.dart' as p;
+
 /// Local-only engine audit trail (T14).
 ///
 /// Every Rust init attempt, fallback and backend transition lands in
-/// `<AppData>\GhitaPPT\engine.log` (or `$HOME` on non-Windows) as one short
+/// `<AppData>\GhitaDeck\engine.log` (or `$HOME` on non-Windows) as one short
 /// line. The log is deliberately PII-free (no deck content, no user paths, no
 /// URLs), purely local (no network) and written best-effort — an audit
 /// failure must never break an export. The path resolves with plain `dart:io`
@@ -14,9 +16,13 @@ class EngineAuditLog {
   /// Test hook: redirects the log to a fixed path.
   static String? debugOverridePath;
 
-  static String _path() => debugOverridePath ??
-      '${Platform.isWindows ? (Platform.environment['APPDATA'] ?? Directory.systemTemp.path) : (Platform.environment['HOME'] ?? Directory.systemTemp.path)}'
-      '\\GhitaPPT\\engine.log';
+  static String _path() {
+    if (debugOverridePath != null) return debugOverridePath!;
+    final base = Platform.isWindows
+        ? (Platform.environment['APPDATA'] ?? Directory.systemTemp.path)
+        : (Platform.environment['HOME'] ?? Directory.systemTemp.path);
+    return p.join(base, 'GhitaDeck', 'engine.log');
+  }
 
   static Future<void> append(String event, [String? detail]) async {
     try {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/slide_layout.dart';
-import 'package:ghita_ppt_converter/screens/widgets/layout_picker.dart';
+import 'package:ghita_deck/models/slide_layout.dart';
+import 'package:ghita_deck/screens/widgets/layout_picker.dart';
 
 /// Layout picker widget coverage: grid rendering (which draws every mini
 /// layout through the shared painter), dialog flow and popup-menu flow.

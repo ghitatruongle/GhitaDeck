@@ -3,12 +3,12 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/providers/config_service.dart';
-import 'package:ghita_ppt_converter/services/advanced_import_service.dart';
-import 'package:ghita_ppt_converter/services/ai_pipeline_service.dart';
-import 'package:ghita_ppt_converter/services/search_service.dart';
-import 'package:ghita_ppt_converter/services/spellcheck_service.dart';
-import 'package:ghita_ppt_converter/services/wysiwyg_service.dart';
+import 'package:ghita_deck/providers/config_service.dart';
+import 'package:ghita_deck/services/advanced_import_service.dart';
+import 'package:ghita_deck/services/ai_pipeline_service.dart';
+import 'package:ghita_deck/services/search_service.dart';
+import 'package:ghita_deck/services/spellcheck_service.dart';
+import 'package:ghita_deck/services/wysiwyg_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

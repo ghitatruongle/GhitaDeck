@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'SilentlyContinue'
 $found = @()
-$patterns = @('ghita_ppt', 'GhitaPPT', 'ghita-ppt')
+$patterns = @('ghita_deck', 'ghita_ppt', 'GhitaPPT', 'ghita-ppt')
 
 function Check-Path {
     param([string]$p, [string]$label)
@@ -23,7 +23,7 @@ function Search-Directory {
 
 Write-Host ''
 Write-Host '===========================================' -ForegroundColor White
-Write-Host '  DEEP TRACE SCAN - GhitaPPT' -ForegroundColor White
+Write-Host '  DEEP TRACE SCAN - GhitaDeck' -ForegroundColor White
 Write-Host '===========================================' -ForegroundColor White
 
 Write-Host ''
@@ -36,7 +36,7 @@ Write-Host ''
 Write-Host '[2] User data folders' -ForegroundColor Yellow
 Check-Path 'C:\Users\Acer\AppData\Roaming\com.example\ghita_ppt_converter' 'Roaming data'
 Check-Path 'C:\Users\Acer\AppData\Local\com.example\ghita_ppt_converter' 'Local data'
-Check-Path 'C:\Users\Acer\AppData\Local\flutter_webview_windows\ghita_ppt_converter' 'WebView cache'
+Check-Path 'C:\Users\Acer\AppData\Local\flutter_webview_windows\ghita_deck' 'WebView cache'
 Check-Path 'C:\Users\Acer\AppData\Local\GhitaPPT' 'Local dir'
 Check-Path 'C:\Users\Acer\AppData\Roaming\GhitaPPT' 'Roaming dir'
 

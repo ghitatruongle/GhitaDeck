@@ -21,15 +21,15 @@ import '../models/slide.dart';
 /// file next to the pointer file; the pointer keeps only metadata + a count.
 /// Reading a legacy draft (slides inline) still works.
 class SmartDraftManager {
-  static const String _draftFileName = 'ghita_ppt_unsaved_draft.json';
-  static const String _slidesFileName = 'ghita_ppt_unsaved_draft.slides.json';
+  static const String _draftFileName = 'ghita_deck_unsaved_draft.json';
+  static const String _slidesFileName = 'ghita_deck_unsaved_draft.slides.json';
 
   /// 1 MB of JSON slides — beyond this the pointer file stays small.
   static const int _largeDeckThreshold = 1 << 20;
 
   Future<File> _getDraftFile() async {
     final dir = await getApplicationDocumentsDirectory();
-    final draftsDir = Directory(p.join(dir.path, 'GhitaPPT', 'drafts'));
+    final draftsDir = Directory(p.join(dir.path, 'GhitaDeck', 'drafts'));
     if (!await draftsDir.exists()) {
       await draftsDir.create(recursive: true);
     }
@@ -38,7 +38,7 @@ class SmartDraftManager {
 
   Future<File> _getSlidesFile() async {
     final dir = await getApplicationDocumentsDirectory();
-    final draftsDir = Directory(p.join(dir.path, 'GhitaPPT', 'drafts'));
+    final draftsDir = Directory(p.join(dir.path, 'GhitaDeck', 'drafts'));
     if (!await draftsDir.exists()) {
       await draftsDir.create(recursive: true);
     }
@@ -63,15 +63,15 @@ class SmartDraftManager {
         await slidesFile.writeAsString(slidesJson, flush: true);
         draftData['slidesFile'] = _slidesFileName;
         draftData['slideCount'] = slides.length;
+        await file.writeAsString(jsonEncode(draftData), flush: true);
       } else {
         draftData['slides'] = jsonDecode(slidesJson);
-        // Remove any stale spill file from an earlier large save.
+        await file.writeAsString(jsonEncode(draftData), flush: true);
         final slidesFile = await _getSlidesFile();
         if (await slidesFile.exists()) {
           await slidesFile.delete();
         }
       }
-      await file.writeAsString(jsonEncode(draftData), flush: true);
       debugPrint('SmartDraftManager: Draft auto-saved (${slides.length} slides)');
     } catch (e) {
       debugPrint('SmartDraftManager Error saving draft: $e');

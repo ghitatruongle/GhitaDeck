@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/presentation_recorder_service.dart';
+import 'package:ghita_deck/services/presentation_recorder_service.dart';
 
 /// Track 39 tests — Record presentation (FEAT 65).
 void main() {

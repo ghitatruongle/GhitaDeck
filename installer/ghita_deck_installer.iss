@@ -1,19 +1,21 @@
-; GhitaPPT Converter - Inno Setup definition
 ; Version values are supplied by build_installer.ps1 from pubspec.yaml.
 
-#define MyAppName "GhitaPPT Converter"
+#define MyAppName "GhitaDeck"
 #ifndef MyAppVersion
-  #define MyAppVersion "2.0.5.5"
+  #define MyAppVersion "0.0.0"
 #endif
 #ifndef MyAppBuild
-  #define MyAppBuild "2"
+  #define MyAppBuild "1"
 #endif
 #ifndef MyAppDisplayVersion
-  #define MyAppDisplayVersion "2.0.5-beta.3+7"
+  #define MyAppDisplayVersion "0.0.0-preview+1"
+#endif
+#ifndef MyAppFileBase
+  #define MyAppFileBase "0.0.0-preview"
 #endif
 #define MyAppPublisher "Ghita"
 #define MyAppURL "https://github.com/ghitatruongle/GhitaPowerPointConverter"
-#define MyAppExeName "ghita_ppt_converter.exe"
+#define MyAppExeName "ghita_deck.exe"
 #define MyAppCopyright "Copyright (C) 2026 Ghita"
 #define MyAppDescription "PowerPoint creator with AI integration"
 
@@ -36,7 +38,7 @@ DisableDirPage=no
 AllowNoIcons=yes
 UsePreviousAppDir=yes
 OutputDir=output
-OutputBaseFilename=GhitaPPT-Setup-{#MyAppFileBase}
+OutputBaseFilename=GhitaDeck-Setup-{#MyAppFileBase}
 SetupIconFile=app_icon.ico
 Compression=lzma2/ultra64
 SolidCompression=yes
@@ -74,7 +76,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 ; T18.3: auto-start is OPT-IN — unchecked by default; the Run key is written
 ; only when the user ticks it.
-Name: "autostart"; Description: "Khởi động GhitaPPT cùng Windows"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "autostart"; Description: "Khởi động GhitaDeck cùng Windows"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
 Source: "..\build\windows\x64\runner\Release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
@@ -103,17 +105,15 @@ Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}
 ; optional removal branch lives in [Code] and defaults to "keep".
 Type: filesandordirs; Name: "{localappdata}\GhitaPPT\image_cache"
 Type: files; Name: "{userappdata}\GhitaPPT\engine.log"
+Type: filesandordirs; Name: "{localappdata}\GhitaDeck\image_cache"
+Type: files; Name: "{userappdata}\GhitaDeck\engine.log"
 
 [Code]
 // T18 — installer polish: free-space precheck, opt-in user-data removal on
 // uninstall, and a report the verification script can assert against.
 //
-// Data groups (see installer/README.md):
-//   Group A (KEPT by default): Documents\GhitaPPT  (decks / audio / drafts)
-//                              AppData\Roaming\Ghita\GhitaPPT Converter
-//                              (shared_preferences.json + flutter_secure_storage.dat)
-//   Group B (always cleaned) : AppData\Local\GhitaPPT\image_cache
-//                              AppData\Roaming\GhitaPPT\engine.log
+// Data groups (see installer/README.md): Group A is kept unless the user
+// opts in; Group B is always removed. Both folder-name generations are listed.
 
 const
   // ~300 MB: comfortably above the ~160 MB install size, so a nearly-full disk
@@ -134,10 +134,21 @@ begin
     begin
       if MsgBox('Ổ đĩa còn ít dung lượng trống (' +
                 IntToStr(FreeBytes div (1024 * 1024)) + ' MB).' + #13#10 +
-                'GhitaPPT cần khoảng 300 MB để cài đặt.' + #13#10#13#10 +
+                'GhitaDeck cần khoảng 300 MB để cài đặt.' + #13#10#13#10 +
                 'Vẫn tiếp tục?', mbConfirmation, MB_YESNO) = IDNO then
         Result := False;
     end;
+  end;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssInstall then
+  begin
+    RegDeleteValue(HKEY_CURRENT_USER,
+      'Software\Microsoft\Windows\CurrentVersion\Run', 'GhitaPPT Converter');
+    RegDeleteValue(HKEY_CURRENT_USER,
+      'Software\Microsoft\Windows\CurrentVersion\Run', 'GhitaPPT');
   end;
 end;
 
@@ -149,11 +160,11 @@ begin
   // explicit answer.
   if not UninstallSilent then
     RemoveUserData := MsgBox(
-      'Gỡ GhitaPPT Converter?' + #13#10#13#10 +
+      'Gỡ GhitaDeck?' + #13#10#13#10 +
       'Dữ liệu của bạn (deck, ghi chú, bản nháp, cài đặt và API key) sẽ được GIỮ LẠI.' + #13#10#13#10 +
       'Chọn "Có" để xoá TOÀN BỘ dữ liệu người dùng kèm theo.' + #13#10 +
       'Chọn "Không" để chỉ gỡ ứng dụng và giữ nguyên dữ liệu.',
-      mbConfirmation, MB_YESNO) = IDYES;
+      mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES;
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
@@ -161,6 +172,10 @@ begin
   if CurUninstallStep = usUninstall then
   begin
     // Group B — always safe to remove (regenerated on the next launch).
+    DelTree(ExpandConstant('{localappdata}\GhitaDeck\image_cache'), True, True, True);
+    DeleteFile(ExpandConstant('{userappdata}\GhitaDeck\engine.log'));
+    RemoveDir(ExpandConstant('{userappdata}\GhitaDeck'));
+
     DelTree(ExpandConstant('{localappdata}\GhitaPPT\image_cache'), True, True, True);
     DeleteFile(ExpandConstant('{userappdata}\GhitaPPT\engine.log'));
     RemoveDir(ExpandConstant('{userappdata}\GhitaPPT'));
@@ -168,7 +183,10 @@ begin
     if RemoveUserData then
     begin
       // Group A — only after the explicit opt-in above.
+      DelTree(ExpandConstant('{userdocs}\GhitaDeck'), True, True, True);
       DelTree(ExpandConstant('{userdocs}\GhitaPPT'), True, True, True);
+      DelTree(ExpandConstant('{userappdata}\Ghita\GhitaDeck'),
+              True, True, True);
       DelTree(ExpandConstant('{userappdata}\Ghita\GhitaPPT Converter'),
               True, True, True);
     end;
@@ -178,15 +196,15 @@ end;
 [Messages]
 ; Only the "vietnamese" entry needs overrides; "english" falls back to
 ; compiler:Default.isl in full.
-vietnamese.SetupAppTitle=Trình cài đặt GhitaPPT
+vietnamese.SetupAppTitle=Trình cài đặt GhitaDeck
 vietnamese.SetupWindowTitle=Trình cài đặt %1
-vietnamese.WelcomeLabel1=Chào mừng đến với trình cài đặt GhitaPPT Converter
+vietnamese.WelcomeLabel1=Chào mừng đến với trình cài đặt GhitaDeck
 vietnamese.WelcomeLabel2=Trình cài đặt sẽ cài [name/ver] lên máy của bạn.%n%nNên đóng các ứng dụng khác trước khi tiếp tục.
 vietnamese.ExitSetupTitle=Thoát trình cài đặt
 vietnamese.ExitSetupMessage=Chưa cài xong. Nếu thoát bây giờ, ứng dụng sẽ không được cài đặt.%n%nVẫn thoát?
 vietnamese.ButtonYes=&Có
 vietnamese.ButtonNo=&Không
-vietnamese.SelectDirDesc=Chọn thư mục để cài đặt GhitaPPT Converter.
+vietnamese.SelectDirDesc=Chọn thư mục để cài đặt GhitaDeck.
 vietnamese.SelectDirLabel3=Trình cài đặt sẽ cài [name] vào thư mục sau.
 vietnamese.SelectDirBrowseLabel=Bấm "Tiếp" để dùng thư mục này. Nếu muốn đổi, bấm "Duyệt...".
 vietnamese.SelectTasksDesc=Chọn các tác vụ bổ sung cần thực hiện khi cài đặt.

@@ -1,5 +1,5 @@
 Add-Type -AssemblyName System.Drawing
-$dir = 'D:\GhitaPPT\tool\template_mockups'
+$dir = 'E:\GhitaPPT\tool\template_mockups'
 $expect = @{
   'business_A'  = '#0F1F33'
   'creative_C'  = '#170A26'

@@ -162,7 +162,10 @@ class OdpExportService {
     final images = <(String, Uint8List)>[];
     final contentXml = buildContentXml(slides, images: images);
     final archive = Archive();
-    archive.addFile(ArchiveFile('mimetype', _mime.length, _mime.codeUnits));
+    final mimetypeEntry =
+        ArchiveFile('mimetype', _mime.length, _mime.codeUnits)
+          ..compress = false;
+    archive.addFile(mimetypeEntry);
     archive.addFile(
         ArchiveFile('content.xml', utf8.encode(contentXml).length, utf8.encode(contentXml)));
     archive.addFile(ArchiveFile('styles.xml', _styles.length, _styles.codeUnits));
@@ -191,7 +194,7 @@ class OdpExportService {
 
   static const String _meta = '''<?xml version="1.0" encoding="UTF-8"?>
 <office:document-meta xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:meta="urn:oasis:names:tc:opendocument:xmlns:meta:1.0" office:version="1.2">
- <office:meta><meta:generator>Ghita PPT Converter</meta:generator></office:meta>
+ <office:meta><meta:generator>GhitaDeck</meta:generator></office:meta>
 </office:document-meta>''';
 
   static const String _settings = '''<?xml version="1.0" encoding="UTF-8"?>

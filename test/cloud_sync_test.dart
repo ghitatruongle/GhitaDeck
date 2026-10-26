@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/cloud_sync_service.dart';
-import 'package:ghita_ppt_converter/services/version_history_service.dart';
+import 'package:ghita_deck/services/cloud_sync_service.dart';
+import 'package:ghita_deck/services/version_history_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 

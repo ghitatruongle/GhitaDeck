@@ -4,7 +4,7 @@ import io
 import os
 
 B = "tool/template_mockups"
-OUT = os.path.join("D:/GhitaPPT", B)
+OUT = os.path.join("E:/GhitaPPT", B)
 
 DOT = "\u25CF"
 

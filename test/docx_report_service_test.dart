@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/docx_report_service.dart';
+import 'package:ghita_deck/services/docx_report_service.dart';
 import 'package:xml/xml.dart';
 
 /// Track 03 (N1) — DOCX report: package structure, Vietnamese/escaping

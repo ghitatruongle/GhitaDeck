@@ -98,7 +98,7 @@ class ConfigService {
   // ---- Slides & theme (non-secret) ----
 
   /// Track 65 OPT 27: decks whose serialized slides exceed 1 MB are spilled
-  /// to `<docs>/GhitaPPT/decks/presentation_slides.json`; SharedPreferences
+  /// to `<docs>/GhitaDeck/decks/presentation_slides.json`; SharedPreferences
   /// then holds only a file pointer (and a legacy inline key is removed).
   /// Load is backward compatible with decks saved inline before this change.
   Future<void> saveSlides(List<Map<String, dynamic>> slides, String effectName,
@@ -128,7 +128,7 @@ class ConfigService {
     final jsonStr = jsonEncode(slides);
     if (utf8.encode(jsonStr).length > _largeDeckThreshold) {
       final dir = await getApplicationDocumentsDirectory();
-      final decksDir = Directory(p.join(dir.path, 'GhitaPPT', 'decks'));
+      final decksDir = Directory(p.join(dir.path, 'GhitaDeck', 'decks'));
       await decksDir.create(recursive: true);
       final file = File(p.join(decksDir.path, 'presentation_slides.json'));
       await _writeTextAtomically(file, jsonStr);

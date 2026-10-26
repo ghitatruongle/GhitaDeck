@@ -11,7 +11,7 @@ $cases = @{
     'minimal'   = '#F7F9F4'
 }
 
-$dir = 'D:/GhitaPPT/tool/template_previews'
+$dir = 'E:/GhitaPPT/tool/template_previews'
 $fail = $false
 
 foreach ($slug in $cases.Keys) {

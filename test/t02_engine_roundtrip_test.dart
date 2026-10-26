@@ -9,12 +9,12 @@ import 'dart:io';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/chart_data.dart';
-import 'package:ghita_ppt_converter/models/drawn_shape.dart';
-import 'package:ghita_ppt_converter/models/smartart.dart';
-import 'package:ghita_ppt_converter/services/chart_service.dart';
-import 'package:ghita_ppt_converter/services/ppt_generator.dart';
-import 'package:ghita_ppt_converter/services/smartart_service.dart';
+import 'package:ghita_deck/models/chart_data.dart';
+import 'package:ghita_deck/models/drawn_shape.dart';
+import 'package:ghita_deck/models/smartart.dart';
+import 'package:ghita_deck/services/chart_service.dart';
+import 'package:ghita_deck/services/ppt_generator.dart';
+import 'package:ghita_deck/services/smartart_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

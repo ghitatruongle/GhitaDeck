@@ -637,9 +637,14 @@ fn extract_blocks_inner(element: &Handle, inherited: &HashMap<String, String>) -
         if tag == "video" && attr_bool(&node, "data-video") {
             let dv = attr_str(&node, "data-video").unwrap_or_default();
             let poster = attr_str(&node, "poster").unwrap_or_default();
+            let src = attr_str(&node, "src").unwrap_or_default();
             s.add_block(
                 "video",
-                &[("data-video", dv.as_str()), ("poster", poster.as_str())],
+                &[
+                    ("data-video", dv.as_str()),
+                    ("poster", poster.as_str()),
+                    ("src", src.as_str()),
+                ],
             );
             continue;
         }

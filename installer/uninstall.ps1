@@ -3,7 +3,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$productName = "GhitaPPT Converter"
+$productName = "GhitaDeck"
 $appId = "{A3F8E1C2-5B7D-4E9A-B6C1-2D3F4A5B6C7D}_is1"
 
 function Find-RegisteredUninstaller {
@@ -33,7 +33,10 @@ function Find-RegisteredUninstaller {
 $uninstaller = Find-RegisteredUninstaller
 if (-not $uninstaller) {
     $knownPaths = @(
+        (Join-Path $env:LOCALAPPDATA "Programs\GhitaDeck\unins000.exe"),
         (Join-Path $env:LOCALAPPDATA "Programs\GhitaPPT Converter\unins000.exe"),
+        (Join-Path $env:ProgramFiles "GhitaDeck\unins000.exe"),
+        (Join-Path ${env:ProgramFiles(x86)} "GhitaDeck\unins000.exe"),
         (Join-Path $env:ProgramFiles "GhitaPPT Converter\unins000.exe"),
         (Join-Path ${env:ProgramFiles(x86)} "GhitaPPT Converter\unins000.exe")
     )
@@ -45,7 +48,11 @@ if (-not $uninstaller) {
 }
 
 $arguments = if ($Silent) { "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART" } else { "" }
-$process = Start-Process -FilePath $uninstaller -ArgumentList $arguments -Wait -PassThru
+$process = if ($arguments) {
+    Start-Process -FilePath $uninstaller -ArgumentList $arguments -Wait -PassThru
+} else {
+    Start-Process -FilePath $uninstaller -Wait -PassThru
+}
 if ($process.ExitCode -ne 0) {
     throw "The official uninstaller exited with code $($process.ExitCode)."
 }

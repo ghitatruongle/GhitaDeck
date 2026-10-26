@@ -4,8 +4,8 @@
 // signed shoelace areas stay positive for outer loops and negative for holes
 // ("holes are separate loops with reversed winding" per the library contract).
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/models/drawn_shape.dart';
-import 'package:ghita_ppt_converter/services/polygon_boolean.dart';
+import 'package:ghita_deck/models/drawn_shape.dart';
+import 'package:ghita_deck/services/polygon_boolean.dart';
 
 /// Signed shoelace area of one loop (CCW > 0, CW < 0).
 double _loopArea(List<Offset2D> loop) {

@@ -3,12 +3,12 @@ import 'dart:io';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/action_button_service.dart';
-import 'package:ghita_ppt_converter/services/equation_service.dart';
-import 'package:ghita_ppt_converter/services/ole_service.dart';
-import 'package:ghita_ppt_converter/services/symbol_service.dart';
-import 'package:ghita_ppt_converter/services/html_export_service.dart';
-import 'package:ghita_ppt_converter/services/ppt_generator.dart';
+import 'package:ghita_deck/services/action_button_service.dart';
+import 'package:ghita_deck/services/equation_service.dart';
+import 'package:ghita_deck/services/ole_service.dart';
+import 'package:ghita_deck/services/symbol_service.dart';
+import 'package:ghita_deck/services/html_export_service.dart';
+import 'package:ghita_deck/services/ppt_generator.dart';
 
 /// Track 18 tests — Action buttons, Equation, Symbol (FEAT 17, 18, 19, 20).
 void main() {

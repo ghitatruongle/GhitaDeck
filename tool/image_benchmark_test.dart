@@ -3,8 +3,8 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ghita_ppt_converter/services/image_codec.dart';
-import 'package:ghita_ppt_converter/src/rust/api/image.dart' as rust_api;
+import 'package:ghita_deck/services/image_codec.dart';
+import 'package:ghita_deck/src/rust/api/image.dart' as rust_api;
 import 'package:image/image.dart' as img;
 
 /// Track 06 (ghita_image) benchmark — deck image pipeline.

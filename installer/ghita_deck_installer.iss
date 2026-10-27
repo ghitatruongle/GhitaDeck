@@ -5,13 +5,13 @@
   #define MyAppVersion "0.0.0"
 #endif
 #ifndef MyAppBuild
-  #define MyAppBuild "1"
+  #define MyAppBuild "2"
 #endif
 #ifndef MyAppDisplayVersion
-  #define MyAppDisplayVersion "0.0.0-preview+1"
+  #define MyAppDisplayVersion "0.0.0+2"
 #endif
 #ifndef MyAppFileBase
-  #define MyAppFileBase "0.0.0-preview"
+  #define MyAppFileBase "0.0.0"
 #endif
 #define MyAppPublisher "Ghita"
 #define MyAppURL "https://github.com/ghitatruongle/GhitaPowerPointConverter"
@@ -82,6 +82,11 @@ Name: "autostart"; Description: "Khởi động GhitaDeck cùng Windows"; GroupD
 Source: "..\build\windows\x64\runner\Release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\build\windows\x64\runner\Release\*.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\build\windows\x64\runner\Release\data\*"; DestDir: "{app}\data"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+[InstallDelete]
+Type: files; Name: "{app}\ghita_ppt_converter.exe"
+Type: files; Name: "{group}\GhitaPPT Converter.lnk"
+Type: files; Name: "{group}\Uninstall GhitaPPT Converter.lnk"
 
 [Icons]
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon

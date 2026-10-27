@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.0] - 2026-10-27 — GhitaDeck chính thức
+
+- **Chốt chuỗi version:** bỏ hậu tố preview, kênh phát hành `preview` → `stable`; buildNumber 2 (FileVersion `0.0.0.2`). `coreVersion` giữ `2.0.5-beta.3` — engine Rust không đổi.
+- **Cài đè được bản `0.0.0-preview`** và mọi bản GhitaPPT Converter trước đó (AppId Inno giữ nguyên GUID qua các bản; `UsePreviousAppDir` được test hợp đồng khoá; dữ liệu tự chuyển nhà từ lần chạy đầu của bản đổi tên).
+- **Danh sách xanh:** `flutter analyze` 0 issue · `l10n_audit` CLEAN · `flutter test` **1132 pass / 1 skip** · `cargo test` **11/11** · coverage **52,7%** (ex-generated l10n, gate ≥52,5%) · `verify_release.ps1` Passed · Release exe 0-TCP.
+- **Dọn kho:** tài liệu kế hoạch/roadmap/benchmark/mockup nội bộ xoá vĩnh viễn khỏi git kể cả toàn bộ lịch sử (Quy tắc 3 AGENT.md).
+- **Định dạng không đổi:** `.ghita` bundle schema 2, giao thức LAN v2 — deck làm dở của các bản cũ mở dùng tiếp.
+
 ## [0.0.0-preview] - 2026-10-11 — Đổi tên GhitaDeck, khởi động lại chuỗi version
 
 - **Tên mới: GhitaDeck.** Toàn bộ nhận diện sản phẩm — exe (`ghita_deck.exe`), cửa sổ, installer (`GhitaDeck-Setup-0.0.0-preview.exe`), metadata mọi định dạng xuất, thư mục dữ liệu (`Documents\GhitaDeck`, `%APPDATA%\Ghita\GhitaDeck`) — đổi từ GhitaPPT Converter sang GhitaDeck. Chuỗi version bắt đầu lại từ `0.0.0-preview` cho dòng GhitaDeck; `coreVersion` (Rust engine) giữ `2.0.5-beta.3` vì engine không đổi.

@@ -19,7 +19,7 @@ void main() {
       final pubspecFile = File('pubspec.yaml');
       expect(pubspecFile.existsSync(), isTrue);
       final content = pubspecFile.readAsStringSync();
-      expect(content, contains('version: 0.0.0-preview+1'));
+      expect(content, contains('version: 0.0.0+2'));
       expect(content, contains('name: ghita_deck'));
     });
 
@@ -27,9 +27,9 @@ void main() {
       final issFile = File('installer/ghita_deck_installer.iss');
       expect(issFile.existsSync(), isTrue);
       final content = issFile.readAsStringSync();
-      expect(content, contains('#define MyAppDisplayVersion "0.0.0-preview+1"'));
+      expect(content, contains('#define MyAppDisplayVersion "0.0.0+2"'));
       expect(content, contains('#define MyAppVersion "0.0.0"'));
-      expect(content, contains('#define MyAppBuild "1"'));
+      expect(content, contains('#define MyAppBuild "2"'));
     });
 
     test('ProjectBundleService manifest uses app and schema versions',

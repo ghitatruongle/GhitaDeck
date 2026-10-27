@@ -3,8 +3,8 @@
 Flutter application for creating PowerPoint presentations with HTML support and AI-powered content generation.
 
 ## Version
-- **Current version:** `0.0.0-preview+1` (GhitaDeck series — installs over every previous GhitaPPT Converter build)
-- **Release status:** Beta — demo (Rust core + DOCX report + image optimizer beta)
+- **Current version:** `0.0.0+2` (GhitaDeck series — installs over every previous GhitaPPT Converter build)
+- **Release status:** Official (Rust core + DOCX report + image optimizer)
 
 ## Features
 

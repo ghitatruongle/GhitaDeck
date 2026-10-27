@@ -132,19 +132,20 @@ if ($SmokeInstall) {
     $markerDoc = Join-Path $groupADocs 'verify_marker.txt'
     Set-Content -LiteralPath $markerDoc -Value 'group A marker' -NoNewline
     New-Item -ItemType Directory -Path $groupALegacyDocs -Force | Out-Null
-    $markerLegacyDoc = Join-Path $groupALegacyDocs 'verify_marker.txt'
+    $markerLegacyDoc = Join-Path $groupALegacyDocs 'verify_marker_legacy.txt'
     Set-Content -LiteralPath $markerLegacyDoc -Value 'group A legacy marker' -NoNewline
     New-Item -ItemType Directory -Path $groupAPrefs -Force | Out-Null
     $markerPref = Join-Path $groupAPrefs 'verify_marker.json'
     Set-Content -LiteralPath $markerPref -Value '{}' -NoNewline
     New-Item -ItemType Directory -Path $groupALegacyPrefs -Force | Out-Null
-    $markerLegacyPref = Join-Path $groupALegacyPrefs 'verify_marker.json'
+    $markerLegacyPref = Join-Path $groupALegacyPrefs 'verify_marker_legacy.json'
     Set-Content -LiteralPath $markerLegacyPref -Value '{}' -NoNewline
     New-Item -ItemType Directory -Path $groupBCache -Force | Out-Null
     Set-Content -LiteralPath (Join-Path $groupBCache 'verify_marker.bin') -Value 'x' -NoNewline
     New-Item -ItemType Directory -Path $groupBCacheLegacy -Force | Out-Null
     Set-Content -LiteralPath (Join-Path $groupBCacheLegacy 'verify_marker.bin') -Value 'x' -NoNewline
     New-Item -ItemType Directory -Path (Split-Path -Parent $groupBLog) -Force | Out-Null
+    New-Item -ItemType Directory -Path (Split-Path -Parent $groupBLogLegacy) -Force | Out-Null
     Set-Content -LiteralPath $groupBLog -Value 'marker' -NoNewline
     Set-Content -LiteralPath $groupBLogLegacy -Value 'marker' -NoNewline
 
@@ -177,11 +178,22 @@ if ($SmokeInstall) {
     if (-not (Test-Path -LiteralPath $markerPref)) {
         throw "Group A (preferences / API keys) was removed by a default uninstall; must be preserved."
     }
-    if (-not (Test-Path -LiteralPath $markerLegacyDoc)) {
-        throw "Group A (legacy documents) was removed by a default uninstall; must be preserved."
-    }
-    if (-not (Test-Path -LiteralPath $markerLegacyPref)) {
-        throw "Group A (legacy preferences / API keys) was removed by a default uninstall; must be preserved."
+    if ($SmokeLaunch) {
+        $migratedDoc = Join-Path $groupADocs 'verify_marker_legacy.txt'
+        $migratedPref = Join-Path $groupAPrefs 'verify_marker_legacy.json'
+        if (-not (Test-Path -LiteralPath $migratedDoc)) {
+            throw "Group A (legacy documents) vanished: neither at the legacy path nor migrated to $migratedDoc."
+        }
+        if (-not (Test-Path -LiteralPath $migratedPref)) {
+            throw "Group A (legacy preferences / API keys) vanished: neither at the legacy path nor migrated to $migratedPref."
+        }
+    } else {
+        if (-not (Test-Path -LiteralPath $markerLegacyDoc)) {
+            throw "Group A (legacy documents) was removed by a default uninstall; must be preserved."
+        }
+        if (-not (Test-Path -LiteralPath $markerLegacyPref)) {
+            throw "Group A (legacy preferences / API keys) was removed by a default uninstall; must be preserved."
+        }
     }
     if (Test-Path -LiteralPath (Join-Path $groupBCache 'verify_marker.bin')) {
         throw "Group B (image cache) survived the uninstall; it must be cleaned."
@@ -202,6 +214,7 @@ if ($SmokeInstall) {
     # Cleanup of the Group A markers this smoke run created (never touches
     # real user files — only the two marker files it wrote above).
     Remove-Item -LiteralPath $markerDoc, $markerLegacyDoc, $markerPref, $markerLegacyPref -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath (Join-Path $groupADocs 'verify_marker_legacy.txt'), (Join-Path $groupAPrefs 'verify_marker_legacy.json') -Force -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath (Join-Path $groupBCache 'verify_marker.bin') -Force -ErrorAction SilentlyContinue
 }
 

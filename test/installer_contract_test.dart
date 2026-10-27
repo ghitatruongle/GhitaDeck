@@ -36,6 +36,16 @@ void main() {
               'and must not survive an upgrade as a dead autostart link');
     });
 
+    test('rename continuity: setup deletes the legacy exe and shortcuts', () {
+      expect(iss, contains('[InstallDelete]'),
+          reason: 'Inno only overwrites the files it ships; the pre-rename '
+              'ghita_ppt_converter.exe and its Start Menu shortcuts have '
+              'different names and would survive every upgrade otherwise');
+      expect(iss, contains(r'{app}\ghita_ppt_converter.exe'));
+      expect(iss, contains(r'{group}\GhitaPPT Converter.lnk'));
+      expect(iss, contains(r'{group}\Uninstall GhitaPPT Converter.lnk'));
+    });
+
     test('T18.2: directory page is always available for a custom location', () {
       expect(iss, contains('DisableDirPage=no'),
           reason: 'the user must be able to choose the install location');

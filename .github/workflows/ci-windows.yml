@@ -51,7 +51,7 @@ jobs:
         run: dart run tool/l10n_audit.dart
 
       - name: Run tests
-        run: flutter test --coverage --reporter compact
+        run: flutter test --coverage --reporter compact --concurrency=1
 
       - name: Coverage ratchet (hard gate)
         run: dart run tool/coverage_summary.dart

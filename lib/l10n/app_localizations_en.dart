@@ -374,7 +374,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recentProjects => 'Recent Projects';
 
   @override
-  String get noRecentProjects => 'No recent projects';
+  String get noRecentProjects => 'No projects opened recently';
 
   @override
   String get openProject => 'Open Project';
@@ -3051,4 +3051,212 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get templateDescriptionMinimal =>
       'Ultra clean monochrome design for minimalist presentations';
+
+  @override
+  String get shortcutsSubtitle => 'Customize keyboard shortcuts (Ctrl+/)';
+
+  @override
+  String get helpCommandPalette =>
+      'Ctrl+K — Command palette: jump anywhere, run any action.';
+
+  @override
+  String get helpShortcutsHint => 'Ctrl+/ — Full keyboard shortcut list.';
+
+  @override
+  String get helpDocsNote =>
+      'Full guides live in the GitHub repository README.';
+
+  @override
+  String get projectsManageTitle => 'Project Manager (.ghita)';
+
+  @override
+  String get searchProjectsHint => 'Search projects...';
+
+  @override
+  String get newProject => 'New Project';
+
+  @override
+  String get projectCreated => 'New project created!';
+
+  @override
+  String get currentProject => 'Current project';
+
+  @override
+  String projectMetaEditing(int n, Object ratio) {
+    return '$n slides • $ratio • Editing';
+  }
+
+  @override
+  String get saveGhitaTooltip => 'Save .ghita file';
+
+  @override
+  String get saveProjectDialog => 'Save project';
+
+  @override
+  String get openTooltip => 'Open';
+
+  @override
+  String get removeFromListTooltip => 'Remove from list';
+
+  @override
+  String get timeJustNow => 'Just now';
+
+  @override
+  String timeMinutesAgo(int n) {
+    return '$n minutes ago';
+  }
+
+  @override
+  String timeHoursAgo(int n) {
+    return '$n hours ago';
+  }
+
+  @override
+  String timeDaysAgo(int n) {
+    return '$n days ago';
+  }
+
+  @override
+  String get addCustomProvider => 'Add Custom Provider';
+
+  @override
+  String get setupWizard => 'Setup Wizard';
+
+  @override
+  String get providerActiveBadge => 'Active';
+
+  @override
+  String modelLine(Object model) {
+    return 'Model: $model';
+  }
+
+  @override
+  String get modelDefault => 'Default';
+
+  @override
+  String get restoreSettingsTitle => 'Restore settings?';
+
+  @override
+  String restoreBackupInfo(Object exportedAt, int providerCount) {
+    return 'Backup from $exportedAt.\n$providerCount providers.\n\nCurrent settings will be overwritten. Continue?';
+  }
+
+  @override
+  String restoreFailed(Object error) {
+    return 'Could not restore data: $error';
+  }
+
+  @override
+  String get openSlidePanelTooltip => 'Open slide panel';
+
+  @override
+  String get collapseSlidePanelTooltip => 'Collapse slide panel';
+
+  @override
+  String get undoShortcutTooltip => 'Undo (Ctrl+Z)';
+
+  @override
+  String get redoShortcutTooltip => 'Redo (Ctrl+Y)';
+
+  @override
+  String get speechNotFoundFallback =>
+      'Vietnamese speech not found on this machine — using English.';
+
+  @override
+  String notesSlideTitle(int n) {
+    return 'Notes — Slide $n';
+  }
+
+  @override
+  String get speakerNotesHint => 'Speaker notes…';
+
+  @override
+  String get tabHome => 'Home';
+
+  @override
+  String get tabInsert => 'Insert';
+
+  @override
+  String get tabDesign => 'Design';
+
+  @override
+  String get tabMotion => 'Transitions';
+
+  @override
+  String get tabSlideshow => 'Slideshow';
+
+  @override
+  String get tabView => 'View';
+
+  @override
+  String get fontColorTooltip => 'Font Color';
+
+  @override
+  String get highlightTooltip => 'Highlight';
+
+  @override
+  String get chooseTextColor => 'Choose text color';
+
+  @override
+  String get chooseHighlightColor => 'Choose highlight color';
+
+  @override
+  String get chooseBackgroundColor => 'Choose background color';
+
+  @override
+  String get chooseColorTitle => 'Choose color';
+
+  @override
+  String get autoDurationTitle => 'Auto-advance duration';
+
+  @override
+  String get autoDurationHint => 'Auto-advance duration per slide (seconds):';
+
+  @override
+  String secondsSuffix(int n) {
+    return '$n s';
+  }
+
+  @override
+  String get draftRecoveryTitle => 'Restore draft?';
+
+  @override
+  String get draftRecoveryBody =>
+      'An unsaved draft from a previous session was found (the app may have exited unexpectedly). Restore it?';
+
+  @override
+  String get draftRecoveryRestore => 'Restore';
+
+  @override
+  String get draftRecoveryDiscard => 'Discard';
+
+  @override
+  String get unsavedTitle => 'Unsaved changes';
+
+  @override
+  String get closeWithoutSavingBody =>
+      'You have unsaved changes. Save before closing?';
+
+  @override
+  String get saveAndClose => 'Save & Close';
+
+  @override
+  String get discardAndClose => 'Discard Changes';
+
+  @override
+  String get loadOverUnsavedBody =>
+      'This action will replace the deck that has unsaved changes. Continue?';
+
+  @override
+  String get continueAction => 'Continue';
+
+  @override
+  String get exportSaveAsLabel => 'Choose where to save';
+
+  @override
+  String get exportSaveAsTitle => 'Save export as';
+
+  @override
+  String get saveFailedBeforeClose =>
+      'Saving failed before closing — the draft is kept. Try Ctrl+S or close again.';
 }

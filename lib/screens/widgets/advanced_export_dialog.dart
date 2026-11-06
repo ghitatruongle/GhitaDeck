@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import '../../models/export_options.dart';
 import '../../models/ppt_theme_setting.dart';
@@ -25,6 +26,7 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
   bool _includeNotes = true;
   bool _includeBackgrounds = true;
   bool _fitContent = true;
+  bool _chooseLocation = false;
   PdfPaperSize _pdfPaperSize = PdfPaperSize.matchSlide;
   PdfMarginPreset _pdfMarginPreset = PdfMarginPreset.standard;
   bool _pdfScaleToFit = true;
@@ -145,6 +147,14 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
                   subtitle: Text(context.l10n.fitContentDescription),
                   value: _fitContent,
                   onChanged: (v) => setState(() => _fitContent = v ?? true),
+                  contentPadding: EdgeInsets.zero,
+                ),
+                CheckboxListTile(
+                  dense: true,
+                  title: Text(context.l10n.exportSaveAsLabel),
+                  value: _chooseLocation,
+                  onChanged: (v) =>
+                      setState(() => _chooseLocation = v ?? false),
                   contentPadding: EdgeInsets.zero,
                 ),
                 if (_format == PresentationExportFormat.pdf) ...[
@@ -477,6 +487,19 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
         context.l10n.exportSlideCount(indices.length),
       ].join(' | ');
       final fileName = 'presentation_${DateTime.now().millisecondsSinceEpoch}';
+      String? outputPath;
+      if (_chooseLocation) {
+        final picked = await FilePicker.platform.saveFile(
+          dialogTitle: context.l10n.exportSaveAsTitle,
+          fileName: '$fileName.${_format.extension}',
+        );
+        if (!mounted) return;
+        if (picked == null) {
+          setState(() => _isExporting = false);
+          return;
+        }
+        outputPath = picked;
+      }
       // T07 P2: the selected export quality (150/300/600 px ceiling) drives
       // the optimizer's JPEG re-encode quality on the worker isolate too.
       ImageOptimizerConfig.quality =
@@ -484,6 +507,7 @@ class _AdvancedExportDialogState extends State<AdvancedExportDialog> {
       await presentationState.exportWithOptions(
         fileName,
         options,
+        outputPath: outputPath,
         onProgress: (p) {
           if (!mounted) return;
           setState(() {

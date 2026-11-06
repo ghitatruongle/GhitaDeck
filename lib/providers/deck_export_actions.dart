@@ -31,6 +31,7 @@ mixin DeckExportActions on ChangeNotifier {
     ExportOptions options, {
     ExportProgressCallback? onProgress,
     ExportCancelToken? cancelToken,
+    String? outputPath,
   }) async {
     exportStatus = 'exporting';
     notifyListeners();
@@ -43,21 +44,29 @@ mixin DeckExportActions on ChangeNotifier {
               .toList(growable: false)
           : selectedSlides;
       onProgress?.call(ExportProgressBudget.preparing(exportSlides.length));
-      final targetDir = await getApplicationDocumentsDirectory();
-      final safeName =
-          fileName.replaceAll(RegExp(r'[^\w\.-]'), '_').replaceFirst(
-                RegExp('\\.${RegExp.escape(options.format.extension)}' r'$'),
-                '',
-              );
-      final outputPath =
-          '${targetDir.path}/$safeName.${options.format.extension}';
+      final String resolvedPath;
+      if (outputPath != null && outputPath.isNotEmpty) {
+        final ext = '.${options.format.extension}';
+        final endsWithExt = outputPath.toLowerCase().endsWith(ext.toLowerCase());
+        resolvedPath = endsWithExt
+            ? outputPath
+            : '$outputPath.${options.format.extension}';
+      } else {
+        final targetDir = await getApplicationDocumentsDirectory();
+        final safeName =
+            fileName.replaceAll(RegExp(r'[^\w\.-]'), '_').replaceFirst(
+                  RegExp('\\.${RegExp.escape(options.format.extension)}' r'$'),
+                  '',
+                );
+        resolvedPath = '${targetDir.path}/$safeName.${options.format.extension}';
+      }
 
       final String path;
       switch (options.format) {
         case PresentationExportFormat.pptx:
           path = await runPptExportInIsolate(
             selectedSlides,
-            outputPath,
+            resolvedPath,
             effect: slideEffect,
             aspectRatio: options.aspectRatio,
             includeNotes: options.includeNotes,
@@ -74,7 +83,7 @@ mixin DeckExportActions on ChangeNotifier {
         case PresentationExportFormat.html:
           path = await runHtmlExportInIsolate(
             selectedSlides,
-            outputPath,
+            resolvedPath,
             aspectRatio: options.aspectRatio,
             includeNotes: options.includeNotes,
             includeBackgrounds: options.includeBackgrounds,
@@ -87,7 +96,7 @@ mixin DeckExportActions on ChangeNotifier {
         case PresentationExportFormat.pdf:
           path = await runPdfExportInIsolate(
             exportSlides,
-            outputPath,
+            resolvedPath,
             aspectRatio: options.aspectRatio,
             includeNotes: options.includeNotes,
             includeBackgrounds: options.includeBackgrounds,
@@ -105,7 +114,7 @@ mixin DeckExportActions on ChangeNotifier {
         case PresentationExportFormat.docx:
           path = await runDocxExportInIsolate(
             selectedSlides,
-            outputPath,
+            resolvedPath,
             includeNotes: options.includeNotes,
             includeSlideList: options.docxIncludeSlideList,
             onProgress: onProgress,

@@ -2,19 +2,19 @@
 
 #define MyAppName "GhitaDeck"
 #ifndef MyAppVersion
-  #define MyAppVersion "0.0.0"
+  #define MyAppVersion "0.0.1"
 #endif
 #ifndef MyAppBuild
-  #define MyAppBuild "2"
+  #define MyAppBuild "1"
 #endif
 #ifndef MyAppDisplayVersion
-  #define MyAppDisplayVersion "0.0.0+2"
+  #define MyAppDisplayVersion "0.0.1+1"
 #endif
 #ifndef MyAppFileBase
-  #define MyAppFileBase "0.0.0"
+  #define MyAppFileBase "0.0.1"
 #endif
 #define MyAppPublisher "Ghita"
-#define MyAppURL "https://github.com/ghitatruongle/GhitaPowerPointConverter"
+#define MyAppURL "https://github.com/ghitatruongle/GhitaDeck"
 #define MyAppExeName "ghita_deck.exe"
 #define MyAppCopyright "Copyright (C) 2026 Ghita"
 #define MyAppDescription "PowerPoint creator with AI integration"

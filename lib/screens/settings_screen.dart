@@ -18,6 +18,7 @@ import '../services/image_optimizer_service.dart';
 import '../l10n/l10n.dart';
 import '../l10n/app_localizations.dart';
 import '../utils/snackbar_helper.dart';
+import '../theme/office_colors.dart';
 
 /// Settings Screen — v1.2.0: Real Backup/Restore, Configuration Wizard, Local AI scan
 class SettingsScreen extends StatefulWidget {
@@ -159,7 +160,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     leading: Icon(Icons.keyboard_outlined,
                         color: theme.colorScheme.primary),
                     title: Text(l10n.shortcuts),
-                    subtitle: Text(l10n.shortcuts),
+                    subtitle: Text(l10n.shortcutsSubtitle),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
                       showDialog(
@@ -225,9 +226,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 EngineStatus.fallingBack => Icons.warning_amber,
               };
               final statusColor = switch (engine.status) {
-                EngineStatus.rustReady => Colors.green,
+                EngineStatus.rustReady => OfficeColors.success,
                 EngineStatus.dart => theme.colorScheme.outline,
-                EngineStatus.fallingBack => Colors.orange,
+                EngineStatus.fallingBack => OfficeColors.warning,
               };
               return Card(
                 child: Padding(
@@ -343,7 +344,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         children: [
                           FilledButton.tonalIcon(
                             icon: const Icon(Icons.add_circle_outline, size: 18),
-                            label: const Text('Thêm Custom Provider'),
+                            label: Text(l10n.addCustomProvider),
                             onPressed: () {
                               Navigator.push(
                                 context,
@@ -359,7 +360,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           const SizedBox(width: 8),
                           OutlinedButton.icon(
                             icon: const Icon(Icons.auto_fix_high, size: 18),
-                            label: const Text('Wizard'),
+                            label: Text(l10n.setupWizard),
                             onPressed: () {
                               Navigator.push(
                                   context,
@@ -401,10 +402,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ProviderHealthStatus.unknown => Icons.help_outline,
                     };
                     final healthColor = switch (p.healthStatus) {
-                      ProviderHealthStatus.healthy => Colors.green,
-                      ProviderHealthStatus.degraded => Colors.orange,
-                      ProviderHealthStatus.failed => Colors.red,
-                      ProviderHealthStatus.unknown => Colors.grey,
+                      ProviderHealthStatus.healthy => OfficeColors.success,
+                      ProviderHealthStatus.degraded => OfficeColors.warning,
+                      ProviderHealthStatus.failed => OfficeColors.danger,
+                      ProviderHealthStatus.unknown => theme.colorScheme.outline,
                     };
 
                     return Padding(
@@ -437,7 +438,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                           borderRadius:
                                               BorderRadius.circular(4),
                                         ),
-                                        child: Text('Active',
+                                        child: Text(l10n.providerActiveBadge,
                                             style: TextStyle(
                                                 fontSize: 8,
                                                 fontWeight: FontWeight.bold,
@@ -448,7 +449,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   ],
                                 ),
                                 Text(
-                                  'Model: ${p.selectedModel.isNotEmpty ? p.selectedModel : "Default"}',
+                                  l10n.modelLine(p.selectedModel.isNotEmpty
+                                      ? p.selectedModel
+                                      : l10n.modelDefault),
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     fontSize: 10,
@@ -463,7 +466,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               controller: controller,
                               obscureText: true,
                               decoration: InputDecoration(
-                                hintText: 'API Key...',
+                                hintText: l10n.apiKeyHint,
                                 isDense: true,
                                 border: const OutlineInputBorder(),
                                 suffixIcon: IconButton(
@@ -623,23 +626,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final jsonStr = await file.readAsString();
         final backup = jsonDecode(jsonStr) as Map<String, dynamic>;
         if (!context.mounted) return;
+        final l10n = context.l10n;
 
-        // Confirm before restoring
         final confirm = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Khôi phục cài đặt?'),
-            content: Text(
-                'File backup từ ${backup['exportedAt'] ?? "unknown"}.\n'
-                'Số providers: ${(backup['providers'] as List?)?.length ?? 0}\n\n'
-                'Cài đặt hiện tại sẽ bị ghi đè. Tiếp tục?'),
+            title: Text(l10n.restoreSettingsTitle),
+            content: Text(l10n.restoreBackupInfo(
+                backup['exportedAt'] ?? 'unknown',
+                (backup['providers'] as List?)?.length ?? 0)),
             actions: [
               TextButton(
                   onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Hủy')),
+                  child: Text(l10n.cancel)),
               ElevatedButton(
                   onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text('Khôi phục')),
+                  child: Text(l10n.restore)),
             ],
           ),
         );

@@ -104,11 +104,11 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     expect(find.byType(SlideListPanel), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Thu gọn thanh Slide'));
+    await tester.tap(find.byIcon(Icons.view_sidebar));
     await tester.pump();
     expect(find.byType(SlideListPanel), findsNothing);
 
-    await tester.tap(find.byTooltip('Mở thanh Slide'));
+    await tester.tap(find.byIcon(Icons.view_sidebar_outlined));
     await tester.pump();
     expect(find.byType(SlideListPanel), findsOneWidget);
     await tester.pump(const Duration(seconds: 5));

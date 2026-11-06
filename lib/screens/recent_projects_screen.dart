@@ -75,7 +75,30 @@ class _RecentProjectsScreenState extends State<RecentProjectsScreen> {
     }
   }
 
+  Future<bool> _confirmReplaceUnsaved() async {
+    final state = Provider.of<PresentationState>(context, listen: false);
+    if (!state.hasUnsavedChanges) return true;
+    final l10n = context.l10n;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.unsavedTitle),
+        content: Text(l10n.loadOverUnsavedBody),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(l10n.cancel)),
+          FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: Text(l10n.continueAction)),
+        ],
+      ),
+    );
+    return ok == true;
+  }
+
   Future<void> _openGhitaFile() async {
+    if (!await _confirmReplaceUnsaved()) return;
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
@@ -141,7 +164,7 @@ class _RecentProjectsScreenState extends State<RecentProjectsScreen> {
                 Icon(Icons.folder_special, size: 28, color: theme.colorScheme.primary),
                 const SizedBox(width: 12),
                 Text(
-                  'Quản Lý Dự Án (.ghita)',
+                  context.l10n.projectsManageTitle,
                   style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ],
@@ -155,7 +178,7 @@ class _RecentProjectsScreenState extends State<RecentProjectsScreen> {
                   child: TextField(
                     controller: _searchController,
                     decoration: InputDecoration(
-                      hintText: 'Tìm kiếm dự án...',
+                      hintText: context.l10n.searchProjectsHint,
                       prefixIcon: const Icon(Icons.search),
                       isDense: true,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -173,16 +196,21 @@ class _RecentProjectsScreenState extends State<RecentProjectsScreen> {
                 const SizedBox(width: 8),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.add),
-                  label: const Text('Dự Án Mới'),
-                  onPressed: () {
+                  label: Text(context.l10n.newProject),
+                  onPressed: () async {
+                    final l10n = context.l10n;
+                    final messenger = ScaffoldMessenger.of(context);
+                    if (!await _confirmReplaceUnsaved()) return;
                     state.clearSlides();
-                    showAppSnackBar(
-                      context,
-                      'Đã tạo dự án mới!',
+                    if (!mounted) return;
+                    messenger.showSnackBar(SnackBar(
+                      content: Text(l10n.projectCreated),
                       duration: const Duration(seconds: 4),
-                      actionLabel: 'Hoàn tác',
-                      onAction: () => state.undo(),
-                    );
+                      action: SnackBarAction(
+                        label: l10n.undoAction,
+                        onPressed: () => state.undo(),
+                      ),
+                    ));
                   },
                 ),
               ],
@@ -203,21 +231,21 @@ class _RecentProjectsScreenState extends State<RecentProjectsScreen> {
                     child: Icon(Icons.present_to_all, color: theme.colorScheme.onPrimaryContainer),
                   ),
                   title: Text(
-                    state.presentationTitle.isNotEmpty ? state.presentationTitle : 'Dự án hiện tại',
+                    state.presentationTitle.isNotEmpty ? state.presentationTitle : context.l10n.currentProject,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   subtitle: Text(
-                    '${state.slides.length} slides • ${state.aspectRatio} • Đang chỉnh sửa',
+                    context.l10n.projectMetaEditing(state.slides.length, state.aspectRatio),
                   ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
                         icon: const Icon(Icons.save),
-                        tooltip: 'Lưu file .ghita',
+                        tooltip: context.l10n.saveGhitaTooltip,
                         onPressed: () async {
                           final path = await FilePicker.platform.saveFile(
-                            dialogTitle: 'Lưu dự án',
+                            dialogTitle: context.l10n.saveProjectDialog,
                             fileName: '${state.presentationTitle.isNotEmpty ? state.presentationTitle : "presentation"}.ghita',
                             type: FileType.custom,
                             allowedExtensions: ['ghita'],
@@ -243,7 +271,7 @@ class _RecentProjectsScreenState extends State<RecentProjectsScreen> {
 
             // Recent projects list
             Text(
-              'Dự Án Gần Đây',
+              context.l10n.recentProjects,
               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
@@ -257,7 +285,7 @@ class _RecentProjectsScreenState extends State<RecentProjectsScreen> {
                             children: [
                               Icon(Icons.folder_off, size: 64, color: theme.colorScheme.outline),
                               const SizedBox(height: 16),
-                              const Text('Chưa có dự án nào được mở gần đây'),
+                              Text(context.l10n.noRecentProjects),
                               const SizedBox(height: 12),
                               OutlinedButton.icon(
                                 icon: const Icon(Icons.folder_open),
@@ -286,25 +314,26 @@ class _RecentProjectsScreenState extends State<RecentProjectsScreen> {
                                 Text(timeAgo, style: theme.textTheme.bodySmall),
                                 IconButton(
                                   icon: const Icon(Icons.open_in_new, size: 18),
-                                  tooltip: 'Mở',
+                                  tooltip: context.l10n.openTooltip,
                                   onPressed: () async {
                                     final path = project['path'] as String?;
-                                    if (path != null) {
-                                      final state = Provider.of<PresentationState>(context, listen: false);
-                                      final success = await state.loadProjectFromFile(path);
-                                      if (!context.mounted) return;
-                                      if (success) {
-                                        _addToRecent(path, project['name'] as String);
-                                        showAppSnackBar(context, context.l10n.openedProject(project['name'] ?? ''));
-                                      } else {
-                                        showAppSnackBar(context, context.l10n.recentFileOpenFailedNotice);
-                                      }
+                                    if (path == null) return;
+                                    if (!await _confirmReplaceUnsaved()) return;
+                                    if (!context.mounted) return;
+                                    final state = Provider.of<PresentationState>(context, listen: false);
+                                    final success = await state.loadProjectFromFile(path);
+                                    if (!context.mounted) return;
+                                    if (success) {
+                                      _addToRecent(path, project['name'] as String);
+                                      showAppSnackBar(context, context.l10n.openedProject(project['name'] ?? ''));
+                                    } else {
+                                      showAppSnackBar(context, context.l10n.recentFileOpenFailedNotice);
                                     }
                                   },
                                 ),
                                 IconButton(
                                   icon: const Icon(Icons.delete_outline, size: 18),
-                                  tooltip: 'Xoá khỏi danh sách',
+                                  tooltip: context.l10n.removeFromListTooltip,
                                   onPressed: () {
                                     setState(() => _recentProjects.removeAt(idx));
                                     _saveRecentProjects();
@@ -324,11 +353,12 @@ class _RecentProjectsScreenState extends State<RecentProjectsScreen> {
   }
 
   String _formatTimeAgo(DateTime dateTime) {
+    final l10n = context.l10n;
     final diff = DateTime.now().difference(dateTime);
-    if (diff.inMinutes < 1) return 'Vừa xong';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} phút trước';
-    if (diff.inHours < 24) return '${diff.inHours} giờ trước';
-    if (diff.inDays < 7) return '${diff.inDays} ngày trước';
+    if (diff.inMinutes < 1) return l10n.timeJustNow;
+    if (diff.inMinutes < 60) return l10n.timeMinutesAgo(diff.inMinutes);
+    if (diff.inHours < 24) return l10n.timeHoursAgo(diff.inHours);
+    if (diff.inDays < 7) return l10n.timeDaysAgo(diff.inDays);
     return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
   }
 }

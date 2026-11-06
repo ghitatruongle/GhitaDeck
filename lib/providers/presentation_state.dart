@@ -48,7 +48,7 @@ class PresentationState with ChangeNotifier, DeckExportActions {
   SlideEffect _slideEffect = SlideEffect.none;
   DeckMeta _deckMeta = const DeckMeta();
   String _aspectRatio = '16:9';
-  String _presentationTitle = 'Dự Án Thuyết Trình';
+  String _presentationTitle = '';
   @override
   String? exportStatus;
   @override
@@ -63,6 +63,8 @@ class PresentationState with ChangeNotifier, DeckExportActions {
   String? _lastPersistenceError;
   int _documentRevision = 0;
   int _savedRevision = 0;
+  bool _draftRecoveryPending = false;
+  Map<String, dynamic>? _pendingDraft;
   late final Future<void> _readyFuture;
 
   // Current slide in the editor (session-only, used by "Present From Current").
@@ -139,6 +141,7 @@ class PresentationState with ChangeNotifier, DeckExportActions {
   bool get isSaving => _isSaving;
   bool get hasUnsavedChanges => _hasUnsavedChanges;
   String? get lastPersistenceError => _lastPersistenceError;
+  bool get draftRecoveryPending => _draftRecoveryPending;
   int get documentRevision => _documentRevision;
   int get savedRevision => _savedRevision;
   Future<void> get ready => _readyFuture;
@@ -246,6 +249,71 @@ class PresentationState with ChangeNotifier, DeckExportActions {
     }
   }
 
+  Future<void> scanRecoverableDraft() async {
+    try {
+      if (!await _smartDraftManager.hasRecoverableDraft()) return;
+      final draft = await _smartDraftManager.loadRecoverableDraft();
+      if (_disposed || draft == null) return;
+      final rawSlides = draft['slides'];
+      if (rawSlides is! List || rawSlides.isEmpty) return;
+      _pendingDraft = draft;
+      _draftRecoveryPending = true;
+    } catch (_) {}
+  }
+
+  Future<void> restoreDraft() async {
+    final draft = _pendingDraft;
+    if (draft == null) return;
+    _pendingDraft = null;
+    _draftRecoveryPending = false;
+    final rawSlides = draft['slides'];
+    if (rawSlides is List) {
+      final slides = rawSlides
+          .map((e) => Slide.fromMap(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      if (slides.isNotEmpty) {
+        _slides = slides;
+        _keepCurrentSlideInRange();
+        final meta = draft['metadata'];
+        if (meta is Map) {
+          final title = meta['title'];
+          if (title is String && title.isNotEmpty) {
+            _presentationTitle = title;
+          }
+          final ratio = meta['aspectRatio'];
+          if (ratio is String && ratio.isNotEmpty) {
+            _aspectRatio = ratio;
+          }
+        }
+        _historyService.clear();
+        _recordHistory('Recovered draft');
+        _markDirty();
+      }
+    }
+    if (_disposed) return;
+    notifyListeners();
+    try {
+      await savePresentation();
+      await _smartDraftManager.purgeDraft();
+    } catch (_) {
+      if (!_disposed) notifyListeners();
+    }
+  }
+
+  Future<void> discardDraft() async {
+    _saveDebounce?.cancel();
+    _saveDebounce = null;
+    _pendingDraft = null;
+    _draftRecoveryPending = false;
+    await _smartDraftManager.purgeDraft();
+  }
+
+  Future<void> purgeDraftSandbox() async {
+    _saveDebounce?.cancel();
+    _saveDebounce = null;
+    await _smartDraftManager.purgeDraft();
+  }
+
   // ---- Auto advance ("Timing") ----
 
   Future<void> _loadAutoAdvance() async {
@@ -341,6 +409,8 @@ class PresentationState with ChangeNotifier, DeckExportActions {
     _saveDebounce = Timer(const Duration(milliseconds: 400), () {
       _saveDebounce = null;
       savePresentation();
+      unawaited(_smartDraftManager.saveDraft(_slides,
+          metadata: {'title': _presentationTitle, 'aspectRatio': _aspectRatio}));
     });
   }
 
@@ -405,8 +475,7 @@ class PresentationState with ChangeNotifier, DeckExportActions {
       useEngineZip: true,
     );
     if (success) {
-      // PURGE temporary draft from sandbox after official save
-      await _smartDraftManager.purgeDraft();
+      await purgeDraftSandbox();
     }
     return success;
   }
@@ -421,7 +490,7 @@ class PresentationState with ChangeNotifier, DeckExportActions {
       final manifest = data['manifest'] as Map<String, dynamic>?;
       if (manifest != null) {
         _presentationTitle =
-            (manifest['title'] ?? 'Dự Án Thuyết Trình').toString();
+            (manifest['title'] ?? '').toString();
         _aspectRatio = (manifest['aspectRatio'] ?? '16:9').toString();
       }
       _historyService.clear();
@@ -1066,6 +1135,8 @@ class PresentationState with ChangeNotifier, DeckExportActions {
       _lastPersistenceError = error.toString();
       debugPrint('PresentationState save failed: $error');
       debugPrint('$stack');
+      unawaited(_smartDraftManager.saveDraft(_slides,
+          metadata: {'title': _presentationTitle, 'aspectRatio': _aspectRatio}));
       rethrow;
     } finally {
       _isSaving = false;

@@ -1,10 +1,10 @@
 // Coverage summary for CI (T04 phase 9).
 //
 // Reads coverage/lcov.info and prints a compact report — to the console and,
-// when running in GitHub Actions, to the job step summary. Thresholds are
-// soft (warnings, never failures) and act as a RATCHET: they pin today's
-// measured values so any regression fails loudly while later tracks climb
-// toward the 55 % repository goal.
+// when running in GitHub Actions, to the job step summary. Thresholds act as
+// a RATCHET hard gate: falling below today's measured floors exits non-zero
+// so any regression fails CI while later tracks climb toward the 55 %
+// repository goal.
 //
 // Usage: dart run tool/coverage_summary.dart
 import 'dart:io';
@@ -14,14 +14,14 @@ const _keyFiles = <String, double>{
   'pdf_export_service.dart': 65.0,
 };
 
-const _repoSoftThreshold = 47.0;
+const _repoFloor = 47.0;
 const _repoGoal = 55.0;
 
 void main() {
   final file = File('coverage/lcov.info');
   if (!file.existsSync()) {
     stderr.writeln('coverage/lcov.info not found — run flutter test --coverage first.');
-    exit(0); // soft: never break CI here.
+    exit(1);
   }
 
   var totalFound = 0, totalHit = 0;
@@ -52,10 +52,10 @@ void main() {
       found == 0 ? 'n/a' : '${(100 * hit / found).toStringAsFixed(1)}%';
 
   final lines = <String>[
-    '| Metric | Coverage | Soft floor | Goal |',
+    '| Metric | Coverage | Floor | Goal |',
     '| --- | --- | --- | --- |',
     '| Repository (all lib) | ${pct(totalHit, totalFound)} | '
-        '$_repoSoftThreshold% | $_repoGoal% |',
+        '$_repoFloor% | $_repoGoal% |',
     '| Repository (ex-generated l10n) | ${pct(nonL10nHit, nonL10nFound)} | — | $_repoGoal% |',
   ];
   keyFileStats.forEach((name, stats) {
@@ -68,19 +68,34 @@ void main() {
   final report = ['### 📊 Coverage summary', ...lines].join('\n');
   stdout.writeln(report);
 
-  final warnings = <String>[];
-  if (100 * totalHit / totalFound < _repoSoftThreshold) {
-    warnings.add(
-        'repository coverage fell below the $_repoSoftThreshold% ratchet floor');
+  final failures = <String>[];
+  if (totalFound == 0) {
+    failures.add('no coverage data found in coverage/lcov.info');
+  } else if (100 * totalHit / totalFound < _repoFloor) {
+    failures.add(
+        'repository coverage fell below the $_repoFloor% ratchet floor');
   }
-  keyFileStats.forEach((name, stats) {
-    final floor = _keyFiles[name];
-    if (floor != null && 100 * stats.hit / stats.found < floor) {
-      warnings.add('$name fell below its $floor% floor');
+  _keyFiles.forEach((name, floor) {
+    if (!keyFileStats.containsKey(name)) {
+      failures.add('$name missing from coverage report');
     }
   });
-  for (final w in warnings) {
-    stdout.writeln('::warning::coverage ratchet: $w');
+  keyFileStats.forEach((name, stats) {
+    final floor = _keyFiles[name];
+    if (floor != null) {
+      if (stats.found == 0) {
+        failures.add('$name has no coverage data');
+      } else if (100 * stats.hit / stats.found < floor) {
+        failures.add('$name fell below its $floor% floor');
+      }
+    }
+  });
+  for (final f in failures) {
+    stdout.writeln('::error::coverage gate: $f');
+  }
+  if (failures.isNotEmpty) {
+    stderr.writeln('coverage gate failed with ${failures.length} violation(s)');
+    exit(1);
   }
 
   final summaryPath = Platform.environment['GITHUB_STEP_SUMMARY'];

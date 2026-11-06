@@ -284,7 +284,10 @@ fn orientation_from_jpeg(bytes: &[u8]) -> u16 {
 fn orientation_from_png(bytes: &[u8]) -> u16 {
     let mut i = 8usize;
     while i + 12 <= bytes.len() {
-        let len = u32::from_be_bytes(bytes[i..i + 4].try_into().unwrap()) as usize;
+        let len = bytes
+            .get(i..i + 4)
+            .and_then(|c| <[u8; 4]>::try_from(c).ok())
+            .map_or(0, u32::from_be_bytes) as usize;
         if &bytes[i + 4..i + 8] == b"eXIf" {
             if i + 8 + len > bytes.len() {
                 return 1;

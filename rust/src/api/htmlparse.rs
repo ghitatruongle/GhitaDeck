@@ -898,3 +898,214 @@ fn append_row(
     }
     rows.push(cells);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parse(html: &str) -> Value {
+        let out = htmlparse_blocks(html.to_string());
+        serde_json::from_str(&out).expect("valid json")
+    }
+
+    fn blocks_of(v: &Value, key: &str) -> Vec<Value> {
+        v[key].as_array().cloned().unwrap_or_default()
+    }
+
+    fn text_of_block(b: &Value) -> String {
+        b["paragraphs"]
+            .as_array()
+            .map(|ps| {
+                ps.iter()
+                    .map(|p| p["text"].as_str().unwrap_or_default())
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            })
+            .unwrap_or_default()
+    }
+
+    #[test]
+    fn paragraph_extracted_with_start_marker() {
+        let v = parse("<p>Hello</p>");
+        let blocks = blocks_of(&v, "blocks");
+        assert_eq!(blocks.len(), 1);
+        assert_eq!(blocks[0]["type"], "text");
+        let p = &blocks[0]["paragraphs"][0];
+        assert_eq!(p["text"], "Hello");
+        assert_eq!(p["paragraphStart"], "true");
+    }
+
+    #[test]
+    fn heading_forced_bold() {
+        let v = parse("<h1>Title</h1>");
+        let p = &blocks_of(&v, "blocks")[0]["paragraphs"][0];
+        assert_eq!(p["bold"], "true");
+        assert_eq!(p["text"], "Title");
+    }
+
+    #[test]
+    fn notes_and_subtitle_artifacts() {
+        let v = parse("<h2>Sub</h2><aside class=\"notes\">Speak me</aside><p>Body</p>");
+        assert_eq!(v["notes"], "Speak me");
+        assert_eq!(v["subtitle"], "Sub");
+        let blocks = blocks_of(&v, "blocks");
+        assert!(blocks.iter().any(|b| text_of_block(b).contains("Sub")));
+        assert!(blocks
+            .iter()
+            .all(|b| !text_of_block(b).contains("Speak me")));
+        let no_h2 = blocks_of(&v, "blocksNoFirstH2");
+        assert!(no_h2.iter().all(|b| !text_of_block(b).contains("Sub")));
+        assert!(no_h2.iter().any(|b| text_of_block(b).contains("Body")));
+    }
+
+    #[test]
+    fn unordered_list_blocks() {
+        let v = parse("<ul><li>alpha</li><li>beta</li></ul>");
+        let blocks = blocks_of(&v, "blocks");
+        assert_eq!(blocks[0]["type"], "list");
+        assert_eq!(blocks[0]["ordered"], false);
+        let items = blocks[0]["items"].as_array().unwrap();
+        assert_eq!(items.len(), 2);
+        assert_eq!(items[0]["text"], "alpha");
+        assert_eq!(items[0]["itemStart"], "true");
+        assert_eq!(items[1]["text"], "beta");
+        assert_eq!(items[1]["itemStart"], "true");
+    }
+
+    #[test]
+    fn ordered_list_flagged() {
+        let v = parse("<ol><li>one</li></ol>");
+        assert_eq!(blocks_of(&v, "blocks")[0]["ordered"], true);
+    }
+
+    #[test]
+    fn inline_styles_merge_into_runs() {
+        let v = parse(
+            "<p style=\"color:#f00;font-weight:bold;text-align:center\">go</p>",
+        );
+        let p = &blocks_of(&v, "blocks")[0]["paragraphs"][0];
+        assert_eq!(p["color"], "FF0000");
+        assert_eq!(p["bold"], "true");
+        assert_eq!(p["align"], "ctr");
+    }
+
+    #[test]
+    fn hyperlink_href_captured() {
+        let v = parse("<p><a href=\"https://example.com/x\">link</a></p>");
+        let p = &blocks_of(&v, "blocks")[0]["paragraphs"][0];
+        assert_eq!(p["text"], "link");
+        assert_eq!(p["href"], "https://example.com/x");
+    }
+
+    #[test]
+    fn image_video_icon_blocks() {
+        let v = parse(
+            "<img src=\"pic.png\"><video data-video=\"v1\" poster=\"p.jpg\" src=\"v.mp4\"></video><span data-icon=\"star\"></span>",
+        );
+        let blocks = blocks_of(&v, "blocks");
+        let kinds: Vec<&str> = blocks
+            .iter()
+            .map(|b| b["type"].as_str().unwrap_or_default())
+            .collect();
+        assert_eq!(kinds, vec!["image", "video", "icon"]);
+        assert_eq!(blocks[0]["src"], "pic.png");
+        assert_eq!(blocks[1]["data-video"], "v1");
+        assert_eq!(blocks[2]["data-icon"], "star");
+    }
+
+    #[test]
+    fn div_data_kinds_map_to_blocks() {
+        let v = parse("<div data-chart=\"line\"></div>");
+        let b = &blocks_of(&v, "blocks")[0];
+        assert_eq!(b["type"], "chart");
+        assert_eq!(b["data-chart"], "line");
+    }
+
+    #[test]
+    fn table_header_row_and_cells() {
+        let v = parse("<table><tr><th>Name</th></tr><tr><td>Ada</td></tr></table>");
+        let b = &blocks_of(&v, "blocks")[0];
+        assert_eq!(b["type"], "table");
+        assert_eq!(b["headerRow"], true);
+        let rows = b["rows"].as_array().unwrap();
+        assert_eq!(rows.len(), 2);
+        assert_eq!(rows[0][0]["text"], "Name");
+        assert_eq!(rows[0][0]["bold"], "true");
+        assert_eq!(rows[1][0]["text"], "Ada");
+    }
+
+    #[test]
+    fn line_breaks_marked() {
+        let v = parse("<p>one<br>two</p>");
+        let ps = blocks_of(&v, "blocks")[0]["paragraphs"]
+            .as_array()
+            .unwrap()
+            .clone();
+        assert_eq!(ps.len(), 3);
+        assert_eq!(ps[1]["isBreak"], "true");
+        assert_eq!(ps[2]["text"], "two");
+    }
+
+    #[test]
+    fn whitespace_collapsed_and_trimmed() {
+        let v = parse("<p>  Hello\t world \n again  </p>");
+        let p = &blocks_of(&v, "blocks")[0]["paragraphs"][0];
+        assert_eq!(p["text"], "Hello world again");
+    }
+
+    #[test]
+    fn malformed_html_still_recovers() {
+        let v = parse("<p>Unclosed <b>bold");
+        let blocks = blocks_of(&v, "blocks");
+        assert!(!blocks.is_empty());
+        let joined = blocks.iter().map(text_of_block).collect::<String>();
+        assert!(joined.contains("Unclosed"));
+    }
+
+    #[test]
+    fn nested_block_children_recurse() {
+        let v = parse("<div><p>Inner</p><img src=\"x.png\"></div>");
+        let blocks = blocks_of(&v, "blocks");
+        let kinds: Vec<&str> = blocks
+            .iter()
+            .map(|b| b["type"].as_str().unwrap_or_default())
+            .collect();
+        assert_eq!(kinds, vec!["text", "image"]);
+    }
+
+    #[test]
+    fn empty_input_falls_back_to_text_paragraph() {
+        let v = parse("");
+        let blocks = blocks_of(&v, "blocks");
+        assert_eq!(blocks.len(), 1);
+        assert_eq!(blocks[0]["type"], "text");
+    }
+
+    #[test]
+    fn css_color_parsing() {
+        assert_eq!(css_color_to_hex("#ABC"), Some("AABBCC".into()));
+        assert_eq!(css_color_to_hex("#00ff00"), Some("00FF00".into()));
+        assert_eq!(css_color_to_hex("red"), Some("FF0000".into()));
+        assert_eq!(css_color_to_hex("rgb(1, 2, 3)"), Some("010203".into()));
+        assert_eq!(css_color_to_hex("rgb(300, -5, 3)"), Some("FF0003".into()));
+        assert_eq!(css_color_to_hex("notacolor"), None);
+        assert_eq!(css_color_to_hex(""), None);
+    }
+
+    #[test]
+    fn css_font_size_parsing() {
+        assert_eq!(css_font_size_to_sz("24px"), Some("1800".into()));
+        assert_eq!(css_font_size_to_sz("12pt"), Some("1200".into()));
+        assert_eq!(css_font_size_to_sz("2em"), Some("2400".into()));
+        assert_eq!(css_font_size_to_sz("0px"), None);
+        assert_eq!(css_font_size_to_sz("abc"), None);
+        assert_eq!(css_font_size_to_sz("999999pt"), None);
+    }
+
+    #[test]
+    fn css_align_parsing() {
+        assert_eq!(css_align_to_algn("Center"), Some("ctr"));
+        assert_eq!(css_align_to_algn(" justify "), Some("just"));
+        assert_eq!(css_align_to_algn("up"), None);
+    }
+}

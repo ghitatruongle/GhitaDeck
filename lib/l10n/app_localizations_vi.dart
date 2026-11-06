@@ -189,7 +189,7 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get apiKeyHint => 'API Key...';
+  String get apiKeyHint => 'Khoá API...';
 
   @override
   String get saveApiKeyTooltip => 'Lưu API Key';
@@ -374,7 +374,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get recentProjects => 'Dự Án Gần Đây';
 
   @override
-  String get noRecentProjects => 'Chưa có dự án nào';
+  String get noRecentProjects => 'Chưa có dự án nào được mở gần đây';
 
   @override
   String get openProject => 'Mở Dự Án';
@@ -3051,4 +3051,212 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get templateDescriptionMinimal =>
       'Thiết kế đơn sắc tối giản cho bài thuyết trình tối giản';
+
+  @override
+  String get shortcutsSubtitle => 'Tùy chỉnh phím tắt (Ctrl+/)';
+
+  @override
+  String get helpCommandPalette =>
+      'Ctrl+K — Bảng lệnh: nhảy tới bất cứ đâu, chạy mọi hành động.';
+
+  @override
+  String get helpShortcutsHint => 'Ctrl+/ — Danh sách đầy đủ các phím tắt.';
+
+  @override
+  String get helpDocsNote =>
+      'Hướng dẫn đầy đủ nằm trong README của repo GitHub.';
+
+  @override
+  String get projectsManageTitle => 'Quản Lý Dự Án (.ghita)';
+
+  @override
+  String get searchProjectsHint => 'Tìm kiếm dự án...';
+
+  @override
+  String get newProject => 'Dự Án Mới';
+
+  @override
+  String get projectCreated => 'Đã tạo dự án mới!';
+
+  @override
+  String get currentProject => 'Dự án hiện tại';
+
+  @override
+  String projectMetaEditing(int n, Object ratio) {
+    return '$n slide • $ratio • Đang chỉnh sửa';
+  }
+
+  @override
+  String get saveGhitaTooltip => 'Lưu file .ghita';
+
+  @override
+  String get saveProjectDialog => 'Lưu dự án';
+
+  @override
+  String get openTooltip => 'Mở';
+
+  @override
+  String get removeFromListTooltip => 'Xoá khỏi danh sách';
+
+  @override
+  String get timeJustNow => 'Vừa xong';
+
+  @override
+  String timeMinutesAgo(int n) {
+    return '$n phút trước';
+  }
+
+  @override
+  String timeHoursAgo(int n) {
+    return '$n giờ trước';
+  }
+
+  @override
+  String timeDaysAgo(int n) {
+    return '$n ngày trước';
+  }
+
+  @override
+  String get addCustomProvider => 'Thêm Custom Provider';
+
+  @override
+  String get setupWizard => 'Trình Hướng Dẫn';
+
+  @override
+  String get providerActiveBadge => 'Đang dùng';
+
+  @override
+  String modelLine(Object model) {
+    return 'Model: $model';
+  }
+
+  @override
+  String get modelDefault => 'Mặc định';
+
+  @override
+  String get restoreSettingsTitle => 'Khôi phục cài đặt?';
+
+  @override
+  String restoreBackupInfo(Object exportedAt, int providerCount) {
+    return 'File backup từ $exportedAt.\nSố providers: $providerCount\n\nCài đặt hiện tại sẽ bị ghi đè. Tiếp tục?';
+  }
+
+  @override
+  String restoreFailed(Object error) {
+    return 'Không thể khôi phục dữ liệu: $error';
+  }
+
+  @override
+  String get openSlidePanelTooltip => 'Mở thanh Slide';
+
+  @override
+  String get collapseSlidePanelTooltip => 'Thu gọn thanh Slide';
+
+  @override
+  String get undoShortcutTooltip => 'Hoàn tác (Ctrl+Z)';
+
+  @override
+  String get redoShortcutTooltip => 'Làm lại (Ctrl+Y)';
+
+  @override
+  String get speechNotFoundFallback =>
+      'Không tìm thấy nhận dạng giọng nói tiếng Việt trên máy — dùng tiếng Anh.';
+
+  @override
+  String notesSlideTitle(int n) {
+    return 'Ghi chú — Slide $n';
+  }
+
+  @override
+  String get speakerNotesHint => 'Ghi chú người thuyết trình…';
+
+  @override
+  String get tabHome => 'Trang chủ';
+
+  @override
+  String get tabInsert => 'Chèn';
+
+  @override
+  String get tabDesign => 'Thiết kế';
+
+  @override
+  String get tabMotion => 'Chuyển động';
+
+  @override
+  String get tabSlideshow => 'Trình chiếu';
+
+  @override
+  String get tabView => 'Xem';
+
+  @override
+  String get fontColorTooltip => 'Màu chữ';
+
+  @override
+  String get highlightTooltip => 'Đánh dấu';
+
+  @override
+  String get chooseTextColor => 'Chọn màu chữ';
+
+  @override
+  String get chooseHighlightColor => 'Chọn màu highlight';
+
+  @override
+  String get chooseBackgroundColor => 'Chọn màu nền';
+
+  @override
+  String get chooseColorTitle => 'Chọn màu';
+
+  @override
+  String get autoDurationTitle => 'Thời lượng tự động';
+
+  @override
+  String get autoDurationHint => 'Thời lượng tự chuyển slide (giây):';
+
+  @override
+  String secondsSuffix(int n) {
+    return '$n giây';
+  }
+
+  @override
+  String get draftRecoveryTitle => 'Khôi phục bản nháp?';
+
+  @override
+  String get draftRecoveryBody =>
+      'Có một bản nháp chưa lưu từ phiên trước (ứng dụng có thể đã thoát đột ngột). Khôi phục?';
+
+  @override
+  String get draftRecoveryRestore => 'Khôi phục';
+
+  @override
+  String get draftRecoveryDiscard => 'Bỏ qua';
+
+  @override
+  String get unsavedTitle => 'Thay đổi chưa lưu';
+
+  @override
+  String get closeWithoutSavingBody =>
+      'Bạn có thay đổi chưa lưu. Lưu trước khi đóng?';
+
+  @override
+  String get saveAndClose => 'Lưu & Đóng';
+
+  @override
+  String get discardAndClose => 'Bỏ Thay Đổi';
+
+  @override
+  String get loadOverUnsavedBody =>
+      'Thao tác này sẽ đè lên bộ slide đang có thay đổi chưa lưu. Tiếp tục?';
+
+  @override
+  String get continueAction => 'Tiếp Tục';
+
+  @override
+  String get exportSaveAsLabel => 'Chọn nơi lưu';
+
+  @override
+  String get exportSaveAsTitle => 'Lưu bản xuất với tên';
+
+  @override
+  String get saveFailedBeforeClose =>
+      'Lưu thất bại trước khi đóng — bản nháp vẫn được giữ. Thử Ctrl+S hoặc đóng lại.';
 }

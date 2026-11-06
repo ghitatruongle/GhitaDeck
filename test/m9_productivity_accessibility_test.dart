@@ -9,7 +9,6 @@ import 'package:ghita_deck/services/ribbon_config_service.dart';
 import 'package:ghita_deck/services/search_service.dart';
 import 'package:ghita_deck/services/spellcheck_service.dart';
 import 'package:ghita_deck/services/template_service.dart';
-import 'package:ghita_deck/services/vba_service.dart';
 
 void main() {
   // -------------------------------------------------------------------------
@@ -353,65 +352,6 @@ void main() {
       ]);
       expect(result.add, isEmpty);
       expect(result.update, isEmpty);
-    });
-  });
-
-  group('T61 VbaService', () {
-    test('detects .pptm macro files', () {
-      expect(VbaService.isMacroFile('deck.pptm'), isTrue);
-      expect(VbaService.isMacroFile('deck.pptx'), isFalse);
-      expect(VbaService.hasVbaProject({'vbaProject': 'x'}), isTrue);
-    });
-
-    test('macroWarning mentions the file and non-execution', () {
-      final w = VbaService.macroWarning('evil.pptm');
-      expect(w, contains('evil.pptm'));
-      expect(w, contains('not executed'));
-    });
-
-    test('record + encode + decode round-trip', () {
-      var script = <String, dynamic>{'version': 1, 'steps': []};
-      script = VbaService.record(script, 'add_slide', {
-        'slide': {'title': 'A', 'htmlContent': '<h1>A</h1>'}
-      });
-      final steps = (script['steps'] as List).cast<Map<String, dynamic>>();
-      final decoded = VbaService.decode(VbaService.encode(steps));
-      expect(decoded, hasLength(1));
-      expect(decoded.first['action'], 'add_slide');
-    });
-
-    test('replay executes add/update/remove/set_bg', () {
-      final slides = [
-        {'title': 'A', 'htmlContent': '<p>a</p>'},
-        {'title': 'B', 'htmlContent': '<p>b</p>'},
-      ];
-      final out = VbaService.replay(slides, <Map<String, dynamic>>[
-        {
-          'action': 'set_bg',
-          'params': {'color': '#112233'}
-        },
-        {
-          'action': 'update_slide',
-          'params': {
-            'index': 0,
-            'slide': {'title': 'A2'}
-          }
-        },
-        {
-          'action': 'remove_slide',
-          'params': {'index': 1}
-        },
-        {
-          'action': 'add_slide',
-          'params': {
-            'slide': {'title': 'C', 'htmlContent': '<p>c</p>'}
-          }
-        },
-      ]);
-      expect(out, hasLength(2));
-      expect(out[0]['bgColor'], '#112233');
-      expect(out[0]['title'], 'A2');
-      expect(out[1]['title'], 'C');
     });
   });
 

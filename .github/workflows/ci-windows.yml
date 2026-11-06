@@ -44,13 +44,16 @@ jobs:
       - name: Static analysis
         run: flutter analyze --no-fatal-infos
 
+      - name: Rust tests
+        run: cargo test --manifest-path rust/Cargo.toml
+
       - name: Localization audit
         run: dart run tool/l10n_audit.dart
 
       - name: Run tests
         run: flutter test --coverage --reporter compact
 
-      - name: Coverage summary (soft ratchet)
+      - name: Coverage ratchet (hard gate)
         run: dart run tool/coverage_summary.dart
 
       - name: Build Windows release

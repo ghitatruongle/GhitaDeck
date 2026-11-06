@@ -205,7 +205,7 @@ class HtmlParseCore {
       return null;
     }
     final rgbMatch = RegExp(
-      r'^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)',
+      r'^rgba?\(\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)',
     ).firstMatch(v);
     if (rgbMatch != null) {
       String toHex(String s) =>

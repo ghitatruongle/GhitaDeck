@@ -56,6 +56,9 @@ void main() {
     'inline_styles':
         '<p style="color:#FF0000">Đỏ</p>'
         '<p style="font-size:20px;font-family:Arial;text-align:center">Mix</p>',
+    'rgb_negative':
+        '<p style="color: rgb(300, -5, 3)">Kênh âm</p>'
+        '<p style="color: rgb(10, 20, 30)">Kênh dương</p>',
     'anchor_br':
         '<p>Xem <a href="https://example.com">liên kết</a><br>dòng mới</p>',
     'data_blocks':

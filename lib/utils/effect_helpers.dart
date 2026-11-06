@@ -1,7 +1,5 @@
 import '../models/slide.dart';
 
-/// Shared helper for effect display names.
-/// Used by ribbon_toolbar, effects_screen, and editor_state.
 class EffectHelpers {
   EffectHelpers._();
 

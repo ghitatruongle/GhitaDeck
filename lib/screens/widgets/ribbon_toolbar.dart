@@ -4,8 +4,11 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../providers/presentation_state.dart';
+import '../../services/stock_media_service.dart';
 import '../../utils/effect_helpers.dart';
+import '../../l10n/l10n.dart';
 import 'diagram_dialog.dart';
+import 'stock_media_dialog.dart';
 import '../../utils/error_mapper.dart';
 import '../../utils/snackbar_helper.dart';
 
@@ -139,13 +142,13 @@ class _RibbonToolbarState extends State<RibbonToolbar>
               unselectedLabelStyle: const TextStyle(fontSize: 12),
               labelPadding: const EdgeInsets.symmetric(horizontal: 16),
               indicatorSize: TabBarIndicatorSize.label,
-              tabs: const [
-                Tab(text: 'Trang chủ'),
-                Tab(text: 'Chèn'),
-                Tab(text: 'Thiết kế'),
-                Tab(text: 'Chuyển động'),
-                Tab(text: 'Trình chiếu'),
-                Tab(text: 'Xem'),
+              tabs: [
+                Tab(text: context.l10n.tabHome),
+                Tab(text: context.l10n.tabInsert),
+                Tab(text: context.l10n.tabDesign),
+                Tab(text: context.l10n.tabMotion),
+                Tab(text: context.l10n.tabSlideshow),
+                Tab(text: context.l10n.tabView),
               ],
             ),
           ),
@@ -279,10 +282,10 @@ class _RibbonToolbarState extends State<RibbonToolbar>
                   children: [
                     _RibbonButton(
                       icon: Icons.format_color_text,
-                      tooltip: 'Font Color',
+                      tooltip: context.l10n.fontColorTooltip,
                       compact: true,
                       onPressed: () => _showColorPickerDialog(
-                          context, 'Chọn màu chữ', (color) {
+                          context, context.l10n.chooseTextColor, (color) {
                         final hex =
                             '#${color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
                         widget.onInsertHtmlTag?.call(
@@ -293,10 +296,10 @@ class _RibbonToolbarState extends State<RibbonToolbar>
                     ),
                     _RibbonButton(
                       icon: Icons.highlight,
-                      tooltip: 'Highlight',
+                      tooltip: context.l10n.highlightTooltip,
                       compact: true,
                       onPressed: () => _showColorPickerDialog(
-                          context, 'Chọn màu highlight', (color) {
+                          context, context.l10n.chooseHighlightColor, (color) {
                         final hex =
                             '#${color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
                         widget.onInsertHtmlTag?.call(
@@ -722,7 +725,7 @@ class _RibbonToolbarState extends State<RibbonToolbar>
                   label: 'Background',
                   compact: true,
                   onPressed: () =>
-                      _showColorPickerDialog(context, 'Chọn màu nền', (color) {
+                      _showColorPickerDialog(context, context.l10n.chooseBackgroundColor, (color) {
                     final hex =
                         '#${color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
                     widget.onSetSlideBackground?.call(hex);
@@ -916,13 +919,13 @@ class _RibbonToolbarState extends State<RibbonToolbar>
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Thời lượng tự động'),
+          title: Text(context.l10n.autoDurationTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Auto-advance duration per slide (seconds):'),
+              Text(context.l10n.autoDurationHint),
               const SizedBox(height: 12),
-              Text('$seconds giây',
+              Text(context.l10n.secondsSuffix(seconds),
                   style: Theme.of(context).textTheme.titleMedium),
               Slider(
                 min: 1,
@@ -937,10 +940,10 @@ class _RibbonToolbarState extends State<RibbonToolbar>
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Hủy')),
+                child: Text(context.l10n.cancel)),
             ElevatedButton(
                 onPressed: () => Navigator.pop(context, seconds),
-                child: const Text('Áp dụng')),
+                child: Text(context.l10n.apply)),
           ],
         ),
       ),
@@ -1228,20 +1231,15 @@ class _RibbonToolbarState extends State<RibbonToolbar>
     }
   }
 
-  /// Stock image placeholder dialog.
-  void _showStockImageDialog(BuildContext context) {
-    showDialog(
+  /// Stock illustration picker (same flow as the editor toolbar).
+  Future<void> _showStockImageDialog(BuildContext context) async {
+    final item = await showDialog<StockMediaItem>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Stock Images'),
-        content: const Text('Chức năng stock images sẽ sớm ra mắt.\n'
-            'Hiện tại, bạn có thể dùng nút Pictures để chèn ảnh từ máy.'),
-        actions: [
-          ElevatedButton(
-              onPressed: () => Navigator.pop(context), child: const Text('OK')),
-        ],
-      ),
+      builder: (_) => const StockMediaDialog(),
     );
+    if (item == null) return;
+    widget.onInsertHtml
+        ?.call('<img src="${item.dataUri}" alt="${item.name}">');
   }
 
   /// Table insertion dialog.
@@ -1753,7 +1751,7 @@ class _RibbonToolbarState extends State<RibbonToolbar>
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text('Chọn màu'),
+          title: Text(context.l10n.chooseColorTitle),
           content: SizedBox(
             width: 250,
             height: 200,

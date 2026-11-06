@@ -1,4 +1,5 @@
-﻿import 'dart:convert';
+﻿import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'widgets/setup_show_dialog.dart';
@@ -32,7 +33,6 @@ import 'widgets/office_buttons.dart';
 import '../theme/office_colors.dart';
 import '../l10n/l10n.dart';
 
-/// HomeScreen ΓÇö Microsoft Office 365 style layout
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -40,10 +40,11 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WindowListener {
   bool _showSidebar = true;
   bool _showGrid = false;
   bool _showRuler = false;
+  bool _draftRecoveryShown = false;
   late final FocusNode _focusNode;
   // Owned here so the ribbon toolbar, status bar and editor shell all drive
   // the SAME editor state (previously the ribbon was never wired and its
@@ -55,15 +56,117 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _focusNode = FocusNode();
     _editorState = EditorState();
-    // Local-AI port scan is no longer pre-warmed here; AI surfaces call
-    // scanLocalAI() on demand (served by the manager's 5-minute cache).
+    windowManager.addListener(this);
+    unawaited(_initWindowGuard());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final ps = Provider.of<PresentationState>(context, listen: false);
+      unawaited(ps.ready.then((_) => ps.scanRecoverableDraft()).then((_) {
+        if (mounted) _maybeShowDraftRecovery();
+      }));
+    });
+  }
+
+  Future<void> _initWindowGuard() async {
+    try {
+      await windowManager.setPreventClose(true);
+    } catch (_) {
+      windowManager.removeListener(this);
+    }
+  }
+
+  @override
+  void onWindowClose() async {
+    final ps = Provider.of<PresentationState>(context, listen: false);
+    if (ps.draftRecoveryPending) {
+      return;
+    }
+    if (ps.hasUnsavedChanges && mounted) {
+      final l10n = context.l10n;
+      final decision = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(l10n.unsavedTitle),
+          content: Text(l10n.closeWithoutSavingBody),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(dialogContext, 'cancel'),
+                child: Text(l10n.cancel)),
+            TextButton(
+                onPressed: () => Navigator.pop(dialogContext, 'discard'),
+                child: Text(l10n.discardAndClose)),
+            FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, 'save'),
+                child: Text(l10n.saveAndClose)),
+          ],
+        ),
+      );
+      if (!mounted) return;
+      if (decision == 'save') {
+        var saved = false;
+        try {
+          await ps.savePresentation();
+          saved = true;
+        } catch (_) {}
+        if (!mounted) return;
+        if (!saved) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(context.l10n.saveFailedBeforeClose),
+          ));
+          return;
+        }
+        await ps.purgeDraftSandbox();
+        await windowManager.destroy();
+      } else if (decision == 'discard') {
+        await ps.purgeDraftSandbox();
+        await windowManager.destroy();
+      }
+      return;
+    }
+    await ps.purgeDraftSandbox();
+    await windowManager.destroy();
   }
 
   @override
   void dispose() {
+    windowManager.removeListener(this);
     _focusNode.dispose();
     _editorState.dispose();
     super.dispose();
+  }
+
+  void _maybeShowDraftRecovery() {
+    if (!mounted || _draftRecoveryShown) return;
+    final ps = Provider.of<PresentationState>(context, listen: false);
+    if (!ps.draftRecoveryPending) return;
+    _draftRecoveryShown = true;
+    final l10n = context.l10n;
+    showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.draftRecoveryTitle),
+        content: Text(l10n.draftRecoveryBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.draftRecoveryDiscard),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.draftRecoveryRestore),
+          ),
+        ],
+      ),
+    ).then((restore) {
+      if (!mounted) return;
+      final ps = Provider.of<PresentationState>(context, listen: false);
+      if (restore == true) {
+        unawaited(ps.restoreDraft());
+      } else if (restore == false) {
+        unawaited(ps.discardDraft());
+      }
+    });
   }
 
   /// Build shortcuts map from ShortcutsProvider
@@ -372,7 +475,7 @@ class _HomeScreenState extends State<HomeScreen> {
             value: _editorState,
             child: Scaffold(
             backgroundColor:
-                isDark ? const Color(0xFF1B1A19) : OfficeColors.gray98,
+                isDark ? OfficeColors.chromeDark : OfficeColors.gray98,
             body: Semantics(
               container: true,
               label: context.l10n.workspaceSemantics,
@@ -439,9 +542,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             onToggleRuler: () =>
                                 setState(() => _showRuler = !_showRuler),
                             onToggleFullscreen: _toggleFullscreen,
-                            // Editor formatting wiring ΓÇö without these the
-                            // ribbon's Bold/Italic/lists/insert actions were
-                            // silently no-ops (rendered enabled, did nothing).
                             onInsertHtmlTag: _editorState.insertHtmlTag,
                             onInsertHtml: _editorState.insertHtml,
                             onExport: () => showDialog(
@@ -522,7 +622,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       width: 72,
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF252423) : OfficeColors.gray95,
+        color: isDark ? OfficeColors.ribbonBgDark : OfficeColors.gray95,
         border: Border(
           right: BorderSide(
             color:
@@ -691,7 +791,7 @@ class _HomeScreenState extends State<HomeScreen> {
       height: 40,
       padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF252423) : OfficeColors.white,
+        color: isDark ? OfficeColors.ribbonBgDark : OfficeColors.white,
         border: Border(
           bottom: BorderSide(
             color:
@@ -746,7 +846,7 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: isDark
-                    ? const Color(0xFF1B3A4F)
+                    ? OfficeColors.blueBadgeBgDark
                     : OfficeColors.officeBlueLight,
                 borderRadius: BorderRadius.circular(2),
               ),
@@ -756,7 +856,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   fontSize: 9,
                   fontWeight: FontWeight.w600,
                   color: isDark
-                      ? const Color(0xFF50B8F4)
+                      ? OfficeColors.blueBadgeFgDark
                       : OfficeColors.officeBlue,
                 ),
               ),
@@ -781,12 +881,54 @@ class _HomeScreenState extends State<HomeScreen> {
           OfficeHeaderButton(
             icon: Icons.help_outline,
             tooltip: context.l10n.help,
-            onTap: () {
-              showAppSnackBar(context,
-          context.l10n.homeOffice365StyleNotice(
-              BuildInfo.productName, BuildInfo.displayVersion));
-            },
+            onTap: () => _showHelpDialog(context),
             isDark: isDark,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showHelpDialog(BuildContext context) {
+    final l10n = context.l10n;
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.homeOffice365StyleNotice(
+            BuildInfo.productName, BuildInfo.displayVersion)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.search, size: 18),
+                const SizedBox(width: 8),
+                Expanded(child: Text(l10n.helpCommandPalette)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.keyboard, size: 18),
+                const SizedBox(width: 8),
+                Expanded(child: Text(l10n.helpShortcutsHint)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.menu_book_outlined, size: 18),
+                const SizedBox(width: 8),
+                Expanded(child: Text(l10n.helpDocsNote)),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l10n.close),
           ),
         ],
       ),
@@ -861,7 +1003,6 @@ class _HomeScreenState extends State<HomeScreen> {
       showAppSnackBar(context, context.l10n.noSlides);
       return;
     }
-    // Track 36: Set Up Show dialog ΓÇö mode, options, pen colour, custom show.
     final result = await showSetupShowDialog(
       context,
       initial: state.setupShow,
@@ -957,7 +1098,6 @@ class _HomeScreenState extends State<HomeScreen> {
         await windowManager.setFullScreen(true);
       }
     } catch (_) {
-      // window_manager not initialized (e.g. tests) ΓÇö ignore silently.
     }
   }
 

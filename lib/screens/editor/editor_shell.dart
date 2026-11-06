@@ -20,6 +20,7 @@ import '../../services/stock_media_service.dart';
 import '../../screens/present_screen.dart';
 import '../../screens/slide_sorter_screen.dart';
 import 'editor_state.dart';
+import '../../utils/error_mapper.dart';
 import 'slide_list_panel.dart';
 import 'html_editor_panel.dart';
 import '../widgets/advanced_export_dialog.dart';
@@ -817,7 +818,8 @@ class _EditorShellState extends State<EditorShell> {
             child: Text(context.l10n.cancel),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error),
             onPressed: () {
               state.clearSlides();
               showAppSnackBar(
@@ -848,7 +850,7 @@ class _EditorShellState extends State<EditorShell> {
         presentationState.slides.isEmpty) {
       return Center(
         child: SelectableText(
-          'Không thể khôi phục dữ liệu: ${presentationState.lastPersistenceError}',
+          context.l10n.restoreFailed(presentationState.lastPersistenceError!),
         ),
       );
     }
@@ -865,7 +867,18 @@ class _EditorShellState extends State<EditorShell> {
           // NOT open the export dialog.
           const SingleActivator(LogicalKeyboardKey.keyS, control: true):
               () async {
-            await presentationState.savePresentation();
+            final messenger = ScaffoldMessenger.maybeOf(context);
+            final locale = Localizations.localeOf(context).languageCode;
+            try {
+              await presentationState.savePresentation();
+            } catch (e) {
+              if (messenger != null) {
+                messenger.showSnackBar(SnackBar(
+                  content: Text(ErrorMapper.mapErrorToUserMessage(e,
+                      locale: locale)),
+                ));
+              }
+            }
           },
           const SingleActivator(LogicalKeyboardKey.keyZ, control: true): () =>
               presentationState.undo(),
@@ -1056,8 +1069,8 @@ class _EditorShellState extends State<EditorShell> {
                   color: theme.colorScheme.primary,
                 ),
                 tooltip: _isSidebarCollapsed
-                    ? 'Mở thanh Slide'
-                    : 'Thu gọn thanh Slide',
+                    ? context.l10n.openSlidePanelTooltip
+                    : context.l10n.collapseSlidePanelTooltip,
                 onPressed: () =>
                     setState(() => _isSidebarCollapsed = !_isSidebarCollapsed),
                 visualDensity: VisualDensity.compact,
@@ -1509,7 +1522,7 @@ class _EditorShellState extends State<EditorShell> {
                     color: presentationState.canUndo
                         ? theme.colorScheme.onSurface
                         : theme.colorScheme.outline.withValues(alpha: 0.3)),
-                tooltip: 'Undo (Ctrl+Z)',
+                tooltip: context.l10n.undoShortcutTooltip,
                 onPressed: presentationState.canUndo
                     ? () => presentationState.undo()
                     : null,
@@ -1523,7 +1536,7 @@ class _EditorShellState extends State<EditorShell> {
                     color: presentationState.canRedo
                         ? theme.colorScheme.onSurface
                         : theme.colorScheme.outline.withValues(alpha: 0.3)),
-                tooltip: 'Redo (Ctrl+Y)',
+                tooltip: context.l10n.redoShortcutTooltip,
                 onPressed: presentationState.canRedo
                     ? () => presentationState.redo()
                     : null,
@@ -1534,8 +1547,8 @@ class _EditorShellState extends State<EditorShell> {
               // Clear all
               if (presentationState.slides.isNotEmpty)
                 IconButton(
-                  icon: const Icon(Icons.delete_sweep,
-                      size: 16, color: Colors.red),
+                  icon: Icon(Icons.delete_sweep,
+                      size: 16, color: theme.colorScheme.error),
                   tooltip: context.l10n.clearAllSlides,
                   onPressed: _confirmClearAll,
                   visualDensity: VisualDensity.compact,
@@ -1598,8 +1611,7 @@ class _EditorShellState extends State<EditorShell> {
       effective = 'en';
       if (mounted) {
         showAppSnackBar(
-            context,
-            'Vietnamese speech not found on this machine — using English.');
+            context, context.l10n.speechNotFoundFallback);
       }
     }
     _dictation.onPhrase = (phrase) {
@@ -1632,28 +1644,29 @@ class _EditorShellState extends State<EditorShell> {
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Notes — Slide ${i + 1}'),
+        title: Text(context.l10n.notesSlideTitle(i + 1)),
         content: SizedBox(
           width: 420,
           child: TextField(
             controller: controller,
             maxLines: 8,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              hintText: 'Speaker notes…',
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              hintText: context.l10n.speakerNotesHint,
             ),
           ),
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(context.l10n.cancel)),
           FilledButton(
             onPressed: () {
               presentationState.updateSlide(
                   i, slide.copyWith(notes: controller.text));
               Navigator.pop(ctx);
             },
-            child: const Text('Save'),
+            child: Text(context.l10n.save),
           ),
         ],
       ),

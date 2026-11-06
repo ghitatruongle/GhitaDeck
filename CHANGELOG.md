@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.0.1-preview] - 2026-11-03 — Diện mạo dọn nhất quán + nền móng ổn định
+
+- **Diện mạo — dọn nhất quán:** thay toàn bộ màu cứng còn sót bằng token theme (`OfficeColors`/`ColorScheme`): nền scaffold, sidebar, title bar, badge `.ghita`, màu trạng thái engine & health provider, nút xóa tất cả — light/dark đồng bộ; sửa tile Phím tắt trong Settings (subtitle trùng title); nút Trợ giúp mở hộp thoại thật thay vì snackbar.
+- **l10n:** ~50 chuỗi cứng EN/VI chuyển sang `.arb` (màn Dự án gần đây, Settings, ribbon — kể cả tên 6 tab, editor, tiêu đề deck mặc định) — UI theo đúng ngôn ngữ đã chọn; `l10n_audit` CLEAN.
+- **Nền móng an toàn dữ liệu:** `SmartDraftManager` được nối thật — tự lưu nháp debounce 400 ms cùng nhịp lưu, lưu chính thất bại thì nháp vẫn ghi; mở lại app sau thoát đột ngột → dialog **Khôi phục / Bỏ qua**; lưu `.ghita` hoặc đóng sạch sẽ dọn nháp.
+- **Cảnh báo chưa lưu:** đóng cửa sổ khi có thay đổi → **Lưu & Đóng / Bỏ Thay Đổi / Huỷ**; mở `.ghita` hay tạo dự án mới khi có thay đổi → hỏi trước; Ctrl+S thất bại hiện snackbar lỗi rõ thay vì nuốt âm thầm.
+- **Tiện lợi:** nút ảnh mẫu trên ribbon dùng `StockMediaDialog` thật (bỏ "coming soon"); hộp thoại xuất có thêm **Chọn nơi lưu** — không tick vẫn giữ hành vi cũ (`Documents\presentation_<timestamp>`).
+- **Rust:** +18 unit test cho `htmlparse.rs` (tổng 29 test), thay `unwrap()` duy nhất ngoài test trong `image.rs` — DLL không thể panic khi đọc EXIF ảnh lạ. Đồng bộ `rgb()` số âm: Dart fallback giờ **clamp 0..255 như Rust** (khớp chuẩn CSS/trình duyệt), khoá bằng test cả hai phía + case parity corpus.
+- **CI:** thêm bước `cargo test`; coverage ratchet thành **gate cứng** (tụt dưới 47% → CI đỏ).
+- **Dọn kho:** xoá 6 file chết (`effects_screen`, `coach_service`, `rehearse_service`, `version_history_service`, `history_storage_service`, `vba_service`) cùng test mồ côi.
+- **Nâng version:** `0.0.1+1` (channel `preview`, FileVersion `0.0.1.1`); `coreVersion` giữ nguyên; AppURL installer đổi về đúng repo `GhitaDeck`.
+- **Cài đè được `0.0.0`** và mọi bản cũ (AppId giữ nguyên GUID). Định dạng không đổi: `.ghita` bundle schema 2, giao thức LAN v2 — deck cũ mở dùng tiếp.
+
 ## [0.0.0] - 2026-10-27 — GhitaDeck chính thức
 
 - **Chốt chuỗi version:** bỏ hậu tố preview, kênh phát hành `preview` → `stable`; buildNumber 2 (FileVersion `0.0.0.2`). `coreVersion` giữ `2.0.5-beta.3` — engine Rust không đổi.

@@ -34,6 +34,10 @@ class OfficeColors {
   static const Color ribbonBgDark = Color(0xFF252423);
   static const Color ribbonBorderLight = Color(0xFFE1DFDD);
   static const Color ribbonBorderDark = Color(0xFF484644);
+
+  static const Color chromeDark = Color(0xFF1B1A19);
+  static const Color blueBadgeBgDark = Color(0xFF1B3A4F);
+  static const Color blueBadgeFgDark = Color(0xFF50B8F4);
   
   // Tab bar (active tab underline)
   static const Color tabActive = Color(0xFF0078D4);

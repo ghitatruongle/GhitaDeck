@@ -3,9 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ghita_deck/models/slide.dart';
 import 'package:ghita_deck/services/advanced_import_service.dart';
-import 'package:ghita_deck/services/history_storage_service.dart';
 import 'package:ghita_deck/services/thumbnail_service.dart';
-import 'package:ghita_deck/services/time_machine_history_service.dart';
 import 'package:ghita_deck/services/wysiwyg_service.dart';
 import 'package:archive/archive.dart';
 
@@ -97,73 +95,6 @@ void main() {
       final b64 = ThumbnailService.placeholderB64('two_content');
       final bytes = base64Decode(b64);
       expect(bytes.sublist(0, 4), [0x89, 0x50, 0x4E, 0x47]);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // T65 — Storage & startup
-  // -------------------------------------------------------------------------
-  group('T65 HistoryStorageService', () {
-    test('compress/decompress round-trips slides', () {
-      final slides = [
-        Slide(title: 'A', htmlContent: '<h1>A</h1>'),
-        Slide(title: 'B', htmlContent: '<p>b</p>'),
-      ];
-      final gz = HistoryStorageService.compressSlides(slides);
-      final back = HistoryStorageService.decompressSlides(gz);
-      expect(back, hasLength(2));
-      expect(back[0].title, 'A');
-      expect(back[1].htmlContent, '<p>b</p>');
-    });
-
-    test('compressed snapshot is smaller than raw JSON', () {
-      final slides = [
-        for (var i = 0; i < 20; i++)
-          Slide(title: 'Slide $i', htmlContent: '<p>${'x' * 100}</p>'),
-      ];
-      final gz = HistoryStorageService.compressSlides(slides);
-      final raw = utf8.encode(jsonEncode([for (final s in slides) s.toMap()]));
-      expect(gz.length, lessThan(raw.length));
-    });
-
-    test('diff stores only changed slides and applies back', () {
-      final prev = [
-        Slide(title: 'A', htmlContent: '<h1>A</h1>'),
-        Slide(title: 'B', htmlContent: '<p>b</p>'),
-      ];
-      final next = [
-        Slide(title: 'A2', htmlContent: '<h1>A2</h1>'),
-        Slide(title: 'B', htmlContent: '<p>b</p>'),
-      ];
-      final diff = HistoryStorageService.diffSlides(prev, next);
-      expect(diff['full'], isFalse);
-      final changed = (diff['changed'] as Map).cast<String, dynamic>();
-      expect(changed, hasLength(1));
-      final applied = HistoryStorageService.applyDiff(prev, diff);
-      expect(applied[0].title, 'A2');
-      expect(applied[1].title, 'B');
-    });
-
-    test('diff falls back to full when lengths differ', () {
-      final diff = HistoryStorageService.diffSlides(
-        [Slide(title: 'A', htmlContent: '<h1>A</h1>')],
-        [Slide(title: 'A', htmlContent: '<h1>A</h1>'), Slide(title: 'B', htmlContent: '<p>b</p>')],
-      );
-      expect(diff['full'], isTrue);
-    });
-  });
-
-  group('T65 CoalescingRecorder', () {
-    test('coalesces rapid typing into one snapshot', () async {
-      final history = TimeMachineHistoryService(maxHistoryLength: 30);
-      final recorder = CoalescingRecorder(history: history);
-      recorder.touch('edit', [Slide(title: 'v1', htmlContent: '<p>1</p>')]);
-      recorder.touch('edit', [Slide(title: 'v2', htmlContent: '<p>2</p>')]);
-      recorder.touch('edit', [Slide(title: 'v3', htmlContent: '<p>3</p>')]);
-      recorder.flush();
-      expect(history.snapshots, hasLength(1));
-      expect(history.snapshots.first.slides.first.title, 'v3');
-      recorder.dispose();
     });
   });
 

@@ -1,7 +1,7 @@
 name: ghita_deck
 description: A Flutter app for creating PowerPoint presentations with HTML support and AI chat integration
 publish_to: none
-version: 0.0.0+2
+version: 0.0.1+1
 
 environment:
   sdk: ">=3.0.0 <4.0.0"

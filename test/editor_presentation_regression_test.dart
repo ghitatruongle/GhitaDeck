@@ -65,7 +65,7 @@ void main() {
         ),
       ),
     );
-    await tester.tap(find.text('Trình chiếu'));
+    await tester.tap(find.text('Slideshow'));
     await tester.pumpAndSettle();
 
     expect(find.text('From Beginning'), findsOneWidget);

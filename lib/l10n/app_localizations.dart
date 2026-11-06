@@ -797,7 +797,7 @@ abstract class AppLocalizations {
   /// No description provided for @noRecentProjects.
   ///
   /// In en, this message translates to:
-  /// **'No recent projects'**
+  /// **'No projects opened recently'**
   String get noRecentProjects;
 
   /// No description provided for @openProject.
@@ -5755,6 +5755,372 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ultra clean monochrome design for minimalist presentations'**
   String get templateDescriptionMinimal;
+
+  /// No description provided for @shortcutsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Customize keyboard shortcuts (Ctrl+/)'**
+  String get shortcutsSubtitle;
+
+  /// No description provided for @helpCommandPalette.
+  ///
+  /// In en, this message translates to:
+  /// **'Ctrl+K — Command palette: jump anywhere, run any action.'**
+  String get helpCommandPalette;
+
+  /// No description provided for @helpShortcutsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Ctrl+/ — Full keyboard shortcut list.'**
+  String get helpShortcutsHint;
+
+  /// No description provided for @helpDocsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Full guides live in the GitHub repository README.'**
+  String get helpDocsNote;
+
+  /// No description provided for @projectsManageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Project Manager (.ghita)'**
+  String get projectsManageTitle;
+
+  /// No description provided for @searchProjectsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search projects...'**
+  String get searchProjectsHint;
+
+  /// No description provided for @newProject.
+  ///
+  /// In en, this message translates to:
+  /// **'New Project'**
+  String get newProject;
+
+  /// No description provided for @projectCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'New project created!'**
+  String get projectCreated;
+
+  /// No description provided for @currentProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Current project'**
+  String get currentProject;
+
+  /// No description provided for @projectMetaEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} slides • {ratio} • Editing'**
+  String projectMetaEditing(int n, Object ratio);
+
+  /// No description provided for @saveGhitaTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Save .ghita file'**
+  String get saveGhitaTooltip;
+
+  /// No description provided for @saveProjectDialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Save project'**
+  String get saveProjectDialog;
+
+  /// No description provided for @openTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get openTooltip;
+
+  /// No description provided for @removeFromListTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from list'**
+  String get removeFromListTooltip;
+
+  /// No description provided for @timeJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Just now'**
+  String get timeJustNow;
+
+  /// No description provided for @timeMinutesAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} minutes ago'**
+  String timeMinutesAgo(int n);
+
+  /// No description provided for @timeHoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} hours ago'**
+  String timeHoursAgo(int n);
+
+  /// No description provided for @timeDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} days ago'**
+  String timeDaysAgo(int n);
+
+  /// No description provided for @addCustomProvider.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Custom Provider'**
+  String get addCustomProvider;
+
+  /// No description provided for @setupWizard.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup Wizard'**
+  String get setupWizard;
+
+  /// No description provided for @providerActiveBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get providerActiveBadge;
+
+  /// No description provided for @modelLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Model: {model}'**
+  String modelLine(Object model);
+
+  /// No description provided for @modelDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get modelDefault;
+
+  /// No description provided for @restoreSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore settings?'**
+  String get restoreSettingsTitle;
+
+  /// No description provided for @restoreBackupInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup from {exportedAt}.\n{providerCount} providers.\n\nCurrent settings will be overwritten. Continue?'**
+  String restoreBackupInfo(Object exportedAt, int providerCount);
+
+  /// No description provided for @restoreFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not restore data: {error}'**
+  String restoreFailed(Object error);
+
+  /// No description provided for @openSlidePanelTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Open slide panel'**
+  String get openSlidePanelTooltip;
+
+  /// No description provided for @collapseSlidePanelTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse slide panel'**
+  String get collapseSlidePanelTooltip;
+
+  /// No description provided for @undoShortcutTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo (Ctrl+Z)'**
+  String get undoShortcutTooltip;
+
+  /// No description provided for @redoShortcutTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Redo (Ctrl+Y)'**
+  String get redoShortcutTooltip;
+
+  /// No description provided for @speechNotFoundFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Vietnamese speech not found on this machine — using English.'**
+  String get speechNotFoundFallback;
+
+  /// No description provided for @notesSlideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes — Slide {n}'**
+  String notesSlideTitle(int n);
+
+  /// No description provided for @speakerNotesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Speaker notes…'**
+  String get speakerNotesHint;
+
+  /// No description provided for @tabHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get tabHome;
+
+  /// No description provided for @tabInsert.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert'**
+  String get tabInsert;
+
+  /// No description provided for @tabDesign.
+  ///
+  /// In en, this message translates to:
+  /// **'Design'**
+  String get tabDesign;
+
+  /// No description provided for @tabMotion.
+  ///
+  /// In en, this message translates to:
+  /// **'Transitions'**
+  String get tabMotion;
+
+  /// No description provided for @tabSlideshow.
+  ///
+  /// In en, this message translates to:
+  /// **'Slideshow'**
+  String get tabSlideshow;
+
+  /// No description provided for @tabView.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get tabView;
+
+  /// No description provided for @fontColorTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Font Color'**
+  String get fontColorTooltip;
+
+  /// No description provided for @highlightTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlight'**
+  String get highlightTooltip;
+
+  /// No description provided for @chooseTextColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose text color'**
+  String get chooseTextColor;
+
+  /// No description provided for @chooseHighlightColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose highlight color'**
+  String get chooseHighlightColor;
+
+  /// No description provided for @chooseBackgroundColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose background color'**
+  String get chooseBackgroundColor;
+
+  /// No description provided for @chooseColorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose color'**
+  String get chooseColorTitle;
+
+  /// No description provided for @autoDurationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-advance duration'**
+  String get autoDurationTitle;
+
+  /// No description provided for @autoDurationHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-advance duration per slide (seconds):'**
+  String get autoDurationHint;
+
+  /// No description provided for @secondsSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} s'**
+  String secondsSuffix(int n);
+
+  /// No description provided for @draftRecoveryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore draft?'**
+  String get draftRecoveryTitle;
+
+  /// No description provided for @draftRecoveryBody.
+  ///
+  /// In en, this message translates to:
+  /// **'An unsaved draft from a previous session was found (the app may have exited unexpectedly). Restore it?'**
+  String get draftRecoveryBody;
+
+  /// No description provided for @draftRecoveryRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get draftRecoveryRestore;
+
+  /// No description provided for @draftRecoveryDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get draftRecoveryDiscard;
+
+  /// No description provided for @unsavedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved changes'**
+  String get unsavedTitle;
+
+  /// No description provided for @closeWithoutSavingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You have unsaved changes. Save before closing?'**
+  String get closeWithoutSavingBody;
+
+  /// No description provided for @saveAndClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Save & Close'**
+  String get saveAndClose;
+
+  /// No description provided for @discardAndClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard Changes'**
+  String get discardAndClose;
+
+  /// No description provided for @loadOverUnsavedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This action will replace the deck that has unsaved changes. Continue?'**
+  String get loadOverUnsavedBody;
+
+  /// No description provided for @continueAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get continueAction;
+
+  /// No description provided for @exportSaveAsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose where to save'**
+  String get exportSaveAsLabel;
+
+  /// No description provided for @exportSaveAsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save export as'**
+  String get exportSaveAsTitle;
+
+  /// No description provided for @saveFailedBeforeClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving failed before closing — the draft is kept. Try Ctrl+S or close again.'**
+  String get saveFailedBeforeClose;
 }
 
 class _AppLocalizationsDelegate

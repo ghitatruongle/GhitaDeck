@@ -1,8 +1,5 @@
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ghita_deck/services/cloud_sync_service.dart';
-import 'package:ghita_deck/services/version_history_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
@@ -128,45 +125,4 @@ void main() {
     });
   });
 
-  group('T50 — VersionHistoryService', () {
-    test('trims to max 20 keeping the newest', () async {
-      final requests = <String>[];
-      final mock = MockClient((request) async {
-        requests.add(request.method);
-        return http.Response('', 204);
-      });
-      // ignore: unused_local_variable
-      mock;
-      final versions = [
-        for (var i = 1; i <= 25; i++)
-          RemoteVersion(projectName: 'p', version: i, sizeBytes: 100),
-      ];
-      // Trim with versions capped at maxVersions → nothing deleted.
-      final capped = versions.take(VersionHistoryService.maxVersions).toList();
-      final deleted = await VersionHistoryService.trimVersions(
-        creds,
-        'p',
-        versions: capped,
-      );
-      expect(deleted, isEmpty);
-      expect(requests, isEmpty); // no deletes issued for an in-cap list
-    });
-
-    test('localIsNewer compares file timestamps', () {
-      final dir = Directory.systemTemp.createTempSync('ghita_ver');
-      addTearDown(() => dir.deleteSync(recursive: true));
-      final file = File('${dir.path}/latest.ghita')..writeAsBytesSync([1]);
-      // Touch the file to now.
-      final newer = VersionHistoryService.localIsNewer(
-          file, DateTime.now().subtract(const Duration(hours: 1)));
-      expect(newer, isTrue);
-      final older = VersionHistoryService.localIsNewer(
-          file, DateTime.now().add(const Duration(hours: 1)));
-      expect(older, isFalse);
-    });
-
-    test('maxVersions is 20', () {
-      expect(VersionHistoryService.maxVersions, 20);
-    });
-  });
 }

@@ -674,6 +674,7 @@ void main() {
       expect(PPTGenerator.cssColorToHex('#ff0000'), 'FF0000');
       expect(PPTGenerator.cssColorToHex('#f00'), 'FF0000');
       expect(PPTGenerator.cssColorToHex('rgb(0, 128, 255)'), '0080FF');
+      expect(PPTGenerator.cssColorToHex('rgb(300, -5, 3)'), 'FF0003');
       expect(PPTGenerator.cssColorToHex('red'), 'FF0000');
       expect(PPTGenerator.cssColorToHex('not-a-color'), isNull);
     });

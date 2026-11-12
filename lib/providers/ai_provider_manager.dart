@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../services/ai_html_guard.dart';
 import '../services/api_key_rotation_service.dart';
 import '../services/local_ai_detector_service.dart';
+import '../services/url_scheme_guard.dart';
 import 'config_service.dart';
 
 // =============================================================================
@@ -595,11 +596,15 @@ class AIProviderManager with ChangeNotifier {
       final base = config.baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
 
       if (config.formatType == 'gemini') {
-        // Percent-encode the key via queryParameters
         final endpoint = buildEndpointUrl(config.baseUrl, '/v1beta/models');
-        final url = Uri.parse(endpoint)
-            .replace(queryParameters: {'key': config.apiKey});
-        final res = await _sharedClient.get(url).timeout(const Duration(seconds: 8));
+        final url = Uri.parse(endpoint);
+        final headers = <String, String>{
+          'Content-Type': 'application/json',
+          'x-goog-api-key': config.apiKey,
+        };
+        final res = await _sharedClient
+            .get(url, headers: headers)
+            .timeout(const Duration(seconds: 8));
         if (res.statusCode == 200) {
           final data = jsonDecode(res.body);
           if (data['models'] is List) {
@@ -748,6 +753,9 @@ class AIProviderManager with ChangeNotifier {
     final uri = Uri.tryParse(provider.baseUrl.trim());
     if (uri == null || (!uri.hasScheme || !uri.hasAuthority)) {
       return 'Base URL is not a valid URL (must start with http:// or https://).';
+    }
+    if (!UrlSchemeGuard.allowsUri(uri)) {
+      return 'Base URL must use https. HTTP is allowed only for localhost or link-local addresses.';
     }
     if (provider.availableModels.isEmpty) return 'Provider must have at least 1 model configured.';
     if (provider.selectedModel.isEmpty) return 'No model selected. Please choose an active model.';

@@ -35,12 +35,12 @@ class _OfficeSidebarItemState extends State<OfficeSidebarItem> {
 
     if (widget.isSelected) {
       bgColor = widget.isDark
-          ? const Color(0xFF1B3A4F)
+          ? OfficeColors.blueBadgeBgDark
           : OfficeColors.officeBlueLight;
       iconColor =
-          widget.isDark ? const Color(0xFF50B8F4) : OfficeColors.officeBlue;
+          widget.isDark ? OfficeColors.blueBadgeFgDark : OfficeColors.officeBlue;
       labelColor =
-          widget.isDark ? const Color(0xFF50B8F4) : OfficeColors.officeBlue;
+          widget.isDark ? OfficeColors.blueBadgeFgDark : OfficeColors.officeBlue;
     } else if (_isHovered) {
       bgColor = widget.isDark ? OfficeColors.gray30 : OfficeColors.gray90;
       iconColor = widget.isDark ? OfficeColors.gray90 : OfficeColors.gray20;
@@ -82,7 +82,7 @@ class _OfficeSidebarItemState extends State<OfficeSidebarItem> {
                           margin: const EdgeInsets.only(left: 2, right: 2),
                           decoration: BoxDecoration(
                             color: widget.isDark
-                                ? const Color(0xFF50B8F4)
+                                ? OfficeColors.blueBadgeFgDark
                                 : OfficeColors.officeBlue,
                             borderRadius: BorderRadius.circular(2),
                           ),

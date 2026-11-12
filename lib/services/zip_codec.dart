@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
 
@@ -148,4 +151,128 @@ class ZipCodec {
     final bytes = ZipEncoder().encode(archive, level: level)!;
     return Uint8List.fromList(bytes);
   }
+
+  static Future<List<ZipExtractedEntry>> decodeWithCaps(
+    List<int> bytes, {
+    int maxEntries = 2048,
+    int maxEntryBytes = 128 << 20,
+    int maxTotalBytes = 512 << 20,
+  }) async {
+    if (ZipEngineConfig.preferredRust &&
+        await ZipEngineConfig.ensureRustReadyOnce()) {
+      final out = await rust_api.zipExtract(
+        bytes: bytes,
+        maxEntries: maxEntries,
+        maxEntryBytes: maxEntryBytes,
+        maxTotalBytes: maxTotalBytes,
+      );
+      lastBackend = 'rust';
+      return [
+        for (final e in out) ZipExtractedEntry(name: e.name, bytes: e.data),
+      ];
+    }
+    lastBackend = 'dart';
+    return _dartDecodeWithCaps(
+        bytes, maxEntries, maxEntryBytes, maxTotalBytes);
+  }
+
+  static List<ZipExtractedEntry> _dartDecodeWithCaps(List<int> bytes,
+      int maxEntries, int maxEntryBytes, int maxTotalBytes) {
+    final archive = ZipDecoder().decodeBytes(bytes);
+    if (archive.files.length > maxEntries) {
+      throw const FormatException('Archive contains too many entries.');
+    }
+    var total = 0;
+    final out = <ZipExtractedEntry>[];
+    for (final f in archive.files) {
+      if (!f.isFile) continue;
+      final name = f.name.replaceAll('\\', '/');
+      if (_unsafeEntryName(name)) {
+        throw FormatException('Unsafe entry name: ${f.name}');
+      }
+      final method = f.compressionType;
+      if (method != ArchiveFile.STORE && method != ArchiveFile.DEFLATE) {
+        throw FormatException(
+            'Unsupported compression method in "${f.name}".');
+      }
+      final data = method == ArchiveFile.DEFLATE
+          ? inflateCapped(f.rawContent!, maxEntryBytes, f.name)
+          : _storedCapped(f.rawContent!, maxEntryBytes, f.name);
+      total += data.length;
+      if (total > maxTotalBytes) {
+        throw const FormatException('Archive expands beyond limits.');
+      }
+      out.add(ZipExtractedEntry(name: name, bytes: Uint8List.fromList(data)));
+    }
+    return out;
+  }
+
+  static List<int> _storedCapped(
+    InputStreamBase raw,
+    int cap,
+    String label,
+  ) {
+    final stored = raw.toUint8List();
+    if (stored.length > cap) {
+      throw FormatException(
+          'Archive entry "$label" expands beyond limits.');
+    }
+    return stored;
+  }
+
+  static bool _unsafeEntryName(String name) {
+    final lowered = name.toLowerCase();
+    return name.isEmpty ||
+        lowered.startsWith('/') ||
+        lowered.startsWith('c:') ||
+        lowered.contains(':') ||
+        name.contains('..') ||
+        name.startsWith('~') ||
+        name.contains('\x00');
+  }
+
+  static List<int> inflateCapped(
+    InputStreamBase raw,
+    int cap,
+    String label,
+  ) {
+    final compressed = raw.toUint8List();
+    final filter = RawZLibFilter.inflateFilter(raw: true);
+    final out = BytesBuilder(copy: false);
+    var total = 0;
+    const chunkSize = 1 << 16;
+    for (var offset = 0; offset < compressed.length; offset += chunkSize) {
+      final end = offset + chunkSize < compressed.length
+          ? offset + chunkSize
+          : compressed.length;
+      filter.process(compressed, offset, end);
+      var produced = filter.processed(flush: false) ?? const <int>[];
+      while (produced.isNotEmpty) {
+        total += produced.length;
+        if (total > cap) {
+          throw FormatException(
+              'Archive entry "$label" expands beyond limits.');
+        }
+        out.add(produced);
+        produced = filter.processed(flush: false) ?? const <int>[];
+      }
+    }
+    var tail = filter.processed(flush: true, end: true) ?? const <int>[];
+    while (tail.isNotEmpty) {
+      total += tail.length;
+      if (total > cap) {
+        throw FormatException(
+            'Archive entry "$label" expands beyond limits.');
+      }
+      out.add(tail);
+      tail = filter.processed(flush: true, end: true) ?? const <int>[];
+    }
+    return out.toBytes();
+  }
+}
+
+class ZipExtractedEntry {
+  final String name;
+  final Uint8List bytes;
+  const ZipExtractedEntry({required this.name, required this.bytes});
 }

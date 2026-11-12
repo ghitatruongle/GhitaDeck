@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/advanced_import_service.dart';
+import '../../services/local_image_allowlist.dart';
 import '../../models/slide.dart';
 import '../../utils/error_mapper.dart';
 import '../../l10n/l10n.dart';
@@ -80,6 +81,10 @@ class _ImportDialogState extends State<ImportDialog> {
       withData: true,
     );
     if (result == null || result.files.isEmpty) return;
+    for (final picked in result.files) {
+      final pickedPath = picked.path;
+      if (pickedPath != null) LocalImageAllowlist.registerPickedFile(pickedPath);
+    }
     final file = result.files.first;
     final bytes = file.bytes;
     if (bytes == null) {

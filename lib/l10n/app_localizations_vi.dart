@@ -3259,4 +3259,77 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get saveFailedBeforeClose =>
       'Lưu thất bại trước khi đóng — bản nháp vẫn được giữ. Thử Ctrl+S hoặc đóng lại.';
+
+  @override
+  String get lanWarnUnencrypted =>
+      'Phiên chưa mã hóa — chỉ dùng trong mạng đáng tin cậy';
+
+  @override
+  String get lanWarnLocalOnly =>
+      'Chỉ cục bộ — không có địa chỉ LAN, thiết bị khác không thể kết nối';
+
+  @override
+  String get netContentToggleTitle => 'Nội dung mạng khi trình chiếu';
+
+  @override
+  String get netContentToggleSubtitle =>
+      'Cho phép slide tải ảnh và media từ mạng (https) khi trình chiếu. Tắt để trình chiếu hoàn toàn ngoại tuyến (chỉ dữ liệu nhúng). Liên kết trong chế độ Trình chiếu luôn bị vô hiệu hóa.';
+
+  @override
+  String exportImagesSkipped(int n) {
+    return 'Đã bỏ qua $n ảnh — nằm ngoài thư mục được phép';
+  }
+
+  @override
+  String get lanShareNewLink => 'Tạo liên kết chia sẻ mới';
+
+  @override
+  String get transTitle => 'Hiệu ứng chuyển';
+
+  @override
+  String get transEffect => 'Hiệu ứng';
+
+  @override
+  String get transDuration => 'Thời lượng';
+
+  @override
+  String get transAutoAdvance => 'Tự chuyển slide sau';
+
+  @override
+  String get transOff => 'Tắt';
+
+  @override
+  String get transMorphTitle => 'Morph từ slide trước';
+
+  @override
+  String get transMorphSubtitle => 'Các hình khớp nhau morph mượt';
+
+  @override
+  String get transSound => 'Âm thanh';
+
+  @override
+  String get transSoundNone => '(Không)';
+
+  @override
+  String get transSoundApplause => 'Vỗ tay';
+
+  @override
+  String get transSoundChime => 'Chuông';
+
+  @override
+  String get transSoundClick => 'Cú nhấp';
+
+  @override
+  String get transSoundDrum => 'Trống lăn';
+
+  @override
+  String get transSoundNote =>
+      'Âm thanh được nhúng vào bản xuất khi có file audio; nếu không, hiệu ứng vẫn được xuất.';
+
+  @override
+  String get transWarningPptx =>
+      'Hiệu ứng này sẽ được xuất PPTX dưới dạng fade đơn giản.';
+
+  @override
+  String get transApplyAll => 'Áp dụng cho tất cả';
 }

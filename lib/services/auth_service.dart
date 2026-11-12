@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 
 import '../models/user_profile.dart';
@@ -40,13 +41,26 @@ class AuthService {
 
   /// A short-lived join token for the given role (used by the broadcast link
   /// generator — the collaboration service accepts these directly).
-  static String mintToken(String role, {int byteLength = 8}) {
+  static String mintToken(String role, {int byteLength = 16}) {
     final random = Random.secure();
     final bytes = List<int>.generate(
         byteLength, (_) => random.nextInt(256));
     return '${role.substring(0, 1)}_${bytes
         .map((b) => b.toRadixString(16).padLeft(2, '0'))
         .join()}';
+  }
+
+  static bool secureEquals(String left, String right) {
+    final leftBytes = utf8.encode(left);
+    final rightBytes = utf8.encode(right);
+    var difference = leftBytes.length ^ rightBytes.length;
+    final length = max(leftBytes.length, rightBytes.length);
+    for (var index = 0; index < length; index++) {
+      final leftByte = index < leftBytes.length ? leftBytes[index] : 0;
+      final rightByte = index < rightBytes.length ? rightBytes[index] : 0;
+      difference |= leftByte ^ rightByte;
+    }
+    return difference == 0;
   }
 
   /// Parses the role out of a minted token (or null for unrecognised tokens).

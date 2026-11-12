@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ghita_deck/models/export_options.dart';
 import 'package:ghita_deck/services/html_export_service.dart';
+import 'package:ghita_deck/services/local_image_allowlist.dart';
 import 'package:image/image.dart' as img;
 
 void main() {
@@ -36,6 +37,22 @@ void main() {
         throwsA(isA<Exception>()
             .having((e) => e.toString(), 'message', contains('No slides'))),
       );
+    });
+
+    test('deck html carries a restrictive content security policy', () async {
+      final path = await service.exportToHtml(
+        [
+          {'title': 'CSP Slide', 'htmlContent': '<p>policy check</p>'},
+        ],
+        fileName: 'test_csp',
+      );
+      final content = File(path).readAsStringSync();
+      expect(content, contains('http-equiv="Content-Security-Policy"'));
+      expect(content, contains("default-src 'none'"));
+      expect(content, contains('img-src data:'));
+      expect(content, contains('media-src data:'));
+      expect(content, contains("script-src 'unsafe-inline'"));
+      expect(content, isNot(contains('file:')));
     });
 
     test('generates valid HTML structure', () async {
@@ -241,6 +258,13 @@ void main() {
       }
       final tmpDir = await Directory.systemTemp.createTemp('ghita_b17');
       addTearDown(() => tmpDir.delete(recursive: true));
+      LocalImageAllowlist.resetForTests();
+      LocalImageAllowlist.debugAllowedDirs = [tmpDir.path];
+      await LocalImageAllowlist.ensureWarm();
+      addTearDown(() {
+        LocalImageAllowlist.resetForTests();
+        LocalImageAllowlist.debugAllowedDirs = null;
+      });
       final imgPath = '${tmpDir.path}/photo.png';
       File(imgPath).writeAsBytesSync(img.encodePng(image));
 

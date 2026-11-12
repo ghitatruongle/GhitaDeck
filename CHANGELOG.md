@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.0.1] - 2026-11-12 — Stable đầu tiên: bảo mật LAN/nội dung + hiệu ứng thật + Rust gđ2
+
+- **Bảo mật phiên LAN (3 server):** bind đúng interface LAN (không còn 0.0.0.0) + cảnh báo "phiên chưa mã hóa"; share link chuyển sang **one-time bootstrap** (hết token dài hạn trong URL); TTL phiên 8h → 60 phút trượt theo hoạt động; session id opaque (hết leak prefix token); rate limit /join·/view·/once·/ws; so sánh token constant-time ở cả 3 service; view token 8→16 byte; /health ẩn danh tính app; kick collaborator hoạt động thật trên LAN; dọn sạch state phiên khi stop (hết token viewer/lock/revision cũ).
+- **Bảo mật nội dung deck:** CSP khóa media `data:` mặc định + toggle "Nội dung mạng trong trình chiếu" (tối ưu); vô hiệu link ngoài khi Present; ảnh local chỉ đọc trong thư mục cho phép (+ paths user chọn), ảnh lạ bị bỏ + ghi warnings.log (chỉ basename); **zip bomb bị chặn** — stream-decompress cap byte thực (Dart streaming + Rust native khi bật engine); tên entry `../` bị chặn; slide nhận về qua collab được sanitize trước khi vào model.
+- **Bảo mật AI + phụ thuộc:** https-only cho base URL AI (trừ localhost); Gemini key chuyển sang header (hết `?key=`); copilot fetch https + cap 10MB; `archive` floor ≥3.6.1; bỏ flutter_animate.
+- **Hiệu ứng thật:** 26 hiệu ứng Track 33 có keyframes riêng (pageCurl, vortex, origami, honeycomb…) thay fade ảo; easing per-effect; player HTML dùng đúng **duration từng slide** (0.1–3s); cảnh báo hiệu ứng degrade ngay trong dialog; transition dialog l10n EN/VI.
+- **Rust giai đoạn 2:** `zip_extract` native với cap + sanitize tên entry (cargo 33/33); `ZipCodec.decodeWithCaps` fail-closed; benchmark đã đo (doc nội bộ).
+- **UI/docs:** token hóa màu cứng (top-5 file), Semantics liveRegion badge engine, README cập nhật 20 template/61 hiệu ứng.
+- **Sửa bug cũ:** crash ribbon tab Design/Transitions; dialog "Go to slide" dùng controller đã dispose; 2 slide tạo cùng ms bị GlobalKey collision; overflow pane khi sidebar hẹp; **slide thêm trước hydration bị xoá** (mất dữ liệu).
+- **Review+debug tổng:** regex guard chết (nuốt nội dung slide có tag không đóng), fallback zip lệch luật, race startup toggle mạng.
+- **CI:** coverage gate 55% (đạt), full suite 1262 pass / cargo 33/33 / l10n CLEAN / analyze 0 issue.
+- **Định dạng không đổi:** `.ghita` schema 2, LAN protocol v2 — deck cũ mở dùng tiếp; cài đè được mọi bản cũ.
+
 ## [0.0.1-preview] - 2026-11-03 — Diện mạo dọn nhất quán + nền móng ổn định
 
 - **Diện mạo — dọn nhất quán:** thay toàn bộ màu cứng còn sót bằng token theme (`OfficeColors`/`ColorScheme`): nền scaffold, sidebar, title bar, badge `.ghita`, màu trạng thái engine & health provider, nút xóa tất cả — light/dark đồng bộ; sửa tile Phím tắt trong Settings (subtitle trùng title); nút Trợ giúp mở hộp thoại thật thay vì snackbar.

@@ -45,8 +45,12 @@ class _AnimationPaneState extends State<AnimationPane> {
               children: [
                 Icon(Icons.animation, size: 16, color: theme.colorScheme.primary),
                 const SizedBox(width: 6),
-                Text('Animation Pane', style: theme.textTheme.titleSmall),
-                const Spacer(),
+                Expanded(
+                  child: Text('Animation Pane',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall),
+                ),
                 IconButton(
                   icon: const Icon(Icons.add, size: 16),
                   tooltip: 'Add animation',

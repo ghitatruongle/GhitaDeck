@@ -6,6 +6,8 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
+// These functions are ignored because they are not marked as `pub`: `is_unsafe_entry_name`
+
 /// Build a ZIP archive from [ZipEntry] list, returning the archive bytes.
 ///
 /// `level` is the deflate level for text entries (0 disables deflate).
@@ -14,6 +16,17 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 Future<Uint8List> zipArchive(
         {required List<ZipEntry> entries, required PlatformInt64 level}) =>
     RustLib.instance.api.crateApiZipZipArchive(entries: entries, level: level);
+
+Future<List<ZipExtracted>> zipExtract(
+        {required List<int> bytes,
+        required PlatformInt64 maxEntries,
+        required PlatformInt64 maxEntryBytes,
+        required PlatformInt64 maxTotalBytes}) =>
+    RustLib.instance.api.crateApiZipZipExtract(
+        bytes: bytes,
+        maxEntries: maxEntries,
+        maxEntryBytes: maxEntryBytes,
+        maxTotalBytes: maxTotalBytes);
 
 /// One member of the archive. `stored: true` writes the bytes without a
 /// second deflate pass (media arrives already compressed).
@@ -39,4 +52,25 @@ class ZipEntry {
           name == other.name &&
           data == other.data &&
           stored == other.stored;
+}
+
+class ZipExtracted {
+  final String name;
+  final Uint8List data;
+
+  const ZipExtracted({
+    required this.name,
+    required this.data,
+  });
+
+  @override
+  int get hashCode => name.hashCode ^ data.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ZipExtracted &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          data == other.data;
 }

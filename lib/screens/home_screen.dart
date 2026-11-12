@@ -1116,51 +1116,75 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   /// Show a dialog to jump to a specific slide number (Ctrl+G).
   Future<void> _goToSlideDialog(BuildContext context, PresentationState ps) async {
     if (ps.slides.isEmpty) return;
-    final controller = TextEditingController(
-        text: '${ps.currentSlideIndex + 1}');
     final result = await showDialog<int>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.l10n.goToSlideTitle),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(
-            labelText: context.l10n.goToSlideLabel(ps.slides.length),
-            isDense: true,
-          ),
-          onSubmitted: (value) {
-            final n = int.tryParse(value);
-            if (n != null && n >= 1 && n <= ps.slides.length) {
-              Navigator.pop(context, n);
-            }
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(context.l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () {
-              final n = int.tryParse(controller.text);
-              if (n != null && n >= 1 && n <= ps.slides.length) {
-                Navigator.pop(context, n);
-              }
-            },
-            child: Text(context.l10n.goButton),
-          ),
-        ],
-      ),
+      builder: (context) => _GoToSlideDialog(ps: ps),
     );
-    controller.dispose();
     if (result != null) {
       final target = result - 1;
       ps.setCurrentSlide(target);
       _editorState.selectSlide(target);
       _editorState.editSlide(target, ps);
     }
+  }
+}
+
+class _GoToSlideDialog extends StatefulWidget {
+  const _GoToSlideDialog({required this.ps});
+
+  final PresentationState ps;
+
+  @override
+  State<_GoToSlideDialog> createState() => _GoToSlideDialogState();
+}
+
+class _GoToSlideDialogState extends State<_GoToSlideDialog> {
+  late final TextEditingController _controller = TextEditingController(
+      text: '${widget.ps.currentSlideIndex + 1}');
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  int? _parsedTarget(String value) {
+    final n = int.tryParse(value);
+    if (n == null || n < 1 || n > widget.ps.slides.length) return null;
+    return n;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(context.l10n.goToSlideTitle),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        keyboardType: TextInputType.number,
+        decoration: InputDecoration(
+          labelText: context.l10n.goToSlideLabel(widget.ps.slides.length),
+          isDense: true,
+        ),
+        onSubmitted: (value) {
+          final target = _parsedTarget(value);
+          if (target != null) Navigator.pop(context, target);
+        },
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(context.l10n.cancel),
+        ),
+        FilledButton(
+          onPressed: () {
+            final target = _parsedTarget(_controller.text);
+            if (target != null) Navigator.pop(context, target);
+          },
+          child: Text(context.l10n.goButton),
+        ),
+      ],
+    );
   }
 }
 

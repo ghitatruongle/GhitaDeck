@@ -6,6 +6,7 @@ import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ghita_deck/services/export_job.dart';
 import 'package:ghita_deck/services/html_image_loader.dart';
+import 'package:ghita_deck/services/local_image_allowlist.dart';
 import 'package:ghita_deck/services/image_codec.dart';
 import 'package:ghita_deck/services/image_optimizer_service.dart';
 import 'package:ghita_deck/services/ppt_generator.dart';
@@ -33,12 +34,17 @@ void main() {
     HttpOverrides.global = null;
     HtmlImageLoader.clearCaches();
     HtmlImageLoader.debugCacheDir = '${tempDir.path}/image_cache';
+    LocalImageAllowlist.resetForTests();
+    LocalImageAllowlist.debugAllowedDirs = [tempDir.path];
+    await LocalImageAllowlist.ensureWarm();
     PPTGenerator.debugDisableMediaDedupe = false;
   });
 
   tearDown(() async {
     HtmlImageLoader.clearCaches();
     HtmlImageLoader.debugCacheDir = null;
+    LocalImageAllowlist.resetForTests();
+    LocalImageAllowlist.debugAllowedDirs = null;
     await tempDir.delete(recursive: true);
   });
 

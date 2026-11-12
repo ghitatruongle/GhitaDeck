@@ -61,10 +61,18 @@ void main() {
         htmlContent: '<h1>$title</h1>\n<p>body</p>',
       );
 
-  /// The debounced save fires after 400 ms; waiting past it makes the
-  /// persistence assertions deterministic without fake clocks.
-  Future<void> settleDebounce() =>
-      Future<void>.delayed(const Duration(milliseconds: 700));
+  /// The debounced save fires after 400 ms; polling for convergence makes
+  /// the persistence assertions deterministic even on a loaded machine.
+  Future<void> settleDebounce(PresentationState state) async {
+    final deadline = DateTime.now().add(const Duration(seconds: 10));
+    while (DateTime.now().isBefore(deadline)) {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      if (!state.hasUnsavedChanges &&
+          state.savedRevision == state.documentRevision) {
+        return;
+      }
+    }
+  }
 
   /// undo()/redo() kick off a fire-and-forget save whose finally block still
   /// notifies listeners; let it finish before teardown disposes the state.
@@ -72,6 +80,16 @@ void main() {
       Future<void>.delayed(const Duration(milliseconds: 150));
 
   group('P2 — hydrate & readiness', () {
+    test('slides added before hydration survive an empty stored deck',
+        () async {
+      final state = PresentationState();
+      addTearDown(state.dispose);
+      state.addSlide(slide('Early'));
+      await state.ready;
+      expect(state.slides, hasLength(1));
+      expect(state.slides.first.title, 'Early');
+      expect(state.hasUnsavedChanges, isTrue);
+    });
     test('fresh state is hydrating and exposes a safe empty deck until ready',
         () async {
       final state = PresentationState();
@@ -194,11 +212,14 @@ void main() {
       expect(state.documentRevision, greaterThan(0));
       expect(state.hasUnsavedChanges, isTrue);
 
-      await settleDebounce();
+      await settleDebounce(state);
 
       expect(state.isSaving, isFalse);
       expect(state.savedRevision, state.documentRevision);
       expect(state.hasUnsavedChanges, isFalse);
+
+      await flushSaves();
+      await Future<void>.delayed(const Duration(milliseconds: 500));
     });
 
     test('savePresentation toggles isSaving synchronously and clears it',
@@ -249,7 +270,7 @@ void main() {
           reason: 'setEffect kicks off an immediate save');
       expect(notified, greaterThanOrEqualTo(2));
 
-      await settleDebounce();
+      await settleDebounce(state);
       expect(state.isSaving, isFalse);
       expect(state.hasUnsavedChanges, isFalse);
     });

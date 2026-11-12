@@ -47,7 +47,7 @@ void main() {
 
     test('start(requireToken: false) admits a token-less client', () async {
       final svc = RemoteControlService();
-      final url = await svc.start(port: 8093, maxPort: 8099, requireToken: false);
+      final url = await svc.start(port: 8093, maxPort: 8099, requireToken: false, bindAddress: '127.0.0.1');
       expect(url, isNotNull);
       try {
         final ws = await WebSocket.connect(
@@ -66,7 +66,7 @@ void main() {
 
     test('start(requireToken: true) rejects a token-less client', () async {
       final svc = RemoteControlService();
-      final url = await svc.start(port: 8093, maxPort: 8099, requireToken: true);
+      final url = await svc.start(port: 8093, maxPort: 8099, requireToken: true, bindAddress: '127.0.0.1');
       expect(url, isNotNull);
       try {
         final ws = await WebSocket.connect(

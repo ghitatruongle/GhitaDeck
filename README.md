@@ -3,8 +3,8 @@
 Flutter application for creating PowerPoint presentations with HTML support and AI-powered content generation.
 
 ## Version
-- **Current version:** `0.0.1+1` (0.0.1-preview — installs over every previous GhitaDeck / GhitaPPT Converter build)
-- **Release status:** Official (Rust core + DOCX report + image optimizer)
+- **Current version:** `0.0.1+2` (0.0.1 stable — installs over every previous GhitaDeck / GhitaPPT Converter build)
+- **Release status:** Official stable (LAN/content security hardening + real transitions + Rust zip native)
 
 ## Features
 
@@ -34,7 +34,7 @@ Write custom HTML for slides — the engine preserves rich content in the output
 - **Present mode**: fullscreen in-app playback (arrow keys, progress bar, Esc to exit)
 
 ### 4. **Slide Transition Effects**
-14 transition effects (fade, push, wipe, split, blinds, clock, zoom, etc.) — deck-wide default plus per-slide overrides.
+61 transition effects across 6 groups (Basic / Entrance / Emphasis / Exit / Motion Path / Advanced): every effect plays for real in the HTML player and Present mode with per-effect easing, and maps to native PPTX transitions on export. Deck-wide default plus per-slide overrides with 0.1–3 s duration, auto-advance and transition sound.
 
 ### 5. **AI Assistant**
 Chat interface to generate presentation HTML using **OpenAI**, **Anthropic**, **Google Gemini**, or **Ollama** (local, no API key needed).
@@ -54,7 +54,7 @@ Chat interface to generate presentation HTML using **OpenAI**, **Anthropic**, **
 - Undo/redo time machine history (up to 30 snapshots)
 
 ### 8. **Slide Templates**
-5 bundled templates (Business, Creative, Academic, Marketing, Minimal) with recommended transitions and accent colors.
+20 bundled templates in 6 categories (Business, Creative, Academic, Marketing and more) with recommended transitions and accent colors, plus user-saved templates.
 
 ### 9. **Dark Mode**
 Toggle between Light, Dark, and System theme mode. Persisted across restarts.

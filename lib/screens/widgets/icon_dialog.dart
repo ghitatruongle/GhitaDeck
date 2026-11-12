@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/l10n.dart';
 import '../../models/icon_item.dart';
 import '../../services/icon_library_service.dart';
+import '../../theme/office_colors.dart';
 
 /// "Chèn Icon" dialog (Track 15, P2): search, category filter, colour picker
 /// and size slider — returns an [IconItem] or null.
@@ -15,7 +16,7 @@ class IconDialog extends StatefulWidget {
 class _IconDialogState extends State<IconDialog> {
   String _searchQuery = '';
   String _selectedCategory = 'All';
-  Color _selectedColor = const Color(0xFF000000);
+  Color _selectedColor = OfficeColors.swatchBlack;
   int _size = 48;
   final _searchController = TextEditingController();
   final _recentIcons = <IconItem>[];
@@ -135,14 +136,14 @@ class _IconDialogState extends State<IconDialog> {
                 Text(l.iconColor, style: const TextStyle(fontSize: 12)),
                 const SizedBox(width: 8),
                 for (final swatch in const [
-                  Color(0xFF000000),
-                  Color(0xFFFF0000),
-                  Color(0xFFFF8C00),
-                  Color(0xFFFFD93D),
-                  Color(0xFF6BCB77),
-                  Color(0xFF3A8FD4),
-                  Color(0xFF7A5CD0),
-                  Color(0xFFFFFFFF),
+                  OfficeColors.swatchBlack,
+                  OfficeColors.swatchRed,
+                  OfficeColors.swatchOrange,
+                  OfficeColors.swatchYellow,
+                  OfficeColors.swatchGreen,
+                  OfficeColors.swatchBlue,
+                  OfficeColors.swatchPurple,
+                  OfficeColors.swatchWhite,
                 ])
                   GestureDetector(
                     onTap: () => setState(() => _selectedColor = swatch),

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:webview_windows/webview_windows.dart';
 import '../../services/ai_html_guard.dart';
+import '../../services/network_content_policy.dart';
 
 /// Renders a single slide's HTML as a high-fidelity 16:9 Presentation Canvas Preview.
 /// Uses WebView2 when available, with automatic fallback to Flutter text rendering.
@@ -31,7 +32,7 @@ class SlidePreview extends StatefulWidget {
 <!DOCTYPE html>
 <html><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: file:; media-src data: file:; font-src data:; style-src 'unsafe-inline';">
+<meta http-equiv="Content-Security-Policy" content="${NetworkContentPolicy.previewContentSecurityPolicy()}">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {

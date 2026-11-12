@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
+import 'url_scheme_guard.dart';
+
 /// Cloud sync over WebDAV (Track 50, FEAT 82).
 ///
 /// WebDAV (Nextcloud/ownCloud first) is used rather than a proprietary API:
@@ -65,10 +67,7 @@ class CloudSyncService {
         'Cloud server URLs cannot contain credentials, a query, or a fragment.',
       );
     }
-    final isLoopback = uri.host.toLowerCase() == 'localhost' ||
-        uri.host == '127.0.0.1' ||
-        uri.host == '::1';
-    if (uri.scheme != 'https' && !(uri.scheme == 'http' && isLoopback)) {
+    if (UrlSchemeGuard.checkUri(uri) != UrlSchemeCheckResult.allowed) {
       throw const FormatException(
         'HTTPS is required for cloud sync. HTTP is allowed only on localhost.',
       );

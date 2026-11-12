@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../providers/presentation_state.dart';
+import '../../services/local_image_allowlist.dart';
 import '../../services/stock_media_service.dart';
 import '../../utils/effect_helpers.dart';
 import '../../l10n/l10n.dart';
@@ -11,6 +12,7 @@ import 'diagram_dialog.dart';
 import 'stock_media_dialog.dart';
 import '../../utils/error_mapper.dart';
 import '../../utils/snackbar_helper.dart';
+import '../../theme/office_colors.dart';
 
 /// PowerPoint-style Ribbon toolbar with tabbed interface.
 /// v1.2.0: All buttons fully wired — no stubs.
@@ -653,42 +655,45 @@ class _RibbonToolbarState extends State<RibbonToolbar>
               children: [
                 SizedBox(
                   height: 56,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: themeGradients.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 6),
-                    itemBuilder: (context, index) {
-                      final bgHex =
-                          '#${themeGradients[index][0].toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
-                      return GestureDetector(
-                        onTap: () => widget.onSetSlideBackground?.call(bgHex),
-                        child: Container(
-                          width: 50,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: themeGradients[index],
-                            ),
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(
-                              color: theme.colorScheme.outline
-                                  .withValues(alpha: 0.3),
-                            ),
-                          ),
-                          child: const Center(
-                            child: Text(
-                              'Aa',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
+                  child: Row(
+                    children: [
+                      for (var i = 0; i < themeGradients.length; i++) ...[
+                        if (i > 0) const SizedBox(width: 6),
+                        Builder(builder: (context) {
+                          final bgHex =
+                              '#${themeGradients[i][0].toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}';
+                          return GestureDetector(
+                            onTap: () =>
+                                widget.onSetSlideBackground?.call(bgHex),
+                            child: Container(
+                              width: 50,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: themeGradients[i],
+                                ),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(
+                                  color: theme.colorScheme.outline
+                                      .withValues(alpha: 0.3),
+                                ),
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  'Aa',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                      );
-                    },
+                          );
+                        }),
+                      ],
+                    ],
                   ),
                 ),
               ],
@@ -789,25 +794,27 @@ class _RibbonToolbarState extends State<RibbonToolbar>
               children: [
                 SizedBox(
                   height: 56,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: 14,
-                    separatorBuilder: (_, __) => const SizedBox(width: 4),
-                    itemBuilder: (context, index) {
-                      final effects = SlideEffect.values
-                          .where((e) => e != SlideEffect.none)
-                          .toList();
-                      if (index >= effects.length) {
-                        return const SizedBox.shrink();
-                      }
-                      final effect = effects[index];
-                      return _TransitionButton(
-                        effect: effect,
-                        label: EffectHelpers.effectName(effect),
-                        onPressed: () => widget.onSetSlideEffect?.call(effect),
-                      );
-                    },
-                  ),
+                  child: Builder(builder: (context) {
+                    final effects = SlideEffect.values
+                        .where((e) => e != SlideEffect.none)
+                        .toList();
+                    final shown = effects.length > 14
+                        ? effects.sublist(0, 14)
+                        : effects;
+                    return Row(
+                      children: [
+                        for (var i = 0; i < shown.length; i++) ...[
+                          if (i > 0) const SizedBox(width: 4),
+                          _TransitionButton(
+                            effect: shown[i],
+                            label: EffectHelpers.effectName(shown[i]),
+                            onPressed: () =>
+                                widget.onSetSlideEffect?.call(shown[i]),
+                          ),
+                        ],
+                      ],
+                    );
+                  }),
                 ),
               ],
             ),
@@ -1163,9 +1170,9 @@ class _RibbonToolbarState extends State<RibbonToolbar>
                       Colors.blueGrey,
                       Colors.black,
                       Colors.white,
-                      const Color(0xFF1a1a2e),
-                      const Color(0xFF16213e),
-                      const Color(0xFF0f3460),
+                      OfficeColors.deckGradient1,
+                      OfficeColors.deckGradient2,
+                      OfficeColors.deckGradient3,
                     ]
                         .map((c) => GestureDetector(
                               onTap: () => setState(() => selectedColor = c),
@@ -1215,6 +1222,7 @@ class _RibbonToolbarState extends State<RibbonToolbar>
       if (result != null &&
           result.files.isNotEmpty &&
           result.files.first.path != null) {
+        LocalImageAllowlist.registerPickedFile(result.files.first.path!);
         final file = File(result.files.first.path!);
         final bytes = await file.readAsBytes();
         final base64Str = base64Encode(bytes);
@@ -1672,8 +1680,8 @@ class _RibbonToolbarState extends State<RibbonToolbar>
 
   /// Gradient background dialog.
   void _showGradientDialog(BuildContext context) {
-    Color color1 = const Color(0xFF1a1a2e);
-    Color color2 = const Color(0xFF16213e);
+    Color color1 = OfficeColors.deckGradient1;
+    Color color2 = OfficeColors.deckGradient2;
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(

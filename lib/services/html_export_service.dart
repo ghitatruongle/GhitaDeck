@@ -28,6 +28,7 @@ import 'export_primitives.dart';
 import 'html_image_loader.dart';
 import '../core/html/html_parser.dart';
 import 'ai_html_guard.dart';
+import 'network_content_policy.dart';
 
 class HtmlExportService {
   static const String _defaultFileName = 'presentation';
@@ -148,6 +149,7 @@ class HtmlExportService {
     String playerLocale = 'en',
     ExportCancelToken? cancelToken,
     DeckMeta? deckMeta,
+    bool stripLinks = false,
   }) {
     return _deckHtml(
       slides,
@@ -157,6 +159,7 @@ class HtmlExportService {
       playerLocale: playerLocale,
       cancelToken: cancelToken,
       deckMeta: deckMeta,
+      stripLinks: stripLinks,
     );
   }
 
@@ -174,6 +177,7 @@ class HtmlExportService {
     ExportCancelToken? cancelToken,
     DeckMeta? deckMeta,
     ExportProgressCallback? onProgress,
+    bool stripLinks = false,
   }) {
     final keySource = jsonEncode([
       slides,
@@ -185,6 +189,7 @@ class HtmlExportService {
       autoAdvance?.inMilliseconds ?? 0,
       playerLocale,
       deckMeta?.toJson() ?? '',
+      stripLinks,
     ]);
     final key = _fnv1a64(keySource);
     final hit = _deckCache[key];
@@ -208,6 +213,7 @@ class HtmlExportService {
       cancelToken: cancelToken,
       deckMeta: deckMeta,
       onProgress: onProgress,
+      stripLinks: stripLinks,
     );
     _deckCache[key] = _DeckCacheEntry(keySource, html);
     if (_deckCache.length > _deckCacheCapacity) {
@@ -228,6 +234,7 @@ class HtmlExportService {
     ExportCancelToken? cancelToken,
     DeckMeta? deckMeta,
     ExportProgressCallback? onProgress,
+    bool stripLinks = false,
   }) {
     final buffer = StringBuffer();
     cancelToken?.throwIfCancelled();
@@ -285,7 +292,7 @@ class HtmlExportService {
     // one short class per effect, duplicated keyframes emitted only once.
     final effectsCss = EffectPreviewService.generateEffectsCss(
       usedEffects,
-      duration: 0.6,
+      duration: 0.5,
     );
 
     // Track 29, P3: per-object animations from visualElements. Collected by
@@ -338,6 +345,8 @@ class HtmlExportService {
     buffer.write('<meta charset="UTF-8">');
     buffer.write(
         '<meta name="viewport" content="width=device-width, initial-scale=1.0">');
+    buffer.write('<meta http-equiv="Content-Security-Policy" '
+        'content="${NetworkContentPolicy.deckContentSecurityPolicy()}">');
     buffer.write('<title>Presentation</title>');
     buffer.write('<style>');
     buffer.write('  * { margin: 0; padding: 0; box-sizing: border-box; }');
@@ -652,6 +661,7 @@ class HtmlExportService {
         imageIds: imageIds,
         lazyVideos: lazyVideos,
         videoIds: videoIds,
+        stripLinks: stripLinks,
       );
       final notes = includeNotes ? _speakerNotes(slide) : '';
       // Track 13, P5: narration audio (slide-level field) becomes a small
@@ -685,14 +695,21 @@ class HtmlExportService {
       // Get transition class for this slide
       String transitionClass = '';
       final effectName = slide['effect'] as String?;
+      var durationStyle = '';
       if (effectName != null && effectName.isNotEmpty && effectName != 'none') {
         transitionClass = ' slide-transition-$effectName';
+        final durationMs = slide['transitionDurationMs'] as num?;
+        if (durationMs != null && durationMs > 0) {
+          durationStyle =
+              ' style="--st-duration:${(durationMs / 1000).toStringAsFixed(2)}s"';
+        }
       }
 
       // Server-side activation: the starting slide renders even if the
       // player script fails to run at all.
       final activeClass = i == initIndex ? ' active' : '';
-      buffer.write('  <div class="slide$transitionClass$activeClass" id="slide-$i">');
+      buffer.write(
+          '  <div class="slide$transitionClass$activeClass"$durationStyle id="slide-$i">');
       buffer.write('    <h1>$cleanTitle</h1>');
       buffer.write('    $processedContent');
       // Track 17, P6: free-form text/shape elements from the visualElements
@@ -1168,9 +1185,11 @@ class HtmlExportService {
     required Map<String, String> imageIds,
     required Map<String, String> lazyVideos,
     required Map<String, String> videoIds,
+    bool stripLinks = false,
   }) {
     final document = html_parser.parse(AIHtmlGuard.guard(rawHtml,
-            maxBytes: AIHtmlGuard.presentationMaxBytes)
+            maxBytes: AIHtmlGuard.presentationMaxBytes,
+            stripLinks: stripLinks)
         .html);
     final body = document.body;
     if (body == null) return '';

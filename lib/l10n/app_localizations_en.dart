@@ -3259,4 +3259,76 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get saveFailedBeforeClose =>
       'Saving failed before closing — the draft is kept. Try Ctrl+S or close again.';
+
+  @override
+  String get lanWarnUnencrypted =>
+      'Session is not encrypted — use only on trusted networks';
+
+  @override
+  String get lanWarnLocalOnly =>
+      'Local only — no LAN address available, other devices cannot connect';
+
+  @override
+  String get netContentToggleTitle => 'Network content in presentation';
+
+  @override
+  String get netContentToggleSubtitle =>
+      'Allow slides to load remote (https) images and media while presenting. Off keeps the presentation fully offline (embedded data only). Links in Present mode are always disabled.';
+
+  @override
+  String exportImagesSkipped(int n) {
+    return '$n image(s) skipped — outside allowed folders';
+  }
+
+  @override
+  String get lanShareNewLink => 'New share link';
+
+  @override
+  String get transTitle => 'Transitions';
+
+  @override
+  String get transEffect => 'Effect';
+
+  @override
+  String get transDuration => 'Duration';
+
+  @override
+  String get transAutoAdvance => 'Auto-advance after';
+
+  @override
+  String get transOff => 'Off';
+
+  @override
+  String get transMorphTitle => 'Morph from previous slide';
+
+  @override
+  String get transMorphSubtitle => 'Matching shapes morph smoothly';
+
+  @override
+  String get transSound => 'Sound';
+
+  @override
+  String get transSoundNone => '(None)';
+
+  @override
+  String get transSoundApplause => 'Applause';
+
+  @override
+  String get transSoundChime => 'Chime';
+
+  @override
+  String get transSoundClick => 'Click';
+
+  @override
+  String get transSoundDrum => 'Drum Roll';
+
+  @override
+  String get transSoundNote =>
+      'Sound is embedded in exported decks when the audio file is available; otherwise the transition still exports.';
+
+  @override
+  String get transWarningPptx => 'This effect exports to PPTX as a plain fade.';
+
+  @override
+  String get transApplyAll => 'Apply to all';
 }

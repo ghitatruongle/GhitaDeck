@@ -336,11 +336,20 @@ void main() {
         isNotNull,
         reason: 'a provider without a model cannot generate',
       );
-      // Reality check: the validator only rejects unparseable URLs — any
-      // scheme with an authority (even ftp://) passes and would fail later
-      // at request time. Pinned here so a future tightening is deliberate.
       expect(
         AIProviderManager.validateProvider(base.copyWith(baseUrl: 'ftp://x')),
+        isNotNull,
+        reason: 'only http and https base URLs are accepted',
+      );
+      expect(
+        AIProviderManager.validateProvider(
+            base.copyWith(baseUrl: 'http://203.0.113.10')),
+        isNotNull,
+        reason: 'plain http is limited to loopback and link-local hosts',
+      );
+      expect(
+        AIProviderManager.validateProvider(
+            base.copyWith(baseUrl: 'http://127.0.0.1:1234')),
         isNull,
       );
       expect(

@@ -58,7 +58,7 @@
   "addNewProvider": "Thêm Mới",
   "details": "Chi Tiết",
   "apiKeySaved": "Đã lưu API Key cho {name}",
-  "apiKeyHint": "API Key...",
+  "apiKeyHint": "Khoá API...",
   "saveApiKeyTooltip": "Lưu API Key",
   "exportBackup": "Xuất Cấu Hình (JSON)",
   "importBackup": "Nhập Cấu Hình (JSON)",
@@ -150,7 +150,7 @@
   "infoSection": "Thông Tin",
   "addNew": "Thêm mới",
   "recentProjects": "Dự Án Gần Đây",
-  "noRecentProjects": "Chưa có dự án nào",
+  "noRecentProjects": "Chưa có dự án nào được mở gần đây",
   "openProject": "Mở Dự Án",
   "removeFromList": "Xóa khỏi danh sách",
   "removeAll": "Xóa Tất Cả",
@@ -1010,14 +1010,20 @@
   "statusBarSlideProgress": "Slide {current} / {total}",
   "@statusBarSlideProgress": {
     "placeholders": {
-      "current": {"type": "int"},
-      "total": {"type": "int"}
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "statusBarWords": "{n, plural, =1{1 từ} other{{n} từ}}",
   "@statusBarWords": {
     "placeholders": {
-      "n": {"type": "int"}
+      "n": {
+        "type": "int"
+      }
     }
   },
   "statusBarExporting": "Đang xuất...",
@@ -1027,16 +1033,26 @@
   "statusBarViewLabel": "chế độ {view}",
   "@statusBarViewLabel": {
     "placeholders": {
-      "view": {"type": "String"}
+      "view": {
+        "type": "String"
+      }
     }
   },
   "statusBarStatusLabel": "Trạng thái trình chiếu: slide {current}/{total}, zoom {zoom}%{auto}",
   "@statusBarStatusLabel": {
     "placeholders": {
-      "current": {"type": "int"},
-      "total": {"type": "int"},
-      "zoom": {"type": "int"},
-      "auto": {"type": "String"}
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "zoom": {
+        "type": "int"
+      },
+      "auto": {
+        "type": "String"
+      }
     }
   },
   "zoomDialogTitle": "Thu phóng",
@@ -1044,7 +1060,9 @@
   "goToSlideLabel": "Số slide (1-{total})",
   "@goToSlideLabel": {
     "placeholders": {
-      "total": {"type": "int"}
+      "total": {
+        "type": "int"
+      }
     }
   },
   "goButton": "Đi",
@@ -1354,7 +1372,6 @@
   "projectMetaEditing": "{n} slide • {ratio} • Đang chỉnh sửa",
   "saveGhitaTooltip": "Lưu file .ghita",
   "saveProjectDialog": "Lưu dự án",
-  "noRecentProjects": "Chưa có dự án nào được mở gần đây",
   "openTooltip": "Mở",
   "removeFromListTooltip": "Xoá khỏi danh sách",
   "timeJustNow": "Vừa xong",
@@ -1366,7 +1383,6 @@
   "providerActiveBadge": "Đang dùng",
   "modelLine": "Model: {model}",
   "modelDefault": "Mặc định",
-  "apiKeyHint": "Khoá API...",
   "restoreSettingsTitle": "Khôi phục cài đặt?",
   "restoreBackupInfo": "File backup từ {exportedAt}.\nSố providers: {providerCount}\n\nCài đặt hiện tại sẽ bị ghi đè. Tiếp tục?",
   "restoreFailed": "Không thể khôi phục dữ liệu: {error}",
@@ -1404,5 +1420,50 @@
   "continueAction": "Tiếp Tục",
   "exportSaveAsLabel": "Chọn nơi lưu",
   "exportSaveAsTitle": "Lưu bản xuất với tên",
-  "saveFailedBeforeClose": "Lưu thất bại trước khi đóng — bản nháp vẫn được giữ. Thử Ctrl+S hoặc đóng lại."
+  "saveFailedBeforeClose": "Lưu thất bại trước khi đóng — bản nháp vẫn được giữ. Thử Ctrl+S hoặc đóng lại.",
+  "lanWarnUnencrypted": "Phiên chưa mã hóa — chỉ dùng trong mạng đáng tin cậy",
+  "lanWarnLocalOnly": "Chỉ cục bộ — không có địa chỉ LAN, thiết bị khác không thể kết nối",
+  "netContentToggleTitle": "Nội dung mạng khi trình chiếu",
+  "netContentToggleSubtitle": "Cho phép slide tải ảnh và media từ mạng (https) khi trình chiếu. Tắt để trình chiếu hoàn toàn ngoại tuyến (chỉ dữ liệu nhúng). Liên kết trong chế độ Trình chiếu luôn bị vô hiệu hóa.",
+  "exportImagesSkipped": "Đã bỏ qua {n} ảnh — nằm ngoài thư mục được phép",
+  "@exportImagesSkipped": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "lanShareNewLink": "Tạo liên kết chia sẻ mới",
+  "transTitle": "Hiệu ứng chuyển",
+  "transEffect": "Hiệu ứng",
+  "transDuration": "Thời lượng",
+  "transAutoAdvance": "Tự chuyển slide sau",
+  "transOff": "Tắt",
+  "transMorphTitle": "Morph từ slide trước",
+  "transMorphSubtitle": "Các hình khớp nhau morph mượt",
+  "transSound": "Âm thanh",
+  "transSoundNone": "(Không)",
+  "transSoundApplause": "Vỗ tay",
+  "transSoundChime": "Chuông",
+  "transSoundClick": "Cú nhấp",
+  "transSoundDrum": "Trống lăn",
+  "transSoundNote": "Âm thanh được nhúng vào bản xuất khi có file audio; nếu không, hiệu ứng vẫn được xuất.",
+  "transWarningPptx": "Hiệu ứng này sẽ được xuất PPTX dưới dạng fade đơn giản.",
+  "transApplyAll": "Áp dụng cho tất cả",
+  "@restoreBackupInfo": {
+    "placeholders": {
+      "exportedAt": {},
+      "providerCount": {
+        "type": "int"
+      }
+    }
+  },
+  "@projectMetaEditing": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "ratio": {}
+    }
+  }
 }

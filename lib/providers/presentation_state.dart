@@ -37,6 +37,8 @@ import '../services/smart_draft_manager.dart';
 import '../services/time_machine_history_service.dart';
 import '../services/project_bundle_service.dart';
 import '../services/header_footer_service.dart';
+import '../services/local_image_allowlist.dart';
+import '../services/network_content_policy.dart';
 import 'config_service.dart';
 
 // SlideEffect moved to models/slide.dart in 0.3.0; re-export so existing
@@ -232,10 +234,12 @@ class PresentationState with ChangeNotifier, DeckExportActions {
   }
 
   Future<void> _initialize() async {
+    unawaited(LocalImageAllowlist.ensureWarm());
     try {
       await Future.wait<void>([
         loadPresentation(),
         _loadAutoAdvance(),
+        _loadNetworkContent(),
         loadCustomShows(),
       ]);
       _lastPersistenceError = null;
@@ -322,6 +326,13 @@ class PresentationState with ChangeNotifier, DeckExportActions {
     _autoAdvance = data.enabled;
     _autoAdvanceSeconds = data.seconds;
     notifyListeners();
+  }
+
+  Future<void> _loadNetworkContent() async {
+    final enabled = await _configService.loadNetworkContent();
+    if (_disposed) return;
+    if (NetworkContentPolicy.userTouched) return;
+    NetworkContentPolicy.remoteAllowed = enabled;
   }
 
   void _persistAutoAdvance() {
@@ -475,12 +486,16 @@ class PresentationState with ChangeNotifier, DeckExportActions {
       useEngineZip: true,
     );
     if (success) {
+      LocalImageAllowlist.registerPickedFile(targetPath);
+      LocalImageAllowlist.setCurrentProjectDir(p.dirname(targetPath));
       await purgeDraftSandbox();
     }
     return success;
   }
 
   Future<bool> loadProjectFromFile(String sourcePath) async {
+    LocalImageAllowlist.registerPickedFile(sourcePath);
+    LocalImageAllowlist.setCurrentProjectDir(p.dirname(sourcePath));
     final data = await _bundleService.loadProjectBundle(sourcePath);
     if (data != null) {
       final rawSlides = data['slides'] as List<dynamic>?;
@@ -1147,9 +1162,13 @@ class PresentationState with ChangeNotifier, DeckExportActions {
   Future<void> loadPresentation([String? title]) async {
     final data = await _configService.loadSlides();
     if (_disposed) return;
-    _slides = (data['slides'] as List)
+    final loadedSlides = (data['slides'] as List)
         .map((e) => Slide.fromMap(Map<String, dynamic>.from(e as Map)))
         .toList();
+    final hadStoredDeck = loadedSlides.isNotEmpty;
+    if (hadStoredDeck || _slides.isEmpty) {
+      _slides = loadedSlides;
+    }
     _keepCurrentSlideInRange();
     try {
       _slideEffect = SlideEffect.values.byName(data['slide_effect'] ?? 'none');
@@ -1161,8 +1180,9 @@ class PresentationState with ChangeNotifier, DeckExportActions {
         : const DeckMeta();
     _historyService.clear();
     _recordHistory('Trạng thái ban đầu');
-    _savedRevision = _documentRevision;
-    _hasUnsavedChanges = false;
+    _hasUnsavedChanges = !hadStoredDeck && _slides.isNotEmpty;
+    _savedRevision =
+        _hasUnsavedChanges ? _savedRevision : _documentRevision;
     notifyListeners();
   }
 

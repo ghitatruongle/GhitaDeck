@@ -6121,6 +6121,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Saving failed before closing — the draft is kept. Try Ctrl+S or close again.'**
   String get saveFailedBeforeClose;
+
+  /// No description provided for @lanWarnUnencrypted.
+  ///
+  /// In en, this message translates to:
+  /// **'Session is not encrypted — use only on trusted networks'**
+  String get lanWarnUnencrypted;
+
+  /// No description provided for @lanWarnLocalOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Local only — no LAN address available, other devices cannot connect'**
+  String get lanWarnLocalOnly;
+
+  /// No description provided for @netContentToggleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Network content in presentation'**
+  String get netContentToggleTitle;
+
+  /// No description provided for @netContentToggleSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow slides to load remote (https) images and media while presenting. Off keeps the presentation fully offline (embedded data only). Links in Present mode are always disabled.'**
+  String get netContentToggleSubtitle;
+
+  /// No description provided for @exportImagesSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} image(s) skipped — outside allowed folders'**
+  String exportImagesSkipped(int n);
+
+  /// No description provided for @lanShareNewLink.
+  ///
+  /// In en, this message translates to:
+  /// **'New share link'**
+  String get lanShareNewLink;
+
+  /// No description provided for @transTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Transitions'**
+  String get transTitle;
+
+  /// No description provided for @transEffect.
+  ///
+  /// In en, this message translates to:
+  /// **'Effect'**
+  String get transEffect;
+
+  /// No description provided for @transDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get transDuration;
+
+  /// No description provided for @transAutoAdvance.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-advance after'**
+  String get transAutoAdvance;
+
+  /// No description provided for @transOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get transOff;
+
+  /// No description provided for @transMorphTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Morph from previous slide'**
+  String get transMorphTitle;
+
+  /// No description provided for @transMorphSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Matching shapes morph smoothly'**
+  String get transMorphSubtitle;
+
+  /// No description provided for @transSound.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound'**
+  String get transSound;
+
+  /// No description provided for @transSoundNone.
+  ///
+  /// In en, this message translates to:
+  /// **'(None)'**
+  String get transSoundNone;
+
+  /// No description provided for @transSoundApplause.
+  ///
+  /// In en, this message translates to:
+  /// **'Applause'**
+  String get transSoundApplause;
+
+  /// No description provided for @transSoundChime.
+  ///
+  /// In en, this message translates to:
+  /// **'Chime'**
+  String get transSoundChime;
+
+  /// No description provided for @transSoundClick.
+  ///
+  /// In en, this message translates to:
+  /// **'Click'**
+  String get transSoundClick;
+
+  /// No description provided for @transSoundDrum.
+  ///
+  /// In en, this message translates to:
+  /// **'Drum Roll'**
+  String get transSoundDrum;
+
+  /// No description provided for @transSoundNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound is embedded in exported decks when the audio file is available; otherwise the transition still exports.'**
+  String get transSoundNote;
+
+  /// No description provided for @transWarningPptx.
+  ///
+  /// In en, this message translates to:
+  /// **'This effect exports to PPTX as a plain fade.'**
+  String get transWarningPptx;
+
+  /// No description provided for @transApplyAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply to all'**
+  String get transApplyAll;
 }
 
 class _AppLocalizationsDelegate

@@ -58,6 +58,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<ZipEntry> dco_decode_list_zip_entry(dynamic raw);
 
   @protected
+  List<ZipExtracted> dco_decode_list_zip_extracted(dynamic raw);
+
+  @protected
   int dco_decode_u_8(dynamic raw);
 
   @protected
@@ -65,6 +68,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ZipEntry dco_decode_zip_entry(dynamic raw);
+
+  @protected
+  ZipExtracted dco_decode_zip_extracted(dynamic raw);
 
   @protected
   String sse_decode_String(SseDeserializer deserializer);
@@ -104,6 +110,10 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<ZipEntry> sse_decode_list_zip_entry(SseDeserializer deserializer);
 
   @protected
+  List<ZipExtracted> sse_decode_list_zip_extracted(
+      SseDeserializer deserializer);
+
+  @protected
   int sse_decode_u_8(SseDeserializer deserializer);
 
   @protected
@@ -111,6 +121,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ZipEntry sse_decode_zip_entry(SseDeserializer deserializer);
+
+  @protected
+  ZipExtracted sse_decode_zip_extracted(SseDeserializer deserializer);
 
   @protected
   void sse_encode_String(String self, SseSerializer serializer);
@@ -152,6 +165,10 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_list_zip_entry(List<ZipEntry> self, SseSerializer serializer);
 
   @protected
+  void sse_encode_list_zip_extracted(
+      List<ZipExtracted> self, SseSerializer serializer);
+
+  @protected
   void sse_encode_u_8(int self, SseSerializer serializer);
 
   @protected
@@ -159,6 +176,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_zip_entry(ZipEntry self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_zip_extracted(ZipExtracted self, SseSerializer serializer);
 }
 
 // Section: wire_class

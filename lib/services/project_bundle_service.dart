@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:flutter/foundation.dart';
@@ -165,6 +166,62 @@ class ProjectBundleService {
     }
   }
 
+  @visibleForTesting
+  static List<int> debugInflateCapped(
+          InputStreamBase raw, int cap, String label) =>
+      _inflateCapped(raw, cap, label);
+
+  static List<int> _entryBytes(ArchiveFile entry, int cap, String label) {
+    final raw = entry.rawContent;
+    if (raw == null) {
+      throw FormatException('Project bundle entry "$label" is empty.');
+    }
+    if (entry.compressionType == ArchiveFile.DEFLATE) {
+      return _inflateCapped(raw, cap, label);
+    }
+    final stored = raw.toUint8List();
+    if (stored.length > cap) {
+      throw FormatException(
+          'Project bundle entry "$label" expands beyond limits.');
+    }
+    return stored;
+  }
+
+  static List<int> _inflateCapped(InputStreamBase raw, int cap, String label) {
+    final compressed = raw.toUint8List();
+    final filter = RawZLibFilter.inflateFilter(raw: true);
+    final out = BytesBuilder(copy: false);
+    var total = 0;
+    const chunkSize = 64 * 1024;
+    for (var offset = 0; offset < compressed.length; offset += chunkSize) {
+      final end = offset + chunkSize < compressed.length
+          ? offset + chunkSize
+          : compressed.length;
+      filter.process(compressed, offset, end);
+      var produced = filter.processed(flush: false) ?? const <int>[];
+      while (produced.isNotEmpty) {
+        total += produced.length;
+        if (total > cap) {
+          throw FormatException(
+              'Project bundle entry "$label" expands beyond limits.');
+        }
+        out.add(produced);
+        produced = filter.processed(flush: false) ?? const <int>[];
+      }
+    }
+    var tail = filter.processed(flush: true, end: true) ?? const <int>[];
+    while (tail.isNotEmpty) {
+      total += tail.length;
+      if (total > cap) {
+        throw FormatException(
+            'Project bundle entry "$label" expands beyond limits.');
+      }
+      out.add(tail);
+      tail = filter.processed(flush: true, end: true) ?? const <int>[];
+    }
+    return out.toBytes();
+  }
+
   /// Unpacks and loads a `.ghita` bundle file from [sourcePath]. Media
   /// entries are extracted to [extractDir] (default: the app documents
   /// `GhitaDeck/audio/` dir); tests inject a temp dir.
@@ -222,14 +279,16 @@ class ProjectBundleService {
               throw const FormatException('Duplicate manifest.json entry.');
             }
             manifestSeen = true;
-            final content = utf8.decode(archiveFile.content as List<int>);
+            final content = utf8.decode(
+                _entryBytes(archiveFile, maxJsonEntryBytes, 'manifest.json'));
             manifest = jsonDecode(content) as Map<String, dynamic>;
           } else if (archiveFile.name == 'slides.json') {
             if (slidesSeen) {
               throw const FormatException('Duplicate slides.json entry.');
             }
             slidesSeen = true;
-            final content = utf8.decode(archiveFile.content as List<int>);
+            final content = utf8.decode(
+                _entryBytes(archiveFile, maxJsonEntryBytes, 'slides.json'));
             final rawList = jsonDecode(content) as List;
             if (rawList.length > maxSlides) {
               throw const FormatException('Project contains too many slides.');
@@ -245,7 +304,8 @@ htmlContent: HtmlSanitizerService.sanitize(slide.htmlContent).html,
               throw const FormatException('Duplicate history.json entry.');
             }
             historySeen = true;
-            final content = utf8.decode(archiveFile.content as List<int>);
+            final content = utf8.decode(
+                _entryBytes(archiveFile, maxJsonEntryBytes, 'history.json'));
             final rawList = jsonDecode(content) as List;
             history = rawList
                 .map((e) => Map<String, dynamic>.from(e as Map))
@@ -260,7 +320,8 @@ htmlContent: HtmlSanitizerService.sanitize(slide.htmlContent).html,
                     .contains(p.extension(relativeName).toLowerCase())) {
               throw const FormatException('Unsafe embedded media entry.');
             }
-            final content = List<int>.from(archiveFile.content as List<int>);
+            final content = _entryBytes(
+                archiveFile, maxMediaEntryBytes, archiveFile.name);
             final digest = crypto.sha256.convert(content).toString();
             final extension = p.extension(relativeName);
             final stem = p.basenameWithoutExtension(relativeName);

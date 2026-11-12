@@ -150,9 +150,12 @@ void main() {
       ),
     );
     pres.releaseHydrating();
-    await tester.pump(const Duration(seconds: 1));
-
-    expect(find.byType(SlideListPanel), findsOneWidget);
+    var panelVisible = false;
+    for (var i = 0; i < 40 && !panelVisible; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+      panelVisible = find.byType(SlideListPanel).evaluate().isNotEmpty;
+    }
+    expect(panelVisible, isTrue);
 
     // Select slide 1, then delete via the footer button (same _deleteSlideWithUndo).
     editor.selectSlide(0);

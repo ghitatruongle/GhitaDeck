@@ -145,3 +145,161 @@ mod tests {
         assert_eq!(entry.compression(), CompressionMethod::Stored);
     }
 }
+
+pub struct ZipExtracted {
+    pub name: String,
+    pub data: Vec<u8>,
+}
+
+impl std::fmt::Debug for ZipExtracted {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ZipExtracted")
+            .field("name", &self.name)
+            .field("data_len", &self.data.len())
+            .finish()
+    }
+}
+
+fn is_unsafe_entry_name(name: &str) -> bool {
+    let lowered = name.to_lowercase();
+    name.is_empty()
+        || lowered.starts_with('/')
+        || name.contains('\\')
+        || lowered.contains(':')
+        || name.contains("..")
+        || name.starts_with('~')
+        || name.contains('\0')
+}
+
+pub fn zip_extract(
+    bytes: Vec<u8>,
+    max_entries: i64,
+    max_entry_bytes: i64,
+    max_total_bytes: i64,
+) -> Result<Vec<ZipExtracted>, String> {
+    if max_entries <= 0 || max_entry_bytes <= 0 || max_total_bytes <= 0 {
+        return Err("limits must be positive".to_string());
+    }
+    let reader = Cursor::new(bytes);
+    let mut archive = zip::ZipArchive::new(reader)
+        .map_err(|e| format!("corrupt zip: {e}"))?;
+    if archive.len() as i64 > max_entries {
+        return Err("too many entries".to_string());
+    }
+    let mut total: u64 = 0;
+    let mut out = Vec::new();
+    for index in 0..archive.len() {
+        let mut file = archive
+            .by_index(index)
+            .map_err(|e| format!("corrupt zip entry: {e}"))?;
+        if !file.is_file() {
+            continue;
+        }
+        let raw_name = file.name().to_string();
+        let safe_name = raw_name.replace('\\', "/");
+        if is_unsafe_entry_name(&safe_name) {
+            return Err(format!("unsafe entry name: {raw_name}"));
+        }
+        let mut limited = file
+            .take((max_entry_bytes as u64).checked_add(1).unwrap_or(u64::MAX));
+        let mut data = Vec::new();
+        use std::io::Read;
+        limited
+            .read_to_end(&mut data)
+            .map_err(|e| format!("entry read failed: {e}"))?;
+        if data.len() as i64 > max_entry_bytes {
+            return Err("entry expands beyond limits".to_string());
+        }
+        total += data.len() as u64;
+        if total > max_total_bytes as u64 {
+            return Err("archive expands beyond limits".to_string());
+        }
+        out.push(ZipExtracted {
+            name: safe_name,
+            data,
+        });
+    }
+    Ok(out)
+}
+
+#[cfg(test)]
+mod extract_tests {
+    use super::*;
+    use zip::write::SimpleFileOptions;
+
+    fn build(entries: Vec<(&str, Vec<u8>)>) -> Vec<u8> {
+        let cursor = Cursor::new(Vec::new());
+        let mut writer = ZipWriter::new(cursor);
+        for (name, data) in entries {
+            writer
+                .start_file(name, SimpleFileOptions::default())
+                .unwrap();
+            writer.write_all(&data).unwrap();
+        }
+        writer.finish().unwrap().into_inner()
+    }
+
+    #[test]
+    fn extracts_files_and_skips_directories() {
+        let bytes = build(vec![
+            ("docs/", Vec::new()),
+            ("slides.json", b"[]".to_vec()),
+        ]);
+        let out = zip_extract(bytes, 16, 1024, 4096).unwrap();
+        assert_eq!(out.len(), 1);
+        assert_eq!(out[0].name, "slides.json");
+        assert_eq!(out[0].data, b"[]");
+    }
+
+    #[test]
+    fn rejects_traversal_and_absolute_names() {
+        let bytes = build(vec![("../evil.txt", b"x".to_vec())]);
+        let err = zip_extract(bytes, 16, 1024, 4096).unwrap_err();
+        assert!(err.contains("unsafe entry name"));
+
+        let bytes = build(vec![("/abs.txt", b"x".to_vec())]);
+        let err = zip_extract(bytes, 16, 1024, 4096).unwrap_err();
+        assert!(err.contains("unsafe entry name"));
+
+        let bytes = build(vec![("a\\b.txt", b"x".to_vec())]);
+        let out = zip_extract(bytes, 16, 1024, 4096).unwrap();
+        assert_eq!(out[0].name, "a/b.txt");
+    }
+
+    #[test]
+    fn enforces_entry_and_total_caps() {
+        let big = vec![0u8; 4096];
+        let bytes = build(vec![("media/bomb.m4a", big.clone())]);
+        let err = zip_extract(bytes, 16, 1024, 8192).unwrap_err();
+        assert!(err.contains("entry expands beyond limits"));
+
+        let bytes = build(vec![
+            ("a.m4a", big.clone()),
+            ("b.m4a", big.clone()),
+            ("c.m4a", big),
+        ]);
+        let err = zip_extract(bytes, 16, 4096, 8192).unwrap_err();
+        assert!(err.contains("archive expands beyond limits"));
+    }
+
+    #[test]
+    fn rejects_entry_count_over_limit() {
+        let names: Vec<(&str, Vec<u8>)> = (0..5)
+            .map(|i| {
+                (
+                    match i {
+                        0 => "a.m4a",
+                        1 => "b.m4a",
+                        2 => "c.m4a",
+                        3 => "d.m4a",
+                        _ => "e.m4a",
+                    },
+                    b"x".to_vec(),
+                )
+            })
+            .collect();
+        let bytes = build(names);
+        let err = zip_extract(bytes, 3, 1024, 8192).unwrap_err();
+        assert!(err.contains("too many entries"));
+    }
+}

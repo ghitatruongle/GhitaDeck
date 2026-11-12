@@ -16,7 +16,7 @@ class EffectPreviewService {
     $keyframes
   }
   .slide-transition-$className {
-    animation: $className $durationStr ease forwards;
+    animation: $className $durationStr ${_easingForEffect(effect)} forwards;
   }
 ''';
   }
@@ -29,7 +29,6 @@ class EffectPreviewService {
     Iterable<SlideEffect> effects, {
     double duration = 0.5,
   }) {
-    final durationStr = '${duration}s';
     final canonicalByBody = <String, String>{}; // keyframe body → name
     final keyframes = <String>[];
     final classes = <String>[];
@@ -42,7 +41,7 @@ class EffectPreviewService {
         keyframes.add('@keyframes $className{$body}');
       }
       classes.add(
-          '.slide-transition-$className{animation:$canonical $durationStr ease forwards}');
+          '.slide-transition-$className{animation:$canonical var(--st-duration,${duration}s) ${_easingForEffect(effect)} forwards}');
     }
     return [...keyframes, ...classes].join('\n');
   }
@@ -135,9 +134,80 @@ class EffectPreviewService {
       case SlideEffect.customPath:
         return 'from { transform: translate(-30%, 30%); opacity: 0; } 33% { transform: translate(20%, -10%); opacity: 1; } 66% { transform: translate(-10%, 20%); opacity: 1; } to { transform: translate(0, 0); opacity: 1; }';
 
+      case SlideEffect.dissolve:
+        return '0% { opacity: 0; } 20% { opacity: 0.3; } 40% { opacity: 0.15; } 60% { opacity: 0.6; } 80% { opacity: 0.8; } 100% { opacity: 1; }';
+      case SlideEffect.coverLeft:
+        return 'from { transform: translateX(100%); box-shadow: -40px 0 80px rgba(0, 0, 0, 0.45); } to { transform: translateX(0); box-shadow: -40px 0 80px rgba(0, 0, 0, 0); }';
+      case SlideEffect.coverRight:
+        return 'from { transform: translateX(-100%); box-shadow: 40px 0 80px rgba(0, 0, 0, 0.45); } to { transform: translateX(0); box-shadow: 40px 0 80px rgba(0, 0, 0, 0); }';
+      case SlideEffect.coverUp:
+        return 'from { transform: translateY(100%); box-shadow: 0 -40px 80px rgba(0, 0, 0, 0.45); } to { transform: translateY(0); box-shadow: 0 -40px 80px rgba(0, 0, 0, 0); }';
+      case SlideEffect.coverDown:
+        return 'from { transform: translateY(-100%); box-shadow: 0 40px 80px rgba(0, 0, 0, 0.45); } to { transform: translateY(0); box-shadow: 0 40px 80px rgba(0, 0, 0, 0); }';
+      case SlideEffect.uncoverLeft:
+        return 'from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0 0 0 0); }';
+      case SlideEffect.uncoverRight:
+        return 'from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); }';
+      case SlideEffect.uncoverUp:
+        return 'from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0 0 0 0); }';
+      case SlideEffect.uncoverDown:
+        return 'from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); }';
+      case SlideEffect.curtain:
+        return 'from { transform: scaleY(0.04); opacity: 0.6; } 60% { transform: scaleY(1); opacity: 1; } to { transform: scaleY(1); opacity: 1; }';
+      case SlideEffect.cedar:
+        return 'from { clip-path: polygon(0 0, 0 0, 0 100%); } to { clip-path: polygon(0 0, 300% 0, 0 300%); }';
+      case SlideEffect.pageCurl:
+        return 'from { transform: perspective(1200px) rotateY(-100deg); transform-origin: right center; opacity: 0.3; } to { transform: perspective(1200px) rotateY(0deg); transform-origin: right center; opacity: 1; }';
+      case SlideEffect.ripple:
+        return '0% { transform: scale(0.6); opacity: 0; filter: blur(8px); } 60% { transform: scale(1.04); opacity: 1; filter: blur(1px); } 100% { transform: scale(1); filter: blur(0); }';
+      case SlideEffect.vortex:
+        return '0% { transform: rotate(-180deg) scale(2.2); opacity: 0; } 60% { transform: rotate(20deg) scale(0.92); opacity: 1; } 100% { transform: rotate(0deg) scale(1); opacity: 1; }';
+      case SlideEffect.shred:
+        return '0% { clip-path: inset(0 0 100% 0); transform: translateX(-3%); } 30% { clip-path: inset(0 0 60% 0); } 60% { clip-path: inset(0 0 25% 0); transform: translateX(2%); } 100% { clip-path: inset(0 0 0 0); transform: translateX(0); }';
+      case SlideEffect.diamond:
+        return 'from { clip-path: polygon(50% 50%, 50% 50%, 50% 50%, 50% 50%); } to { clip-path: polygon(50% -100%, -100% 50%, 50% 200%, 200% 50%); }';
+      case SlideEffect.wedge:
+        return 'from { clip-path: polygon(50% 0, 50% 0, 50% 0); } to { clip-path: polygon(0 0, 100% 0, 50% 200%); }';
+      case SlideEffect.newsflash:
+        return '0% { opacity: 0; filter: brightness(3) blur(6px); } 35% { opacity: 1; filter: brightness(2.2) blur(2px); } 60% { filter: brightness(0.7) blur(0); } 100% { filter: brightness(1); }';
+      case SlideEffect.ferris:
+        return '0% { transform: rotate(-360deg) scale(0.3); opacity: 0; } 70% { opacity: 1; } 100% { transform: rotate(0deg) scale(1); opacity: 1; }';
+      case SlideEffect.flip:
+        return 'from { transform: perspective(1000px) rotateX(90deg) scale(0.8); opacity: 0.3; } to { transform: perspective(1000px) rotateX(0deg) scale(1); opacity: 1; }';
+      case SlideEffect.gallery:
+        return 'from { transform: translateX(60%) scale(0.9); opacity: 0; } to { transform: translateX(0) scale(1); opacity: 1; }';
+      case SlideEffect.honeycomb:
+        return 'from { clip-path: polygon(50% 46%, 54% 48%, 54% 52%, 50% 54%, 46% 52%, 46% 48%); } to { clip-path: polygon(50% -150%, 250% 0%, 250% 100%, 50% 250%, -150% 100%, -150% 0%); }';
+      case SlideEffect.invert:
+        return '0% { filter: invert(1); opacity: 0.4; } 50% { filter: invert(0) brightness(1.4); } 100% { filter: invert(0); opacity: 1; }';
+      case SlideEffect.orbit:
+        return '0% { transform: translateX(-80%) rotate(-45deg) scale(0.7); opacity: 0; } 60% { transform: translateX(8%) rotate(6deg) scale(1.02); opacity: 1; } 100% { transform: translateX(0) rotate(0deg) scale(1); opacity: 1; }';
+      case SlideEffect.origami:
+        return 'from { transform: perspective(900px) rotate3d(1, 1, 0, 90deg); opacity: 0.2; } to { transform: perspective(900px) rotate3d(1, 1, 0, 0deg); opacity: 1; }';
+      case SlideEffect.reveal:
+        return 'from { clip-path: inset(0 100% 0 0); transform: scaleX(1.02); } to { clip-path: inset(0 0 0 0); transform: scaleX(1); }';
+
       default:
         return 'from { opacity: 0; } to { opacity: 1; }';
     }
+  }
+
+  static String _easingForEffect(SlideEffect effect) {
+    return switch (effect) {
+      SlideEffect.pageCurl ||
+      SlideEffect.flip ||
+      SlideEffect.origami =>
+        'cubic-bezier(0.22, 1, 0.36, 1)',
+      SlideEffect.vortex ||
+      SlideEffect.ferris ||
+      SlideEffect.orbit ||
+      SlideEffect.ripple ||
+      SlideEffect.newsflash ||
+      SlideEffect.invert =>
+        'cubic-bezier(0.34, 1.56, 0.64, 1)',
+      SlideEffect.dissolve => 'steps(6, end)',
+      _ => 'ease',
+    };
   }
 
   static String _classNameForEffect(SlideEffect effect) {
@@ -272,6 +342,8 @@ class EffectPreviewService {
         return 'blinds';
       case SlideEffect.clock:
         return 'clock';
+      case SlideEffect.dissolve:
+        return 'dissolve';
       case SlideEffect.zoom:
         return 'zoom';
       // New effects map to closest PPTX equivalent
@@ -299,4 +371,9 @@ class EffectPreviewService {
         return 'fade';
     }
   }
+
+  static bool degradesOnPptxExport(SlideEffect effect) =>
+      effect != SlideEffect.none &&
+      effect != SlideEffect.fade &&
+      toPptxTransitionType(effect) == 'fade';
 }

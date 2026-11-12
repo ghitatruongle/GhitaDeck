@@ -4,14 +4,18 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:collection/collection.dart';
+import 'package:crypto/crypto.dart' as crypto;
 import 'package:flutter/foundation.dart';
-import 'package:network_info_plus/network_info_plus.dart';
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_router/shelf_router.dart';
 
 import '../providers/presentation_state.dart';
 import '../config/build_info.dart';
+import 'ai_html_guard.dart';
+import 'auth_service.dart';
+import 'lan_address.dart';
+import 'rate_limiter.dart';
 
 /// Authenticated local-network collaboration with revisioned snapshot sync.
 ///
@@ -39,11 +43,12 @@ class CollaborationService {
   /// Poll failures back off 1s → 2s → 4s → 8s and then stay at 8s.
   static const Duration reconnectMaxBackoff = Duration(seconds: 8);
   static const int maxSyncLogEntries = 200;
-  static const Duration sessionLifetime = Duration(hours: 8);
+  static const Duration sessionLifetime = Duration(minutes: 60);
 
   bool _disposed = false;
   HttpServer? _server;
   String? _localIp;
+  bool _localOnly = false;
   int _port = 8080;
   CollaborationMode _mode = CollaborationMode.idle;
   final List<CollaboratorInfo> _collaborators = [];
@@ -59,6 +64,9 @@ class CollaborationService {
   final StreamController<CollaborationEvent> _eventController =
       StreamController<CollaborationEvent>.broadcast();
   final Random _secureRandom = Random.secure();
+  final FailureRateLimiter _joinRateLimiter = FailureRateLimiter();
+
+  String? _shareBootstrap;
 
   // ---- T46: tunable session config (host). --------------------------------
   int _maxCollaborators = defaultMaxCollaborators;
@@ -126,6 +134,7 @@ class CollaborationService {
   bool get isActive => _mode != CollaborationMode.idle;
   CollaborationMode get mode => _mode;
   String? get localIp => _localIp;
+  bool get isLocalOnly => _localOnly;
   int get port => _port;
   int get revision => _revision;
   List<CollaboratorInfo> get collaborators => List.unmodifiable(_collaborators);
@@ -164,40 +173,29 @@ class CollaborationService {
   /// [PresentationState] listener.
   void notifyDocumentChanged() => _onLocalPresentationChanged();
 
-  Future<String?> getLocalIpAddress() async {
-    try {
-      final info = NetworkInfo();
-      _localIp = await info.getWifiIP();
-      if (_localIp != null && _localIp!.isNotEmpty) return _localIp;
-    } catch (e) {
-      debugPrint('CollaborationService: WiFi IP lookup failed: $e');
+  Future<String?> getLocalIpAddress({String? bindAddress}) async {
+    if (bindAddress != null && bindAddress.isNotEmpty) {
+      _localIp = bindAddress;
+      _localOnly = bindAddress == LanAddress.loopbackAddress;
+      return _localIp;
     }
-    try {
-      final interfaces = await NetworkInterface.list(
-        type: InternetAddressType.IPv4,
-      );
-      for (final interface in interfaces) {
-        for (final address in interface.addresses) {
-          if (!address.isLoopback && address.type == InternetAddressType.IPv4) {
-            _localIp = address.address;
-            return _localIp;
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('CollaborationService: interface lookup failed: $e');
-    }
-    _localIp = '127.0.0.1';
+    final plan = await LanAddress.resolve();
+    _localIp = plan.address;
+    _localOnly = plan.localOnly;
     return _localIp;
   }
 
   /// Starts a protected host. Port zero is supported for deterministic tests.
   /// [viewToken] (optional) is a short token that grants read-only joins.
-  Future<bool> startHosting({int port = 8080, String? viewToken}) async {
+  Future<bool> startHosting({
+    int port = 8080,
+    String? viewToken,
+    String? bindAddress,
+  }) async {
     if (_disposed || isActive || port < 0 || port > 65535) return false;
     try {
       _port = port;
-      _localIp = await getLocalIpAddress();
+      await getLocalIpAddress(bindAddress: bindAddress);
       _sessionToken = _newToken(32);
       _sessionExpiresAt = DateTime.now().toUtc().add(sessionLifetime);
       _viewToken = (viewToken != null && viewToken.isNotEmpty)
@@ -209,6 +207,7 @@ class CollaborationService {
       final router = Router()
         ..get('/health', _handleHealth)
         ..post('/join', _handleJoin)
+        ..post('/exchange', _handleExchange)
         ..get('/slides', _handleSlides)
         ..post('/sync', _handleSync)
         ..post('/presence', _handlePresence)
@@ -226,7 +225,7 @@ class CollaborationService {
 
       _server = await shelf_io.serve(
         handler,
-        InternetAddress.anyIPv4,
+        InternetAddress(_localIp ?? LanAddress.loopbackAddress),
         port,
         shared: false,
       );
@@ -235,8 +234,11 @@ class CollaborationService {
       _emit(CollaborationEventType.sessionStarted, {
         'host': _localIp,
         'port': _port,
+        'localOnly': _localOnly,
       });
-      debugPrint('CollaborationService: protected host started on port $_port');
+      debugPrint(
+        'CollaborationService: protected host started on $_localIp:$_port',
+      );
       return true;
     } catch (e) {
       debugPrint('CollaborationService: host start failed: $e');
@@ -273,7 +275,7 @@ class CollaborationService {
     client.autoUncompress = false;
     try {
       final request = await client
-          .post('127.0.0.1', _port, '/kick')
+          .post(_localIp ?? '127.0.0.1', _port, '/kick')
           .timeout(requestTimeout);
       request.headers.contentType = ContentType.json;
       request.headers.set('x-ghita-session-token', _sessionToken ?? '');
@@ -291,19 +293,51 @@ class CollaborationService {
   Future<shelf.Response> _handleHealth(shelf.Request request) async {
     return _jsonResponse(200, {
       'status': 'ok',
-      'app': BuildInfo.productName,
-      'version': BuildInfo.appVersion,
       'protocol': BuildInfo.collaborationProtocolVersion,
       'expiresAt': _sessionExpiresAt?.toIso8601String(),
     });
   }
 
+  Future<shelf.Response> _handleExchange(shelf.Request request) async {
+    if (_sessionExpired) return _errorResponse(410, 'session_expired');
+    final clientKey = _clientKey(request);
+    if (_joinRateLimiter.shouldReject(clientKey)) {
+      return _errorResponse(429, 'too_many_attempts');
+    }
+    try {
+      final body = await _readJsonObject(request);
+      final candidate = (body['token'] ?? '').toString();
+      final bootstrap = _shareBootstrap;
+      if (bootstrap == null || !_constantTimeEquals(candidate, bootstrap)) {
+        _joinRateLimiter.registerFailure(clientKey);
+        return _errorResponse(401, 'invalid_bootstrap_token');
+      }
+      _shareBootstrap = null;
+      _joinRateLimiter.registerSuccess(clientKey);
+      _renewSession();
+      return _jsonResponse(200, {
+        'sessionToken': _sessionToken,
+        'role': CollaborationRole.editor.name,
+        'expiresAt': _sessionExpiresAt?.toIso8601String(),
+      });
+    } on CollaborationPayloadException catch (e) {
+      return _errorResponse(e.statusCode, e.code);
+    } catch (_) {
+      return _errorResponse(400, 'invalid_json');
+    }
+  }
+
   Future<shelf.Response> _handleJoin(shelf.Request request) async {
     if (_sessionExpired) return _errorResponse(410, 'session_expired');
+    final clientKey = _clientKey(request);
+    if (_joinRateLimiter.shouldReject(clientKey)) {
+      return _errorResponse(429, 'too_many_attempts');
+    }
     final headerToken = request.headers['x-ghita-session-token'] ?? '';
     final isViewJoin = _constantTimeEquals(headerToken, _viewToken ?? '');
     final isEditJoin = _constantTimeEquals(headerToken, _sessionToken ?? '');
     if (!isViewJoin && !isEditJoin) {
+      _joinRateLimiter.registerFailure(clientKey);
       return _errorResponse(401, 'invalid_session_token');
     }
     if (_sessionLocked && isEditJoin) {
@@ -339,11 +373,13 @@ class CollaborationService {
       _collaborators.add(collaborator);
       _accessTokens[accessToken] = collaborator;
       if (isViewJoin) _viewTokens[accessToken] = collaborator;
+      _joinRateLimiter.registerSuccess(clientKey);
+      _renewSession();
       _emit(CollaborationEventType.userJoined, collaborator);
 
       return _jsonResponse(200, {
         'success': true,
-        'sessionId': 'ghita_${_sessionToken!.substring(0, 12)}',
+        'sessionId': _opaqueSessionId(),
         'accessToken': accessToken,
         'revision': _revision,
         'slides': _slides,
@@ -355,6 +391,22 @@ class CollaborationService {
     } catch (_) {
       return _errorResponse(400, 'invalid_json');
     }
+  }
+
+  String _opaqueSessionId() {
+    final digest = crypto.sha256.convert(utf8.encode(_sessionToken ?? ''));
+    return 'ghita_${digest.toString().substring(0, 12)}';
+  }
+
+  String _clientKey(shelf.Request request) {
+    final info = request.context['shelf.io.connection_info'];
+    if (info is HttpConnectionInfo) return info.remoteAddress.address;
+    return 'unknown';
+  }
+
+  void _renewSession() {
+    if (!isHosting || _sessionToken == null) return;
+    _sessionExpiresAt = DateTime.now().toUtc().add(sessionLifetime);
   }
 
   Future<shelf.Response> _handleSlides(shelf.Request request) async {
@@ -612,6 +664,7 @@ class CollaborationService {
     )) {
       return _errorResponse(401, 'invalid_session_token');
     }
+    _renewSession();
     try {
       final body = await _readJsonObject(request);
       final targetId = (body['collaboratorId'] ?? '').toString();
@@ -637,6 +690,7 @@ class CollaborationService {
     )) {
       return _errorResponse(401, 'invalid_session_token');
     }
+    _renewSession();
     try {
       final body = await _readJsonObject(request);
       _sessionLocked = body['locked'] == true;
@@ -660,7 +714,6 @@ class CollaborationService {
       };
 
   /// Joins a host, authenticates, applies the initial snapshot, and starts
-  /// revision polling. The session token comes from the host's share URL.
   Future<bool> joinSession({
     required String hostIp,
     required int port,
@@ -676,6 +729,10 @@ class CollaborationService {
       return false;
     }
 
+    final effectiveToken =
+        await _exchangeBootstrap(normalizedHost, port, sessionToken) ??
+            sessionToken;
+
     final client = HttpClient()..connectionTimeout = requestTimeout;
     client.autoUncompress = false;
     try {
@@ -683,7 +740,7 @@ class CollaborationService {
           .post(normalizedHost, port, '/join')
           .timeout(requestTimeout);
       request.headers.contentType = ContentType.json;
-      request.headers.set('x-ghita-session-token', sessionToken);
+      request.headers.set('x-ghita-session-token', effectiveToken);
       request.write(jsonEncode({
         'name': name.trim(),
         'color': _randomColor(),
@@ -702,7 +759,7 @@ class CollaborationService {
       final initialSlides = _validatedSlides(data['slides']);
       _remoteHost = normalizedHost;
       _remotePort = port;
-      _sessionToken = sessionToken;
+      _sessionToken = effectiveToken;
       _clientAccessToken = accessToken;
       _role = data['role'] == 'viewer'
           ? CollaborationRole.viewer
@@ -734,6 +791,32 @@ class CollaborationService {
     } catch (e) {
       debugPrint('CollaborationService: join failed: $e');
       return false;
+    } finally {
+      client.close(force: true);
+    }
+  }
+
+  Future<String?> _exchangeBootstrap(
+    String host,
+    int port,
+    String bootstrap,
+  ) async {
+    final client = HttpClient()..connectionTimeout = requestTimeout;
+    client.autoUncompress = false;
+    try {
+      final request = await client
+          .post(host, port, '/exchange')
+          .timeout(requestTimeout);
+      request.headers.contentType = ContentType.json;
+      request.write(jsonEncode({'token': bootstrap}));
+      final response = await request.close().timeout(requestTimeout);
+      if (response.statusCode != 200) return null;
+      final data = await _decodeResponseObject(response);
+      final sessionToken = data['sessionToken'];
+      if (sessionToken is! String || sessionToken.length < 32) return null;
+      return sessionToken;
+    } catch (_) {
+      return null;
     } finally {
       client.close(force: true);
     }
@@ -1051,8 +1134,18 @@ class CollaborationService {
     _server = null;
     _collaborators.clear();
     _accessTokens.clear();
+    _viewTokens.clear();
+    _locks.clear();
+    _slideRevisions.clear();
+    _lastWriters.clear();
+    _presence.clear();
+    _syncLog.clear();
+    _sessionLocked = false;
+    _sessionExpiresAt = null;
     _sessionToken = null;
+    _shareBootstrap = null;
     _mode = CollaborationMode.idle;
+    _localOnly = false;
     _emit(CollaborationEventType.sessionStopped, null);
   }
 
@@ -1066,11 +1159,23 @@ class CollaborationService {
 
   String? getShareUrl() {
     if (!isHosting || _localIp == null || _sessionToken == null) return null;
+    _shareBootstrap ??= _newToken(32);
     return Uri(
       scheme: 'http',
       host: _localIp,
       port: _port,
-      queryParameters: {'token': _sessionToken},
+      queryParameters: {'token': _shareBootstrap},
+    ).toString();
+  }
+
+  String? rotateShareLink() {
+    if (!isHosting || _localIp == null || _sessionToken == null) return null;
+    _shareBootstrap = _newToken(32);
+    return Uri(
+      scheme: 'http',
+      host: _localIp,
+      port: _port,
+      queryParameters: {'token': _shareBootstrap},
     ).toString();
   }
 
@@ -1159,6 +1264,10 @@ class CollaborationService {
             (notes is! String || notes.length > maxNotesLength))) {
       throw const CollaborationPayloadException(422, 'invalid_slide');
     }
+    slide['htmlContent'] = AIHtmlGuard.guard(
+      html,
+      maxBytes: AIHtmlGuard.presentationMaxBytes,
+    ).html;
     // Parsing catches malformed optional fields while preserving the exact
     // map representation used by the presentation model.
     Slide.fromMap(slide);
@@ -1222,10 +1331,16 @@ class CollaborationService {
     }
     final candidate = authorization.substring(7);
     for (final entry in _accessTokens.entries) {
-      if (_constantTimeEquals(candidate, entry.key)) return entry.value;
+      if (_constantTimeEquals(candidate, entry.key)) {
+        _renewSession();
+        return entry.value;
+      }
     }
     for (final entry in _viewTokens.entries) {
-      if (_constantTimeEquals(candidate, entry.key)) return entry.value;
+      if (_constantTimeEquals(candidate, entry.key)) {
+        _renewSession();
+        return entry.value;
+      }
     }
     return null;
   }
@@ -1319,16 +1434,7 @@ class CollaborationService {
   }
 
   bool _constantTimeEquals(String left, String right) {
-    final leftBytes = utf8.encode(left);
-    final rightBytes = utf8.encode(right);
-    var difference = leftBytes.length ^ rightBytes.length;
-    final length = max(leftBytes.length, rightBytes.length);
-    for (var index = 0; index < length; index++) {
-      final leftByte = index < leftBytes.length ? leftBytes[index] : 0;
-      final rightByte = index < rightBytes.length ? rightBytes[index] : 0;
-      difference |= leftByte ^ rightByte;
-    }
-    return difference == 0;
+    return AuthService.secureEquals(left, right);
   }
 
   void _emit(CollaborationEventType type, dynamic data) {

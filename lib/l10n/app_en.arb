@@ -181,7 +181,7 @@
   "infoSection": "Information",
   "addNew": "Add New",
   "recentProjects": "Recent Projects",
-  "noRecentProjects": "No recent projects",
+  "noRecentProjects": "No projects opened recently",
   "openProject": "Open Project",
   "removeFromList": "Remove from list",
   "removeAll": "Remove All",
@@ -1048,14 +1048,20 @@
   "statusBarSlideProgress": "Slide {current} / {total}",
   "@statusBarSlideProgress": {
     "placeholders": {
-      "current": {"type": "int"},
-      "total": {"type": "int"}
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "statusBarWords": "{n, plural, =1{1 word} other{{n} words}}",
   "@statusBarWords": {
     "placeholders": {
-      "n": {"type": "int"}
+      "n": {
+        "type": "int"
+      }
     }
   },
   "statusBarExporting": "Exporting...",
@@ -1065,16 +1071,26 @@
   "statusBarViewLabel": "{view} view",
   "@statusBarViewLabel": {
     "placeholders": {
-      "view": {"type": "String"}
+      "view": {
+        "type": "String"
+      }
     }
   },
   "statusBarStatusLabel": "Presentation status: slide {current} of {total}, zoom {zoom} percent{auto}",
   "@statusBarStatusLabel": {
     "placeholders": {
-      "current": {"type": "int"},
-      "total": {"type": "int"},
-      "zoom": {"type": "int"},
-      "auto": {"type": "String"}
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "zoom": {
+        "type": "int"
+      },
+      "auto": {
+        "type": "String"
+      }
     }
   },
   "zoomDialogTitle": "Zoom",
@@ -1082,7 +1098,9 @@
   "goToSlideLabel": "Slide number (1-{total})",
   "@goToSlideLabel": {
     "placeholders": {
-      "total": {"type": "int"}
+      "total": {
+        "type": "int"
+      }
     }
   },
   "goButton": "Go",
@@ -1390,38 +1408,82 @@
   "projectCreated": "New project created!",
   "currentProject": "Current project",
   "projectMetaEditing": "{n} slides • {ratio} • Editing",
-  "@projectMetaEditing": {"placeholders": {"n": {"type": "int"}, "ratio": {}}},
+  "@projectMetaEditing": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "ratio": {}
+    }
+  },
   "saveGhitaTooltip": "Save .ghita file",
   "saveProjectDialog": "Save project",
-  "noRecentProjects": "No projects opened recently",
   "openTooltip": "Open",
   "removeFromListTooltip": "Remove from list",
   "timeJustNow": "Just now",
   "timeMinutesAgo": "{n} minutes ago",
-  "@timeMinutesAgo": {"placeholders": {"n": {"type": "int"}}},
+  "@timeMinutesAgo": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "timeHoursAgo": "{n} hours ago",
-  "@timeHoursAgo": {"placeholders": {"n": {"type": "int"}}},
+  "@timeHoursAgo": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "timeDaysAgo": "{n} days ago",
-  "@timeDaysAgo": {"placeholders": {"n": {"type": "int"}}},
+  "@timeDaysAgo": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "addCustomProvider": "Add Custom Provider",
   "setupWizard": "Setup Wizard",
   "providerActiveBadge": "Active",
   "modelLine": "Model: {model}",
-  "@modelLine": {"placeholders": {"model": {}}},
+  "@modelLine": {
+    "placeholders": {
+      "model": {}
+    }
+  },
   "modelDefault": "Default",
-  "apiKeyHint": "API Key...",
   "restoreSettingsTitle": "Restore settings?",
   "restoreBackupInfo": "Backup from {exportedAt}.\n{providerCount} providers.\n\nCurrent settings will be overwritten. Continue?",
-  "@restoreBackupInfo": {"placeholders": {"exportedAt": {}, "providerCount": {"type": "int"}}},
+  "@restoreBackupInfo": {
+    "placeholders": {
+      "exportedAt": {},
+      "providerCount": {
+        "type": "int"
+      }
+    }
+  },
   "restoreFailed": "Could not restore data: {error}",
-  "@restoreFailed": {"placeholders": {"error": {}}},
+  "@restoreFailed": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "openSlidePanelTooltip": "Open slide panel",
   "collapseSlidePanelTooltip": "Collapse slide panel",
   "undoShortcutTooltip": "Undo (Ctrl+Z)",
   "redoShortcutTooltip": "Redo (Ctrl+Y)",
   "speechNotFoundFallback": "Vietnamese speech not found on this machine — using English.",
   "notesSlideTitle": "Notes — Slide {n}",
-  "@notesSlideTitle": {"placeholders": {"n": {"type": "int"}}},
+  "@notesSlideTitle": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "speakerNotesHint": "Speaker notes…",
   "tabHome": "Home",
   "tabInsert": "Insert",
@@ -1438,7 +1500,13 @@
   "autoDurationTitle": "Auto-advance duration",
   "autoDurationHint": "Auto-advance duration per slide (seconds):",
   "secondsSuffix": "{n} s",
-  "@secondsSuffix": {"placeholders": {"n": {"type": "int"}}},
+  "@secondsSuffix": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "draftRecoveryTitle": "Restore draft?",
   "draftRecoveryBody": "An unsaved draft from a previous session was found (the app may have exited unexpectedly). Restore it?",
   "draftRecoveryRestore": "Restore",
@@ -1451,5 +1519,34 @@
   "continueAction": "Continue",
   "exportSaveAsLabel": "Choose where to save",
   "exportSaveAsTitle": "Save export as",
-  "saveFailedBeforeClose": "Saving failed before closing — the draft is kept. Try Ctrl+S or close again."
+  "saveFailedBeforeClose": "Saving failed before closing — the draft is kept. Try Ctrl+S or close again.",
+  "lanWarnUnencrypted": "Session is not encrypted — use only on trusted networks",
+  "lanWarnLocalOnly": "Local only — no LAN address available, other devices cannot connect",
+  "netContentToggleTitle": "Network content in presentation",
+  "netContentToggleSubtitle": "Allow slides to load remote (https) images and media while presenting. Off keeps the presentation fully offline (embedded data only). Links in Present mode are always disabled.",
+  "exportImagesSkipped": "{n} image(s) skipped — outside allowed folders",
+  "@exportImagesSkipped": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "lanShareNewLink": "New share link",
+  "transTitle": "Transitions",
+  "transEffect": "Effect",
+  "transDuration": "Duration",
+  "transAutoAdvance": "Auto-advance after",
+  "transOff": "Off",
+  "transMorphTitle": "Morph from previous slide",
+  "transMorphSubtitle": "Matching shapes morph smoothly",
+  "transSound": "Sound",
+  "transSoundNone": "(None)",
+  "transSoundApplause": "Applause",
+  "transSoundChime": "Chime",
+  "transSoundClick": "Click",
+  "transSoundDrum": "Drum Roll",
+  "transSoundNote": "Sound is embedded in exported decks when the audio file is available; otherwise the transition still exports.",
+  "transWarningPptx": "This effect exports to PPTX as a plain fade.",
+  "transApplyAll": "Apply to all"
 }

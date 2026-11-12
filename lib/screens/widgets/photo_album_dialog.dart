@@ -11,6 +11,7 @@ import '../../l10n/l10n.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/slide.dart';
 import '../../models/slide_layout.dart';
+import '../../services/local_image_allowlist.dart';
 
 /// Album layout for arranging multiple images on one slide.
 enum PhotoAlbumLayout {
@@ -55,6 +56,8 @@ class _PhotoAlbumDialogState extends State<PhotoAlbumDialog> {
     );
     if (result == null || result.files.isEmpty) return;
     for (final file in result.files) {
+      final pickedPath = file.path;
+      if (pickedPath != null) LocalImageAllowlist.registerPickedFile(pickedPath);
       final bytes = file.bytes ??
           (file.path != null ? File(file.path!).readAsBytesSync() : null);
       if (bytes == null) continue;

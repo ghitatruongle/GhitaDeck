@@ -6,7 +6,7 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `add_block`, `append_row`, `attr_bool`, `attr_str`, `children_of`, `class_contains`, `collapse_ws`, `css_align_to_algn`, `css_color_names`, `css_color_to_hex`, `css_font_size_to_sz`, `elem_is_tag_any`, `elem_is`, `extract_blocks_inner`, `extract_blocks`, `extract_inline_paragraphs`, `extract_table`, `find_elem_ref`, `find_elem`, `flush_list`, `flush_paragraphs`, `is_text_node`, `is_ws`, `local_tag`, `make_run`, `merge_style`, `new`, `prepare_run_group`, `remove_from_tree`, `text_of_first_elem`, `text_of`, `try_parse`
+// These functions are ignored because they are not marked as `pub`: `add_block`, `append_row`, `attr_bool`, `attr_str`, `children_of`, `class_contains`, `collapse_ws`, `css_align_to_algn`, `css_color_names`, `css_color_to_hex`, `css_font_size_to_sz`, `elem_is_tag_any`, `elem_is`, `extract_blocks_inner`, `extract_blocks_or_fallback`, `extract_blocks`, `extract_inline_paragraphs`, `extract_table`, `find_elem_ref`, `find_elem`, `flush_list`, `flush_paragraphs`, `is_text_node`, `is_ws`, `local_tag`, `make_run`, `merge_style`, `new`, `prepare_run_group`, `remove_all_from_tree`, `remove_from_tree`, `text_of_first_elem`, `text_of`, `try_parse`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `BlockStream`
 
 /// One-shot entry: parse [html] and return the four artifacts the session

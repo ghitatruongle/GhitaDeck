@@ -5,10 +5,10 @@
   #define MyAppVersion "0.0.1"
 #endif
 #ifndef MyAppBuild
-  #define MyAppBuild "1"
+  #define MyAppBuild "2"
 #endif
 #ifndef MyAppDisplayVersion
-  #define MyAppDisplayVersion "0.0.1+1"
+  #define MyAppDisplayVersion "0.0.1+2"
 #endif
 #ifndef MyAppFileBase
   #define MyAppFileBase "0.0.1"

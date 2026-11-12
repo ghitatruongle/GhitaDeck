@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import '../../l10n/l10n.dart';
 import '../../models/user_profile.dart';
 import '../../services/cloud_sync_service.dart';
+import '../../services/local_image_allowlist.dart';
 import '../../utils/snackbar_helper.dart';
 
 /// Local profile editor (Track 49, FEAT 84): name + avatar color/emoji.
@@ -290,6 +291,7 @@ class _CloudSyncDialogState extends State<CloudSyncDialog> {
     final dir = await FilePicker.platform
         .getDirectoryPath(dialogTitle: 'Restore v${v.version}');
     if (dir == null) return;
+    LocalImageAllowlist.registerPickedDirectory(dir);
     final path = '$dir${Platform.pathSeparator}'
         '${widget.projectName}_v${v.version}.ghita';
     await File(path).writeAsBytes(bytes, flush: true);

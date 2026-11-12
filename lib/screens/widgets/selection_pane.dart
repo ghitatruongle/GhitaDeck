@@ -51,11 +51,14 @@ class _SelectionPaneState extends State<SelectionPane> {
               children: [
                 Icon(Icons.layers_outlined, size: 16, color: theme.colorScheme.primary),
                 const SizedBox(width: 6),
-                Text(
-                  'Selection Pane',
-                  style: theme.textTheme.titleSmall,
+                Expanded(
+                  child: Text(
+                    'Selection Pane',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall,
+                  ),
                 ),
-                const Spacer(),
                 Text('${_layers.length}',
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: theme.colorScheme.outline,

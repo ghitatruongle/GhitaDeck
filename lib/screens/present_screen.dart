@@ -9,6 +9,7 @@ import '../services/present_deck_commands.dart';
 import '../services/present_tools_service.dart';
 import '../services/setup_show_service.dart';
 import '../services/webview_runtime_service.dart';
+import '../theme/office_colors.dart';
 
 /// Fullscreen in-app presentation mode (Track 35 — Present Pro).
 ///
@@ -259,7 +260,7 @@ class _PresentScreenState extends State<PresentScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A2233),
+        backgroundColor: OfficeColors.presentChromeBg,
         title: Text(context.l10n.presentGridTitle,
             style: const TextStyle(color: Colors.white)),
         content: SizedBox(
@@ -281,8 +282,8 @@ class _PresentScreenState extends State<PresentScreen> {
               child: Container(
                 decoration: BoxDecoration(
                   color: i == _currentSlide
-                      ? const Color(0xFF3A8FD4)
-                      : const Color(0xFF2A3A5A),
+                      ? OfficeColors.presentAccent
+                      : OfficeColors.presentSurface,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 alignment: Alignment.center,
@@ -356,7 +357,7 @@ class _PresentScreenState extends State<PresentScreen> {
                   left: 0,
                   right: 0,
                   child: Container(
-                    color: const Color(0xFF5B2A1A),
+                    color: OfficeColors.presentWarmAccent,
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Text(
@@ -507,7 +508,7 @@ class _PresentScreenState extends State<PresentScreen> {
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         border: Border.all(
-          color: active ? const Color(0xFF3A8FD4) : Colors.transparent,
+          color: active ? OfficeColors.presentAccent : Colors.transparent,
           width: 2,
         ),
         borderRadius: BorderRadius.circular(6),
@@ -554,7 +555,7 @@ class _PresentScreenState extends State<PresentScreen> {
           color: Colors.black.withValues(alpha: 0.75),
           alignment: Alignment.center,
           child: Card(
-            color: const Color(0xFF1A2233),
+            color: OfficeColors.presentChromeBg,
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -576,7 +577,7 @@ class _PresentScreenState extends State<PresentScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF2A3A5A),
+                              color: OfficeColors.presentSurface,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(key,
@@ -611,7 +612,7 @@ class _PresentScreenState extends State<PresentScreen> {
     try {
       return Color(int.parse('FF${hex.substring(1)}', radix: 16));
     } catch (_) {
-      return const Color(0xFFED1C24);
+      return OfficeColors.inkRed;
     }
   }
 }
@@ -672,7 +673,7 @@ class _MagnifierPainter extends CustomPainter {
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3
-      ..color = const Color(0xFF3A8FD4);
+      ..color = OfficeColors.presentAccent;
     canvas.drawCircle(center, radius, paint);
     // ignore: prefer_const_constructors
     final label = TextPainter(

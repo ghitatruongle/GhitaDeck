@@ -45,8 +45,8 @@ void main() {
 
     test('two editors on different slides merge per-slide without conflict',
         () async {
-      expect(await host.startHosting(port: 0), isTrue);
-      final token = Uri.parse(host.getShareUrl()!).queryParameters['token']!;
+      expect(await host.startHosting(port: 0, bindAddress: '127.0.0.1'), isTrue);
+      final tokenA = Uri.parse(host.getShareUrl()!).queryParameters['token']!;
 
       final aStore = <Map<String, dynamic>>[];
       final bStore = <Map<String, dynamic>>[];
@@ -62,15 +62,16 @@ void main() {
         await a.joinSession(
             hostIp: '127.0.0.1',
             port: host.port,
-            sessionToken: token,
+            sessionToken: tokenA,
             name: 'A'),
         isTrue,
       );
+      final tokenB = Uri.parse(host.getShareUrl()!).queryParameters['token']!;
       expect(
         await b.joinSession(
             hostIp: '127.0.0.1',
             port: host.port,
-            sessionToken: token,
+            sessionToken: tokenB,
             name: 'B'),
         isTrue,
       );
@@ -92,14 +93,23 @@ void main() {
 
     test('stale per-slide edit conflicts and reports who changed it',
         () async {
-      expect(await host.startHosting(port: 0), isTrue);
-      final token = Uri.parse(host.getShareUrl()!).queryParameters['token']!;
+      expect(await host.startHosting(port: 0, bindAddress: '127.0.0.1'), isTrue);
+      final bootstrap = Uri.parse(host.getShareUrl()!).queryParameters['token']!;
 
       // Raw join (like the legacy test) so we control the base revision.
+      final exchanged = await _request(
+        'POST',
+        Uri.parse('http://127.0.0.1:${host.port}/exchange'),
+        body: jsonEncode({'token': bootstrap}),
+      );
+      expect(exchanged.statusCode, 200);
+      final sessionToken =
+          (jsonDecode(exchanged.body) as Map<String, dynamic>)['sessionToken']
+              as String;
       final join = await _request(
         'POST',
         Uri.parse('http://127.0.0.1:${host.port}/join'),
-        headers: {'x-ghita-session-token': token},
+        headers: {'x-ghita-session-token': sessionToken},
         body: jsonEncode({'name': 'Raw', 'color': '#123456'}),
       );
       final joinData = jsonDecode(join.body) as Map<String, dynamic>;
@@ -137,7 +147,7 @@ void main() {
     });
 
     test('view-only join is read-only (server rejects sync)', () async {
-      expect(await host.startHosting(port: 0), isTrue);
+      expect(await host.startHosting(port: 0, bindAddress: '127.0.0.1'), isTrue);
       final viewUrl = host.getShareViewUrl()!;
       final viewUri = Uri.parse(viewUrl);
       final viewToken = viewUri.queryParameters['token']!;
@@ -174,8 +184,8 @@ void main() {
     });
 
     test('soft lock blocks a second editor on the same slide', () async {
-      expect(await host.startHosting(port: 0), isTrue);
-      final token = Uri.parse(host.getShareUrl()!).queryParameters['token']!;
+      expect(await host.startHosting(port: 0, bindAddress: '127.0.0.1'), isTrue);
+      final tokenA = Uri.parse(host.getShareUrl()!).queryParameters['token']!;
 
       final aStore = <Map<String, dynamic>>[];
       final bStore = <Map<String, dynamic>>[];
@@ -190,12 +200,13 @@ void main() {
       await a.joinSession(
           hostIp: '127.0.0.1',
           port: host.port,
-          sessionToken: token,
+          sessionToken: tokenA,
           name: 'A');
+      final tokenB = Uri.parse(host.getShareUrl()!).queryParameters['token']!;
       await b.joinSession(
           hostIp: '127.0.0.1',
           port: host.port,
-          sessionToken: token,
+          sessionToken: tokenB,
           name: 'B');
 
       expect(await a.acquireSlideLock(1), isTrue);
@@ -220,7 +231,7 @@ void main() {
     });
 
     test('presence tracks cursor and slide; history logs edits', () async {
-      expect(await host.startHosting(port: 0), isTrue);
+      expect(await host.startHosting(port: 0, bindAddress: '127.0.0.1'), isTrue);
       final token = Uri.parse(host.getShareUrl()!).queryParameters['token']!;
       final store = <Map<String, dynamic>>[];
       final client = makeClient(store);
@@ -254,7 +265,7 @@ void main() {
 
     test('host can kick a collaborator (their token stops working)',
         () async {
-      expect(await host.startHosting(port: 0), isTrue);
+      expect(await host.startHosting(port: 0, bindAddress: '127.0.0.1'), isTrue);
       final token = Uri.parse(host.getShareUrl()!).queryParameters['token']!;
       final store = <Map<String, dynamic>>[];
       final client = makeClient(store);
@@ -297,7 +308,7 @@ void main() {
         _slide('Big 2', bigHtml),
       ];
       host.notifyDocumentChanged();
-      await host.startHosting(port: 0);
+      await host.startHosting(port: 0, bindAddress: '127.0.0.1');
 
       // Join to obtain an access token, then poll with gzip advertised.
       final store = <Map<String, dynamic>>[];
@@ -342,7 +353,7 @@ void main() {
 
     test('session lock refuses new joins but keeps existing editors',
         () async {
-      expect(await host.startHosting(port: 0), isTrue);
+      expect(await host.startHosting(port: 0, bindAddress: '127.0.0.1'), isTrue);
       final token = Uri.parse(host.getShareUrl()!).queryParameters['token']!;
       final store = <Map<String, dynamic>>[];
       final client = makeClient(store);
@@ -357,6 +368,7 @@ void main() {
           name: 'Existing');
       host.setSessionLocked(true);
 
+      final lateToken = Uri.parse(host.getShareUrl()!).queryParameters['token']!;
       final store2 = <Map<String, dynamic>>[];
       final latecomer = makeClient(store2);
       addTearDown(() async {
@@ -367,7 +379,7 @@ void main() {
         await latecomer.joinSession(
             hostIp: '127.0.0.1',
             port: host.port,
-            sessionToken: token,
+            sessionToken: lateToken,
             name: 'Late'),
         isFalse,
       );

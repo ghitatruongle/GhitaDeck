@@ -223,6 +223,32 @@ class _CollaborationPanelState extends State<CollaborationPanel> {
     );
   }
 
+  Widget _unencryptedBanner(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.warning_amber_rounded,
+              color: theme.colorScheme.error, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              context.l10n.lanWarnUnencrypted,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onErrorContainer,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _activeSessionCard(
     ThemeData theme,
     CollaborationService service,
@@ -233,6 +259,8 @@ class _CollaborationPanelState extends State<CollaborationPanel> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            _unencryptedBanner(theme),
+            const SizedBox(height: 12),
             Icon(
               service.isHosting ? Icons.broadcast_on_personal : Icons.sync,
               size: 36,
@@ -253,6 +281,22 @@ class _CollaborationPanelState extends State<CollaborationPanel> {
                     style: TextStyle(color: theme.colorScheme.error)),
               ),
             if (service.isHosting) ...[
+              const SizedBox(height: 4),
+              SelectableText(
+                '${service.localIp}:${service.port}',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(fontFamily: 'Consolas'),
+              ),
+              if (service.isLocalOnly)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    context.l10n.lanWarnLocalOnly,
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: theme.colorScheme.error),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
               Text(context.l10n
                   .collaborationParticipants(service.collaborators.length)),
               if (shareUrl != null) ...[
@@ -260,6 +304,11 @@ class _CollaborationPanelState extends State<CollaborationPanel> {
                 QrImageView(data: shareUrl, size: 150),
                 const SizedBox(height: 8),
                 _copyableValue(theme, shareUrl),
+                TextButton.icon(
+                  onPressed: () => setState(() => service.rotateShareLink()),
+                  icon: const Icon(Icons.refresh, size: 16),
+                  label: Text(context.l10n.lanShareNewLink),
+                ),
                 const SizedBox(height: 8),
                 Text(context.l10n.collabViewLink,
                     style: theme.textTheme.labelMedium),

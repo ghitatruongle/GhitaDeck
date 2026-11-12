@@ -7,6 +7,7 @@ import 'package:printing/printing.dart' as printing;
 
 import '../../l10n/l10n.dart';
 import '../../services/doc_security_service.dart';
+import '../../services/local_image_allowlist.dart';
 import '../../services/odp_export_service.dart';
 import '../../services/outline_export_service.dart';
 import '../../services/package_format_service.dart';
@@ -255,6 +256,7 @@ class _M6ExportDialogState extends State<M6ExportDialog> {
     final dir = await FilePicker.platform.getDirectoryPath(
         dialogTitle: l.m6ChooseFolder);
     if (dir == null) return;
+    LocalImageAllowlist.registerPickedDirectory(dir);
     setState(() {
       _busy = true;
       _progress = 0;
@@ -441,6 +443,7 @@ class _M6ExportDialogState extends State<M6ExportDialog> {
   Future<void> _savePpt(dynamic l) async {
     final dir = await FilePicker.platform.getDirectoryPath();
     if (dir == null) return;
+    LocalImageAllowlist.registerPickedDirectory(dir);
     setState(() {
       _busy = true;
       _progress = 0;
@@ -529,6 +532,7 @@ class _M6ExportDialogState extends State<M6ExportDialog> {
   Future<void> _package(dynamic l) async {
     final dir = await FilePicker.platform.getDirectoryPath();
     if (dir == null) return;
+    LocalImageAllowlist.registerPickedDirectory(dir);
     setState(() {
       _busy = true;
       _progress = 0;
@@ -620,6 +624,7 @@ class _M6ExportDialogState extends State<M6ExportDialog> {
       dialogTitle: 'Save',
       fileName: defaultName,
     );
+    if (result != null) LocalImageAllowlist.registerPickedFile(result);
     return result;
   }
 

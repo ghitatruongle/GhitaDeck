@@ -91,12 +91,13 @@ void main() {
       expect(received.single.headers.value('anthropic-version'), '2023-06-01');
     });
 
-    test('gemini-style puts the key in the query string', () async {
+    test('gemini-style sends the key in the x-goog-api-key header', () async {
       final service = APIKeyRotationService();
       await service.testAPIKey('http://localhost:$port', 'g-key', 'google');
 
       expect(received.single.uri.path, '/v1beta/models');
-      expect(received.single.uri.queryParameters['key'], 'g-key');
+      expect(received.single.headers.value('x-goog-api-key'), 'g-key');
+      expect(received.single.uri.queryParameters.containsKey('key'), isFalse);
     });
 
     test('empty key sends no credential at all', () async {

@@ -40,7 +40,7 @@ void main() {
     });
 
     test('requires authentication and does not expose wildcard CORS', () async {
-      expect(await host.startHosting(port: 0), isTrue);
+      expect(await host.startHosting(port: 0, bindAddress: '127.0.0.1'), isTrue);
       final shareUri = Uri.parse(host.getShareUrl()!);
 
       final unauthenticated = await _request(
@@ -77,7 +77,7 @@ void main() {
     });
 
     test('synchronizes complete slide snapshots in both directions', () async {
-      expect(await host.startHosting(port: 0), isTrue);
+      expect(await host.startHosting(port: 0, bindAddress: '127.0.0.1'), isTrue);
       final token = Uri.parse(host.getShareUrl()!).queryParameters['token']!;
       expect(
         await client.joinSession(
@@ -111,14 +111,15 @@ void main() {
     });
 
     test('rejects oversized request bodies before JSON processing', () async {
-      expect(await host.startHosting(port: 0), isTrue);
-      final token = Uri.parse(host.getShareUrl()!).queryParameters['token']!;
+      expect(await host.startHosting(port: 0, bindAddress: '127.0.0.1'), isTrue);
+      final bootstrap = Uri.parse(host.getShareUrl()!).queryParameters['token']!;
+      final sessionToken = await _exchangeSessionToken(host.port, bootstrap);
       final oversizedName = 'a' * (CollaborationService.maxPayloadBytes + 1);
       try {
         final response = await _request(
           'POST',
           Uri.parse('http://127.0.0.1:${host.port}/join'),
-          headers: {'x-ghita-session-token': token},
+          headers: {'x-ghita-session-token': sessionToken},
           body: jsonEncode({'name': oversizedName}),
         );
         expect(response.statusCode, 413);
@@ -131,12 +132,13 @@ void main() {
     });
 
     test('rejects invalid slide schemas and stale revisions', () async {
-      expect(await host.startHosting(port: 0), isTrue);
-      final token = Uri.parse(host.getShareUrl()!).queryParameters['token']!;
+      expect(await host.startHosting(port: 0, bindAddress: '127.0.0.1'), isTrue);
+      final bootstrap = Uri.parse(host.getShareUrl()!).queryParameters['token']!;
+      final sessionToken = await _exchangeSessionToken(host.port, bootstrap);
       final join = await _request(
         'POST',
         Uri.parse('http://127.0.0.1:${host.port}/join'),
-        headers: {'x-ghita-session-token': token},
+        headers: {'x-ghita-session-token': sessionToken},
         body: jsonEncode({'name': 'Raw client', 'color': '#123456'}),
       );
       final joinData = jsonDecode(join.body) as Map<String, dynamic>;
@@ -239,4 +241,15 @@ class _HttpResult {
   final Map<String, String> headers;
 
   const _HttpResult(this.statusCode, this.body, this.headers);
+}
+
+Future<String> _exchangeSessionToken(int port, String bootstrap) async {
+  final result = await _request(
+    'POST',
+    Uri.parse('http://127.0.0.1:$port/exchange'),
+    body: jsonEncode({'token': bootstrap}),
+  );
+  expect(result.statusCode, 200);
+  final data = jsonDecode(result.body) as Map<String, dynamic>;
+  return data['sessionToken'] as String;
 }

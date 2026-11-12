@@ -13,7 +13,8 @@ class APIKeyRotationService {
 
       if (providerId.contains('gemini') || providerId.contains('google')) {
         final endpoint = AIProviderManager.buildEndpointUrl(baseUrl, '/v1beta/models');
-        url = Uri.parse(endpoint).replace(queryParameters: {'key': apiKey});
+        url = Uri.parse(endpoint);
+        headers['x-goog-api-key'] = apiKey;
       } else if (providerId.contains('anthropic')) {
         final endpoint = AIProviderManager.buildEndpointUrl(baseUrl, '/v1/models');
         url = Uri.parse(endpoint);
@@ -22,7 +23,6 @@ class APIKeyRotationService {
           headers['anthropic-version'] = '2023-06-01';
         }
       } else {
-        // OpenAI-compatible (OpenAI, Ollama, NVIDIA, custom endpoints)
         final endpoint = AIProviderManager.buildEndpointUrl(baseUrl, '/v1/models');
         url = Uri.parse(endpoint);
         if (apiKey.isNotEmpty) {
@@ -54,7 +54,8 @@ class APIKeyRotationService {
 
       if (providerId.contains('gemini') || providerId.contains('google')) {
         final endpoint = AIProviderManager.buildEndpointUrl(baseUrl, '/v1beta/models');
-        url = Uri.parse(endpoint).replace(queryParameters: {'key': apiKey});
+        url = Uri.parse(endpoint);
+        headers['x-goog-api-key'] = apiKey;
       } else if (providerId.contains('anthropic')) {
         final endpoint = AIProviderManager.buildEndpointUrl(baseUrl, '/v1/models');
         url = Uri.parse(endpoint);

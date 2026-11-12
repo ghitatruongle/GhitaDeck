@@ -132,9 +132,18 @@ void main() {
           'fly');
     });
 
-    test('unmapped legacy effects fall back to fade', () {
+    test('dissolve maps to the native PPTX dissolve transition', () {
       expect(EffectPreviewService.toPptxTransitionType(SlideEffect.dissolve),
+          'dissolve');
+      expect(EffectPreviewService.degradesOnPptxExport(SlideEffect.dissolve),
+          isFalse);
+    });
+
+    test('unmapped legacy effects fall back to fade', () {
+      expect(EffectPreviewService.toPptxTransitionType(SlideEffect.cedar),
           'fade');
+      expect(EffectPreviewService.degradesOnPptxExport(SlideEffect.cedar),
+          isTrue);
     });
   });
 }

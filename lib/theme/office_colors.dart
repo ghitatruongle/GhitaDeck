@@ -28,6 +28,28 @@ class OfficeColors {
   static const Color accentOrange = Color(0xFFCA5010);
   static const Color accentGreen = Color(0xFF498205);
   static const Color accentPurple = Color(0xFF5C2D91);
+
+  static const Color presentChromeBg = Color(0xFF1A2233);
+  static const Color presentSurface = Color(0xFF2A3A5A);
+  static const Color presentAccent = Color(0xFF3A8FD4);
+  static const Color presentWarmAccent = Color(0xFF5B2A1A);
+  static const Color inkRed = Color(0xFFED1C24);
+
+  static const Color swatchBlack = Color(0xFF000000);
+  static const Color swatchRed = Color(0xFFFF0000);
+  static const Color swatchOrange = Color(0xFFFF8C00);
+  static const Color swatchYellow = Color(0xFFFFD93D);
+  static const Color swatchGreen = Color(0xFF6BCB77);
+  static const Color swatchBlue = Color(0xFF3A8FD4);
+  static const Color swatchPurple = Color(0xFF7A5CD0);
+  static const Color swatchWhite = Color(0xFFFFFFFF);
+  static const Color deckGradient1 = Color(0xFF1A1A2E);
+  static const Color deckGradient2 = Color(0xFF16213E);
+  static const Color deckGradient3 = Color(0xFF0F3460);
+  static const Color themePresetCharcoal = Color(0xFF1F2937);
+  static const Color themePresetEmerald = Color(0xFF10B981);
+  static const Color themePresetSlate = Color(0xFF6B7280);
+  static const Color themePresetAmber = Color(0xFFF59E0B);
   
   // Ribbon background
   static const Color ribbonBgLight = Color(0xFFF3F2F1);

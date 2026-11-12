@@ -1,7 +1,7 @@
 name: ghita_deck
 description: A Flutter app for creating PowerPoint presentations with HTML support and AI chat integration
 publish_to: none
-version: 0.0.1+1
+version: 0.0.1+2
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -13,7 +13,7 @@ dependencies:
     sdk: flutter
 
   # Core
-  archive: ^3.3.7
+  archive: ^3.6.1
   crypto: ^3.0.3
   collection: ^1.19.0
   path: ^1.8.3
@@ -30,7 +30,6 @@ dependencies:
   path_provider: ^2.1.1
 
   # UI & Animation
-  flutter_animate: ^4.2.0
   webview_windows: ^0.4.0
 
   # v1.2.0 — New dependencies

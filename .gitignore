@@ -189,3 +189,6 @@ coverage/
 
 # Kết quả đo hiện thời (sinh bởi harness, so với perf_baseline.json ở gate)
 /tool/perf_current.json
+
+.mimosa/
+.v2c/

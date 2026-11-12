@@ -5,6 +5,7 @@ import '../utils/snackbar_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../providers/presentation_state.dart';
+import '../services/local_image_allowlist.dart';
 import '../utils/error_mapper.dart';
 import '../l10n/l10n.dart';
 
@@ -108,6 +109,7 @@ class _RecentProjectsScreenState extends State<RecentProjectsScreen> {
 
       if (result != null && result.files.single.path != null) {
         final filePath = result.files.single.path!;
+        LocalImageAllowlist.registerPickedFile(filePath);
         if (!mounted) return;
         final state = Provider.of<PresentationState>(context, listen: false);
         final success = await state.loadProjectFromFile(filePath);
@@ -251,6 +253,7 @@ class _RecentProjectsScreenState extends State<RecentProjectsScreen> {
                             allowedExtensions: ['ghita'],
                           );
                           if (path != null) {
+                            LocalImageAllowlist.registerPickedFile(path);
                             final success = await state.saveProjectToFile(path);
                             if (!context.mounted) return;
                             if (success) {

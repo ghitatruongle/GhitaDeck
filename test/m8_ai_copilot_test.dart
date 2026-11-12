@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ghita_deck/providers/ai_provider_manager.dart';
 import 'package:ghita_deck/services/ai_html_guard.dart';
@@ -9,6 +12,8 @@ import 'package:ghita_deck/services/deck_translation_service.dart';
 import 'package:ghita_deck/services/designer_service.dart';
 import 'package:ghita_deck/services/dictation_service.dart';
 import 'package:ghita_deck/services/reuse_slide_service.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 
 void main() {
   // -------------------------------------------------------------------------
@@ -339,6 +344,61 @@ void main() {
       ]);
       expect(prompt, contains('Alpha'));
       expect(prompt, contains('one two three'));
+    });
+
+    test('fetchUrlText extracts title and text over https', () async {
+      final client = MockClient((request) async =>
+          http.Response('<html><title>Hello</title><p>World content</p></html>', 200));
+      final result = await CopilotService.fetchUrlText(
+          'https://example.com/article', client: client);
+      expect(result.title, 'Hello');
+      expect(result.text, contains('World content'));
+    });
+
+    test('fetchUrlText rejects plain http to a non-local host', () async {
+      var reachedClient = false;
+      final client = MockClient((request) async {
+        reachedClient = true;
+        return http.Response('<title>x</title>', 200);
+      });
+      final result = await CopilotService.fetchUrlText(
+        'http://203.0.113.10/page',
+        client: client,
+      );
+      expect(result.text, isEmpty);
+      expect(reachedClient, isFalse);
+    });
+
+    test('fetchUrlText aborts when the streamed body exceeds the byte cap',
+        () async {
+      final client = MockClient.streaming((request, bodyStream) async {
+        final body = Stream<List<int>>.fromIterable(
+          List.filled(4, List<int>.filled(64, 65)),
+        );
+        return http.StreamedResponse(body, 200);
+      });
+      final result = await CopilotService.fetchUrlText(
+        'https://files.example.com/huge',
+        client: client,
+        maxBytes: 128,
+      );
+      expect(result.text, isEmpty);
+    });
+
+    test('fetchUrlText still fetches loopback http', () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      server.listen((request) async {
+        await request.drain<void>();
+        request.response.headers.contentType = ContentType.html;
+        request.response.add(
+            utf8.encode('<title>Local</title><p>loopback body</p>'));
+        await request.response.close();
+      });
+      final result = await CopilotService.fetchUrlText(
+          'http://127.0.0.1:${server.port}/x');
+      await server.close(force: true);
+      expect(result.title, 'Local');
+      expect(result.text, contains('loopback body'));
     });
   });
 

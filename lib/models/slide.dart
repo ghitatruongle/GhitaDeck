@@ -142,10 +142,19 @@ class Slide {
     this.transitionSound = '',
     this.autoAdvanceMs = 0,
     this.morphFromPrevious = false,
-  })  : timestamp = timestamp ?? DateTime.now().millisecondsSinceEpoch,
+  })  : timestamp = timestamp ?? _issueTimestamp(),
         tags = tags ?? const [],
         visualElements = visualElements ?? const {},
         audioOptions = audioOptions ?? const {};
+
+  static int _lastIssuedTimestamp = 0;
+
+  static int _issueTimestamp() {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    _lastIssuedTimestamp =
+        now > _lastIssuedTimestamp ? now : _lastIssuedTimestamp + 1;
+    return _lastIssuedTimestamp;
+  }
 
   /// Track 33: transition duration in ms (0.1–3s), per-slide override.
   final int transitionDurationMs;
@@ -270,7 +279,7 @@ class Slide {
       effect: effect,
       timestamp: map['timestamp'] is int
           ? map['timestamp'] as int
-          : DateTime.now().millisecondsSinceEpoch,
+          : _issueTimestamp(),
       bgColor: map['bgColor']?.toString(),
       customCss: map['customCss']?.toString(),
       layoutType: map['layoutType']?.toString() ?? 'standard',

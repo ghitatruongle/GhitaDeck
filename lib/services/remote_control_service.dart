@@ -4,6 +4,10 @@ import 'dart:io';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 
+import 'auth_service.dart';
+import 'lan_address.dart';
+import 'rate_limiter.dart';
+
 /// A control message from a remote client (phone) or the app (Track 37, P1/P2).
 class RemoteCommand {
   final String action; // next | prev | jump | setSlide | ping
@@ -68,8 +72,11 @@ class RemoteControlService {
   final List<WebSocket> _clients = [];
   final List<WebSocket> _viewers = [];
   final _random = Random.secure();
+  final FailureRateLimiter _rateLimiter = FailureRateLimiter();
   bool _enabled = false;
   int _port = 8091;
+  String _bindAddress = LanAddress.loopbackAddress;
+  bool _localOnly = true;
 
   /// Latest presenter state (set by the presenter UI each second).
   RemoteState _state = const RemoteState(
@@ -84,6 +91,8 @@ class RemoteControlService {
   bool get isRunning => _server != null;
   bool get enabled => _enabled;
   int get port => _port;
+  String get bindAddress => _bindAddress;
+  bool get isLocalOnly => _localOnly;
   int get viewerCount => _viewers.length;
   String? _token;
   String? get token => _token;
@@ -100,19 +109,28 @@ class RemoteControlService {
     int port = 8091,
     int maxPort = 8099,
     bool requireToken = true,
+    String? bindAddress,
   }) async {
     _requireToken = requireToken;
     _token = generateToken();
     _enabled = true;
+    final plan = (bindAddress != null && bindAddress.isNotEmpty)
+        ? LanAddress.pinned(bindAddress)
+        : await LanAddress.resolve();
     for (int tryPort = port; tryPort <= maxPort; tryPort++) {
       try {
         await stop();
         _port = tryPort;
-        _server = await HttpServer.bind(InternetAddress.anyIPv4, _port);
+        _bindAddress = plan.address;
+        _localOnly = plan.localOnly;
+        _server = await HttpServer.bind(
+          InternetAddress(_bindAddress),
+          _port,
+        );
         _server!.listen(_handleRequest, onError: (e) {
           debugPrint('RemoteControlService: server error: $e');
         });
-        return 'ws://${await _localIp()}:$_port?token=$_token';
+        return 'ws://$_bindAddress:$_port?token=$_token';
       } catch (e) {
         debugPrint('RemoteControlService: port $tryPort busy, trying next');
         _server = null;
@@ -122,29 +140,32 @@ class RemoteControlService {
     return null;
   }
 
-  Future<String> _localIp() async {
-    try {
-      final interfaces = await NetworkInterface.list(
-          type: InternetAddressType.IPv4, includeLoopback: false);
-      for (final iface in interfaces) {
-        for (final addr in iface.addresses) {
-          if (!addr.isLoopback) return addr.address;
-        }
-      }
-    } catch (_) {}
-    return 'localhost';
-  }
-
   Future<void> _handleRequest(HttpRequest request) async {
     if (request.uri.path == '/ws') {
-      final socket = await WebSocketTransformer.upgrade(request);
-      final token = request.uri.queryParameters['token'] ?? '';
-      final authorized = !_requireToken || token == _token;
-      if (!authorized) {
-        socket.add(jsonEncode({'type': 'error', 'message': 'bad_token'}));
-        await socket.close();
+      final clientKey =
+          request.connectionInfo?.remoteAddress.address ?? 'unknown';
+      if (_rateLimiter.shouldReject(clientKey)) {
+        request.response.statusCode = HttpStatus.tooManyRequests;
+        await request.response.close();
         return;
       }
+      final token = request.uri.queryParameters['token'] ?? '';
+      final authorized =
+          !_requireToken || AuthService.secureEquals(token, _token ?? '');
+      if (!authorized) {
+        _rateLimiter.registerFailure(clientKey);
+        if (WebSocketTransformer.isUpgradeRequest(request)) {
+          final socket = await WebSocketTransformer.upgrade(request);
+          socket.add(jsonEncode({'type': 'error', 'message': 'bad_token'}));
+          await socket.close();
+        } else {
+          request.response.statusCode = HttpStatus.unauthorized;
+          await request.response.close();
+        }
+        return;
+      }
+      _rateLimiter.registerSuccess(clientKey);
+      final socket = await WebSocketTransformer.upgrade(request);
       _clients.add(socket);
       _viewers.add(socket);
       socket.add(jsonEncode({'type': 'state', 'state': _state.toMap()}));
@@ -203,6 +224,7 @@ class RemoteControlService {
     _viewers.clear();
     await _server?.close(force: true);
     _server = null;
+    _localOnly = true;
   }
 
   void dispose() {

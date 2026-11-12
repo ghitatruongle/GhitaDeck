@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../../l10n/l10n.dart';
 import '../../providers/presentation_state.dart';
+import '../../services/effect_preview_service.dart';
 import '../../utils/effect_helpers.dart';
 
-/// Transition picker (Track 33, FEAT 52/53): every SlideEffect including the
-/// 26 new ones, per-slide duration (0.1–3s), auto-advance and optional
-/// sound. Applies to the current slide (or the whole deck).
 class TransitionDialog extends StatefulWidget {
   const TransitionDialog({super.key});
 
@@ -36,8 +36,10 @@ class _TransitionDialogState extends State<TransitionDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
+    final degrades = EffectPreviewService.degradesOnPptxExport(_effect);
     return AlertDialog(
-      title: const Text('Transitions'),
+      title: Text(l10n.transTitle),
       content: SizedBox(
         width: 420,
         child: SingleChildScrollView(
@@ -45,7 +47,7 @@ class _TransitionDialogState extends State<TransitionDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Effect', style: theme.textTheme.titleSmall),
+              Text(l10n.transEffect, style: theme.textTheme.titleSmall),
               const SizedBox(height: 6),
               Wrap(
                 spacing: 4,
@@ -61,8 +63,33 @@ class _TransitionDialogState extends State<TransitionDialog> {
                       ),
                 ],
               ),
+              if (degrades) ...[
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.errorContainer,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline,
+                          size: 16, color: theme.colorScheme.onErrorContainer),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(l10n.transWarningPptx,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onErrorContainer,
+                            )),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const Divider(height: 24),
-              Text('Duration: ${(_durationMs / 1000).toStringAsFixed(1)}s',
+              Text(
+                  '${l10n.transDuration}: ${(_durationMs / 1000).toStringAsFixed(1)}s',
                   style: theme.textTheme.titleSmall),
               Slider(
                 value: _durationMs,
@@ -72,8 +99,7 @@ class _TransitionDialogState extends State<TransitionDialog> {
                 label: '${(_durationMs / 1000).toStringAsFixed(1)}s',
                 onChanged: (v) => setState(() => _durationMs = v),
               ),
-              Text('Auto-advance after',
-                  style: theme.textTheme.titleSmall),
+              Text(l10n.transAutoAdvance, style: theme.textTheme.titleSmall),
               Row(
                 children: [
                   const Icon(Icons.timer_outlined, size: 16),
@@ -84,14 +110,15 @@ class _TransitionDialogState extends State<TransitionDialog> {
                       max: 30000,
                       divisions: 30,
                       label: _autoAdvanceMs == 0
-                          ? 'Off'
+                          ? l10n.transOff
                           : '${(_autoAdvanceMs / 1000).toStringAsFixed(1)}s',
-                      onChanged: (v) => setState(() => _autoAdvanceMs = v.round()),
+                      onChanged: (v) =>
+                          setState(() => _autoAdvanceMs = v.round()),
                     ),
                   ),
                   Text(
                     _autoAdvanceMs == 0
-                        ? 'Off'
+                        ? l10n.transOff
                         : '${(_autoAdvanceMs / 1000).toStringAsFixed(1)}s',
                     style: theme.textTheme.bodySmall,
                   ),
@@ -100,28 +127,31 @@ class _TransitionDialogState extends State<TransitionDialog> {
               CheckboxListTile(
                 dense: true,
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Morph from previous slide (Track 34)'),
-                subtitle: const Text('Morphs matching shapes smoothly'),
+                title: Text(l10n.transMorphTitle),
+                subtitle: Text(l10n.transMorphSubtitle),
                 value: _morph,
                 onChanged: (v) => setState(() => _morph = v ?? false),
               ),
               const Divider(height: 8),
-              Text('Sound', style: theme.textTheme.titleSmall),
+              Text(l10n.transSound, style: theme.textTheme.titleSmall),
               DropdownButtonFormField<String>(
                 initialValue: _sound,
-                items: const [
-                  DropdownMenuItem(value: '', child: Text('(None)')),
-                  DropdownMenuItem(value: 'applause', child: Text('Applause')),
-                  DropdownMenuItem(value: 'chime', child: Text('Chime')),
-                  DropdownMenuItem(value: 'click', child: Text('Click')),
-                  DropdownMenuItem(value: 'drum', child: Text('Drum Roll')),
+                items: [
+                  DropdownMenuItem(value: '', child: Text(l10n.transSoundNone)),
+                  DropdownMenuItem(
+                      value: 'applause', child: Text(l10n.transSoundApplause)),
+                  DropdownMenuItem(
+                      value: 'chime', child: Text(l10n.transSoundChime)),
+                  DropdownMenuItem(
+                      value: 'click', child: Text(l10n.transSoundClick)),
+                  DropdownMenuItem(
+                      value: 'drum', child: Text(l10n.transSoundDrum)),
                 ],
                 onChanged: (v) => setState(() => _sound = v ?? ''),
               ),
               const SizedBox(height: 4),
               Text(
-                'Note: sound is embedded in exported decks when the audio '
-                'file is available; otherwise the transition still exports.',
+                l10n.transSoundNote,
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.outline,
                 ),
@@ -133,15 +163,15 @@ class _TransitionDialogState extends State<TransitionDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
         OutlinedButton(
           onPressed: _applyToAll,
-          child: const Text('Apply to all'),
+          child: Text(l10n.transApplyAll),
         ),
         FilledButton(
           onPressed: _applyCurrent,
-          child: const Text('Apply'),
+          child: Text(l10n.apply),
         ),
       ],
     );

@@ -16,7 +16,8 @@ class APIFallbackCascadeService {
 
       if (config.formatType == 'gemini') {
         final endpoint = AIProviderManager.buildEndpointUrl(config.baseUrl, '/v1beta/models');
-        uri = Uri.parse(endpoint).replace(queryParameters: {'key': config.apiKey});
+        uri = Uri.parse(endpoint);
+        headers['x-goog-api-key'] = config.apiKey;
       } else if (config.formatType == 'anthropic') {
         final endpoint = AIProviderManager.buildEndpointUrl(config.baseUrl, '/v1/models');
         uri = Uri.parse(endpoint);

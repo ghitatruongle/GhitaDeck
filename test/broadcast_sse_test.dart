@@ -16,7 +16,7 @@ void main() {
 
   setUp(() async {
     svc = WifiBroadcasterService();
-    final url = await svc.startBroadcaster(port: 8050, allowControl: true);
+    final url = await svc.startBroadcaster(port: 8050, allowControl: true, bindAddress: '127.0.0.1');
     expect(url, isNotNull);
     accessToken = Uri.parse(url!).queryParameters['t']!;
     // Tests connect via loopback (the returned LAN IP may be unreachable in
@@ -186,7 +186,7 @@ void main() {
 
   test('control blocked when disabled', () async {
     final svc2 = WifiBroadcasterService();
-    final url = await svc2.startBroadcaster(port: 8060, allowControl: false);
+    final url = await svc2.startBroadcaster(port: 8060, allowControl: false, bindAddress: '127.0.0.1');
     final token = Uri.parse(url!).queryParameters['t'];
     // Mint a valid session first: this must be a 403 "control disabled",
     // not a 401 authentication failure.
@@ -208,7 +208,7 @@ void main() {
 
   test('one-time link mints a session and is single use', () async {
     final svc2 = WifiBroadcasterService();
-    await svc2.startBroadcaster(port: 8070, allowControl: false);
+    await svc2.startBroadcaster(port: 8070, allowControl: false, bindAddress: '127.0.0.1');
     final token = svc2.createOneTimeLink();
     // Don't auto-follow: the 302 is where the session cookie is minted.
     final req = await directClient()
@@ -234,7 +234,7 @@ void main() {
 
   test('expired one-time link is rejected', () async {
     final svc2 = WifiBroadcasterService();
-    await svc2.startBroadcaster(port: 8071, allowControl: false);
+    await svc2.startBroadcaster(port: 8071, allowControl: false, bindAddress: '127.0.0.1');
     final token =
         svc2.createOneTimeLink(expiresAfter: const Duration(milliseconds: 10));
     await Future<void>.delayed(const Duration(milliseconds: 60));

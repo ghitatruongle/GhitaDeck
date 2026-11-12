@@ -96,9 +96,11 @@ class SlideListPanel extends StatelessWidget {
                   top: BorderSide(color: theme.dividerColor, width: 0.5),
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
                   _footerButton(
                     context,
                     icon: Icons.add_circle_outline,
@@ -125,6 +127,7 @@ class SlideListPanel extends StatelessWidget {
                         : null,
                   ),
                 ],
+                ),
               ),
             ),
           ],

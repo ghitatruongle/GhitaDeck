@@ -262,6 +262,7 @@ class _PresenterViewScreenState extends State<PresenterViewScreen> {
                 child: Column(
                   children: [
                     _buildTopBar(theme, l10n),
+                    if (_broadcastUrl != null) _broadcastWarningBanner(l10n),
                     Expanded(
                       child: _ready
                           ? Stack(
@@ -422,6 +423,45 @@ class _PresenterViewScreenState extends State<PresenterViewScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _broadcastWarningBanner(AppLocalizations l10n) {
+    return Container(
+      width: double.infinity,
+      color: const Color(0xFF3B2F00),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: Row(
+        children: [
+          Icon(Icons.warning_amber_rounded,
+              size: 16, color: Colors.amber.shade200),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              l10n.lanWarnUnencrypted,
+              style: TextStyle(
+                color: Colors.amber.shade100,
+                fontSize: 12,
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.black26,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              '${_broadcaster.bindAddress}:${_broadcaster.port}',
+              style: TextStyle(
+                color: Colors.amber.shade100,
+                fontSize: 11,
+                fontFamily: 'monospace',
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

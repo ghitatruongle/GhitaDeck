@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:http/http.dart' as http;
+
+import 'url_scheme_guard.dart';
 
 /// Copilot Creator (Track 55, FEAT 88/89).
 ///
@@ -7,6 +11,10 @@ import 'package:http/http.dart' as http;
 /// to the AI provider. Keeping the parsing/indexing local makes it testable.
 class CopilotService {
   CopilotService._();
+
+  static const int maxFetchBytes = 10 * 1024 * 1024;
+
+  static const Duration fetchTimeout = Duration(seconds: 10);
 
   /// Split a long document body into slides by headings, preserving the main
   /// ideas (PDF/Word text extraction feeds this; chunking keeps ~80 words per
@@ -63,15 +71,44 @@ class CopilotService {
 
   /// Fetch a URL and extract meaningful text (title + paragraphs) for deck
   /// creation. Lightweight scrape; heavy extraction is Track 66.
-  static Future<({String title, String text})> fetchUrlText(String url) async {
-    final client = http.Client();
+  static Future<({String title, String text})> fetchUrlText(
+    String url, {
+    http.Client? client,
+    int maxBytes = maxFetchBytes,
+  }) async {
+    final parsed = Uri.tryParse(url.trim());
+    if (parsed == null || !UrlSchemeGuard.allowsUri(parsed)) {
+      return (title: url, text: '');
+    }
+    final c = client ?? http.Client();
     try {
-      final response =
-          await client.get(Uri.parse(url)).timeout(const Duration(seconds: 10));
-      if (response.statusCode != 200) {
+      final request = http.Request('GET', parsed);
+      final streamed = await c.send(request).timeout(fetchTimeout);
+      if (streamed.statusCode != 200) {
         return (title: url, text: '');
       }
-      final html = response.body;
+      if (streamed.contentLength != null && streamed.contentLength! > maxBytes) {
+        return (title: url, text: '');
+      }
+      final stopwatch = Stopwatch()..start();
+      final chunks = <List<int>>[];
+      var received = 0;
+      await for (final chunk in streamed.stream.timeout(fetchTimeout)) {
+        if (stopwatch.elapsed > fetchTimeout ||
+            received + chunk.length > maxBytes) {
+          return (title: url, text: '');
+        }
+        received += chunk.length;
+        chunks.add(chunk);
+      }
+      final contentType = streamed.headers['content-type'] ?? '';
+      final charset = RegExp(r'charset=([\w-]+)', caseSensitive: false)
+          .firstMatch(contentType)
+          ?.group(1);
+      final encoding =
+          charset == null ? latin1 : (Encoding.getByName(charset) ?? latin1);
+      final html = encoding
+          .decode(chunks.expand((chunkBytes) => chunkBytes).toList());
       final titleMatch =
           RegExp(r'<title[^>]*>(.*?)</title>', caseSensitive: false)
               .firstMatch(html);
@@ -88,7 +125,7 @@ class CopilotService {
     } catch (_) {
       return (title: url, text: '');
     } finally {
-      client.close();
+      if (client == null) c.close();
     }
   }
 

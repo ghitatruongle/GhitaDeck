@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart' as crypto;
 import 'image_codec.dart';
 import 'image_optimizer_service.dart';
+import 'local_image_allowlist.dart';
 
 /// A decoded image ready to be embedded into an export (PPTX/PDF).
 class LoadedImage {
@@ -28,8 +29,15 @@ class ImageLoadWarning {
   final String src;
   final String reason;
 
+  String get displayName {
+    if (src.startsWith('data:')) return 'embedded-image';
+    final withoutQuery = src.split('?').first;
+    final segments = withoutQuery.split(RegExp(r'[/\\]'));
+    return segments.isEmpty || segments.last.isEmpty ? src : segments.last;
+  }
+
   @override
-  String toString() => '$src: $reason';
+  String toString() => '$displayName: $reason';
 }
 
 /// Loads `<img src="...">` sources for export embedding (Track 03).
@@ -80,12 +88,29 @@ class HtmlImageLoader {
   /// [writeWarningsLog] once an export finishes.
   static final List<ImageLoadWarning> warnings = [];
 
+  static int skippedOutsideAllowlistCount = 0;
+
   /// N2: per-export savings tally is cleared together with the warnings so
   /// every export starts from a clean slate (and the dialog shows the latest
   /// job only).
   static void clearWarnings() {
     warnings.clear();
+    skippedOutsideAllowlistCount = 0;
     ImageOptimizationStats.reset();
+  }
+
+  static void importWorkerDiagnostics(
+    List<dynamic>? workerWarnings,
+    int skippedCount,
+  ) {
+    skippedOutsideAllowlistCount = skippedCount;
+    if (workerWarnings == null) return;
+    warnings
+      ..clear()
+      ..addAll(workerWarnings.whereType<Map>().map((w) => ImageLoadWarning(
+            (w['src'] ?? '').toString(),
+            (w['reason'] ?? '').toString(),
+          )));
   }
 
   static String _cacheDir() {
@@ -113,13 +138,18 @@ class HtmlImageLoader {
 
   /// Write the job's image warnings to `<outputPath>.warnings.log`.
   static Future<void> writeWarningsLog(String outputPath) async {
-    if (warnings.isEmpty) return;
+    if (warnings.isEmpty && skippedOutsideAllowlistCount == 0) return;
     final file = File('$outputPath.warnings.log');
     try {
-      await file.writeAsString(
-        warnings.map((w) => w.toString()).join('\n'),
-        flush: true,
-      );
+      var content = warnings.map((w) => w.toString()).join('\n');
+      if (skippedOutsideAllowlistCount > 0) {
+        content = content.isEmpty
+            ? 'images skipped outside allowed folders: '
+                '$skippedOutsideAllowlistCount'
+            : '$content\nimages skipped outside allowed folders: '
+                '$skippedOutsideAllowlistCount';
+      }
+      await file.writeAsString(content, flush: true);
     } catch (_) {
       // Logging must never fail the export.
     }
@@ -540,6 +570,11 @@ class HtmlImageLoader {
       return null;
     }
     // Local file path (absolute or relative).
+    if (!LocalImageAllowlist.allows(src)) {
+      skippedOutsideAllowlistCount++;
+      _warn(src, 'outside allowed image folders');
+      return null;
+    }
     try {
       final file = File(src);
       if (!file.existsSync()) {

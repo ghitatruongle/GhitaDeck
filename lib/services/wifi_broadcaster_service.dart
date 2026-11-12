@@ -5,6 +5,9 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 
 import 'ai_html_guard.dart';
+import 'auth_service.dart';
+import 'lan_address.dart';
+import 'rate_limiter.dart';
 
 /// A live slide broadcast state (Track 40, OPT 33).
 class BroadcastState {
@@ -52,15 +55,20 @@ class WifiBroadcasterService {
   BroadcastState _state = const BroadcastState(
       currentSlide: 0, totalSlides: 0, allowControl: false);
   int _serverPort = 8090;
+  String _bindAddress = LanAddress.loopbackAddress;
+  bool _localOnly = true;
   final List<StreamController<String>> _sseClients = [];
   final List<Socket> _sseSockets = [];
   final _random = Random.secure();
+  final FailureRateLimiter _rateLimiter = FailureRateLimiter();
   String? _accessToken;
   String? _oneTimeLink;
   DateTime? _oneTimeExpiry;
 
   bool get isRunning => _server != null;
   int get port => _serverPort;
+  String get bindAddress => _bindAddress;
+  bool get isLocalOnly => _localOnly;
   int get viewerCount => _sseClients.length;
   bool get hasOneTimeLink => _oneTimeLink != null;
 
@@ -78,9 +86,15 @@ class WifiBroadcasterService {
     int maxPort = 8099,
     bool allowControl = false,
     bool includeNotes = false,
+    String? bindAddress,
   }) async {
     if (port > maxPort) return null; // guard: invalid range
     await stopBroadcaster();
+    final plan = (bindAddress != null && bindAddress.isNotEmpty)
+        ? LanAddress.pinned(bindAddress)
+        : await LanAddress.resolve();
+    _bindAddress = plan.address;
+    _localOnly = plan.localOnly;
     _accessToken = _newToken(32);
     _state = BroadcastState(
       currentSlide: _state.currentSlide,
@@ -91,8 +105,13 @@ class WifiBroadcasterService {
     for (int tryPort = port; tryPort <= maxPort; tryPort++) {
       try {
         _serverPort = tryPort;
-        _server = await HttpServer.bind(InternetAddress.anyIPv4, _serverPort);
-        debugPrint('WifiBroadcasterService running on port $_serverPort');
+        _server = await HttpServer.bind(
+          InternetAddress(_bindAddress),
+          _serverPort,
+        );
+        debugPrint(
+          'WifiBroadcasterService running on $_bindAddress:$_serverPort',
+        );
 
         _server!.listen(
           (HttpRequest request) {
@@ -116,20 +135,7 @@ class WifiBroadcasterService {
       }
     }
 
-    try {
-      final interfaces =
-          await NetworkInterface.list(type: InternetAddressType.IPv4);
-      for (final interface in interfaces) {
-        for (final addr in interface.addresses) {
-          if (!addr.isLoopback) {
-            return 'http://${addr.address}:$_serverPort/view?t=$_accessToken';
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('WifiBroadcasterService Error listing interfaces: $e');
-    }
-    return 'http://localhost:$_serverPort/view?t=$_accessToken';
+    return 'http://$_bindAddress:$_serverPort/view?t=$_accessToken';
   }
 
   /// Create a one-time link with an expiry (Track 40, P5). The token is
@@ -219,21 +225,37 @@ class WifiBroadcasterService {
     await _server?.close(force: true);
     _server = null;
     _accessToken = null;
+    _oneTimeLink = null;
+    _oneTimeExpiry = null;
+    _localOnly = true;
     debugPrint('WifiBroadcasterService stopped.');
   }
 
   Future<void> _handleBroadcastRequest(HttpRequest request) async {
     final path = request.uri.path;
+    final clientKey = _clientKey(request);
+    if (path == '/once' || path == '/view' || path == '/') {
+      if (_rateLimiter.shouldReject(clientKey)) {
+        request.response
+          ..statusCode = HttpStatus.tooManyRequests
+          ..headers.set(HttpHeaders.cacheControlHeader, 'no-store')
+          ..write('Too many attempts');
+        await request.response.close();
+        return;
+      }
+    }
     // One-time link: must be consumed first; expired links are rejected.
     if (path == '/once') {
       final token = request.uri.queryParameters['t'] ?? '';
       if (!_consumeOneTimeToken(token)) {
+        _rateLimiter.registerFailure(clientKey);
         request.response
           ..statusCode = 403
           ..write('Link expired or already used');
         await request.response.close();
         return;
       }
+      _rateLimiter.registerSuccess(clientKey);
       _setAccessCookie(request.response);
       request.response.redirect(Uri.parse('/view'));
       await request.response.close();
@@ -248,6 +270,7 @@ class WifiBroadcasterService {
     final viaBootstrapQuery = (path == '/view' || path == '/') &&
         _queryTokenValid(request);
     if (!viaBootstrapQuery && !_sessionAuthorized(request)) {
+      _rateLimiter.registerFailure(clientKey);
       request.response
         ..statusCode = HttpStatus.unauthorized
         ..headers.set(HttpHeaders.cacheControlHeader, 'no-store')
@@ -257,6 +280,9 @@ class WifiBroadcasterService {
     }
     if (viaBootstrapQuery) {
       _setAccessCookie(request.response);
+      _rateLimiter.registerSuccess(clientKey);
+    } else if (path == '/view' || path == '/') {
+      _rateLimiter.registerSuccess(clientKey);
     }
     // SSE stream (Track 40, OPT 33).
     if (path == '/events') {
@@ -404,7 +430,10 @@ class WifiBroadcasterService {
   bool _queryTokenValid(HttpRequest request) {
     final accessToken = _accessToken;
     return accessToken != null &&
-        request.uri.queryParameters['t'] == accessToken;
+        AuthService.secureEquals(
+          request.uri.queryParameters['t'] ?? '',
+          accessToken,
+        );
   }
 
   /// Session credentials minted after the first page load: the HttpOnly
@@ -413,10 +442,16 @@ class WifiBroadcasterService {
   bool _sessionAuthorized(HttpRequest request) {
     final accessToken = _accessToken;
     if (accessToken == null) return false;
-    if (request.headers.value('X-Ghita-Token') == accessToken) return true;
+    if (AuthService.secureEquals(
+      request.headers.value('X-Ghita-Token') ?? '',
+      accessToken,
+    )) {
+      return true;
+    }
     return request.cookies.any(
       (cookie) =>
-          cookie.name == 'ghita_broadcast' && cookie.value == accessToken,
+          cookie.name == 'ghita_broadcast' &&
+          AuthService.secureEquals(cookie.value, accessToken),
     );
   }
 
@@ -428,4 +463,7 @@ class WifiBroadcasterService {
       'ghita_broadcast=$accessToken; HttpOnly; SameSite=Strict; Path=/',
     );
   }
+
+  String _clientKey(HttpRequest request) =>
+      request.connectionInfo?.remoteAddress.address ?? 'unknown';
 }

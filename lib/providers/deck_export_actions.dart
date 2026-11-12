@@ -301,6 +301,7 @@ mixin DeckExportActions on ChangeNotifier {
       startIndex: startIndex,
       autoAdvance: autoAdvanceDuration,
       imageMaxWidth: 1200,
+      stripLinks: true,
     );
   }
 }

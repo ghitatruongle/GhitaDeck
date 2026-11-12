@@ -17,6 +17,42 @@ void main() {
       expect(result.warnings, isNotEmpty);
     });
 
+    test('removes legacy executable containers and unsafe srcset candidates',
+        () {
+      final result = HtmlSanitizerService.sanitize(
+        '<applet code="Evil.class"></applet>'
+        '<frameset><frame src="x"></frame></frameset>'
+        '<img srcset="https://safe.example/a.png 1x, //evil.example/b.png 2x, '
+        'javascript:alert(1) 3x" src="https://safe.example/c.png">',
+      );
+      final lower = result.html.toLowerCase();
+      expect(lower, isNot(contains('<applet')));
+      expect(lower, isNot(contains('<frame')));
+      expect(lower, isNot(contains('evil.example')));
+      expect(lower, isNot(contains('srcset')));
+      expect(lower, contains('https://safe.example/c.png'));
+    });
+
+    test('strips protocol-relative and ftp resource urls and svg data links',
+        () {
+      final result = HtmlSanitizerService.sanitize(
+        '<img src="//evil.example/beacon.png" lowsrc="//evil.example/l.png">'
+        '<video src="ftp://evil.example/x.mp4"></video>'
+        '<a href="data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=">link</a>',
+      );
+      final lower = result.html.toLowerCase();
+      expect(lower, isNot(contains('evil.example')));
+      expect(lower, isNot(contains('ftp:')));
+      expect(lower, isNot(contains('data:image/svg+xml')));
+      expect(lower, contains('link'));
+    });
+
+    test('keeps https image sources for user-initiated export prefetch', () {
+      final result = HtmlSanitizerService
+          .sanitize('<img src="https://example.com/pic.png">');
+      expect(result.html, contains('https://example.com/pic.png'));
+    });
+
     test('counts text without charging embedded base64 media', () {
       final media = 'data:image/png;base64,${List.filled(200000, 'A').join()}';
       expect(

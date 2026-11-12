@@ -22,8 +22,8 @@ class AIHtmlGuard {
   static const int presentationMaxBytes = 16 * 1024 * 1024;
 
   static final RegExp _dangerousTagRe = RegExp(
-    r'<\s*(script|iframe|object|embed|link|meta|base|form|input|button|select|textarea)\b[^>]*>.*?</\s*\1\s*>'
-    r'|<\s*(script|iframe|object|embed|link|meta|base|form|input|button|select|textarea)\b[^>]*/?>',
+    '<\\s*(${_dangerousTags.join('|')})\\b[^>]*>.*?</\\s*\\1\\s*>'
+    '|<\\s*(${_dangerousTags.join('|')})\\b[^>]*/?>',
     caseSensitive: false,
     dotAll: true,
   );
@@ -53,19 +53,38 @@ class AIHtmlGuard {
     'button',
     'select',
     'textarea',
+    'applet',
+    'frame',
+    'frameset',
+    'keygen',
+    'portal',
   };
   static const Set<String> _urlAttributes = {
     'href',
     'src',
+    'srcset',
     'action',
     'formaction',
     'poster',
+    'xlink:href',
+    'background',
+    'ping',
+    'dynsrc',
+    'lowsrc',
+  };
+  static const Set<String> _navigationalAttributes = {
+    'href',
+    'formaction',
     'xlink:href',
   };
 
   /// Sanitize + validate [html]. Returns cleaned HTML and warnings such as
   /// `dangerous_tag:script` or `too_large:shrunk`.
-  static GuardResult guard(String html, {int maxBytes = defaultMaxBytes}) {
+  static GuardResult guard(
+    String html, {
+    int maxBytes = defaultMaxBytes,
+    bool stripLinks = false,
+  }) {
     final warnings = <String>[];
     var out = html;
 
@@ -88,7 +107,7 @@ class AIHtmlGuard {
     // Parse the fragment and inspect decoded attributes. This catches single
     // quotes, unquoted values, character entities and whitespace/control-byte
     // obfuscation that regular expressions cannot reliably cover.
-    out = _sanitizeDom(out, dangerous);
+    out = _sanitizeDom(out, dangerous, stripLinks);
     if (dangerous.isNotEmpty) {
       final warning = 'dangerous_tag:${dangerous.toSet().join(',')}';
       if (!warnings.contains(warning)) warnings.add(warning);
@@ -127,7 +146,11 @@ class AIHtmlGuard {
 
   static int utf8Length(String s) => utf8.encode(s).length;
 
-  static String _sanitizeDom(String html, List<String> dangerous) {
+  static String _sanitizeDom(
+    String html,
+    List<String> dangerous,
+    bool stripLinks,
+  ) {
     final fragment = html_parser.parseFragment(html);
     for (final element in List<dom.Element>.from(
         fragment.querySelectorAll(_dangerousTags.join(',')))) {
@@ -143,8 +166,13 @@ class AIHtmlGuard {
           element.attributes.remove(name);
           continue;
         }
-        if (_urlAttributes.contains(lowerName) && _unsafeUrl(value)) {
-          element.attributes[name] = '';
+        if (stripLinks && _navigationalAttributes.contains(lowerName)) {
+          element.attributes.remove(name);
+          continue;
+        }
+        if (_urlAttributes.contains(lowerName) &&
+            _attributeValueUnsafe(lowerName, value)) {
+          element.attributes.remove(name);
           continue;
         }
         if (lowerName == 'style') {
@@ -159,12 +187,39 @@ class AIHtmlGuard {
   }
 
   static bool _unsafeUrl(String value) {
-    final normalized =
-        value.replaceAll(RegExp(r'[\u0000-\u0020\u007f]+'), '').toLowerCase();
+    final normalized = _normalizedUrl(value);
     return normalized.startsWith('javascript:') ||
         normalized.startsWith('vbscript:') ||
+        normalized.startsWith('ftp:') ||
+        normalized.startsWith('//') ||
         normalized.startsWith('data:text/html') ||
         normalized.startsWith('data:application/xhtml+xml');
+  }
+
+  static bool _unsafeNavigationalUrl(String value) {
+    final normalized = _normalizedUrl(value);
+    return _unsafeUrl(value) || normalized.startsWith('data:image/svg+xml');
+  }
+
+  static String _normalizedUrl(String value) =>
+      value.replaceAll(RegExp(r'[\u0000-\u0020\u007f]+'), '').toLowerCase();
+
+  static bool _attributeValueUnsafe(String lowerName, String value) {
+    if (lowerName == 'srcset') return _srcSetUnsafe(value);
+    if (_navigationalAttributes.contains(lowerName)) {
+      return _unsafeNavigationalUrl(value);
+    }
+    return _unsafeUrl(value);
+  }
+
+  static bool _srcSetUnsafe(String value) {
+    for (final rawCandidate in value.split(',')) {
+      final candidate = rawCandidate.trim();
+      if (candidate.isEmpty) continue;
+      final url = candidate.split(RegExp(r'\s+')).first;
+      if (_unsafeUrl(url)) return true;
+    }
+    return false;
   }
 
   static String _sanitizeCss(String value) {

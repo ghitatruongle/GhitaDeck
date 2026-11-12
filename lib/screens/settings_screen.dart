@@ -13,6 +13,8 @@ import 'theme_settings_screen.dart';
 import 'widgets/shortcuts_customization_dialog.dart';
 import '../utils/error_mapper.dart';
 import '../providers/locale_provider.dart';
+import '../providers/config_service.dart';
+import '../services/network_content_policy.dart';
 import '../services/rust_engine.dart';
 import '../services/image_optimizer_service.dart';
 import '../l10n/l10n.dart';
@@ -45,7 +47,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       engine.loadPreference();
       engine.ensureInitialized();
       _loadImageOptimizerPref(context);
+      _loadNetworkContentPref();
     });
+  }
+
+  Future<void> _loadNetworkContentPref() async {
+    final enabled = await ConfigService().loadNetworkContent();
+    NetworkContentPolicy.remoteAllowed = enabled;
   }
 
   Future<void> _loadImageOptimizerPref(BuildContext context) async {
@@ -268,17 +276,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                       const Divider(height: 24),
-                      Row(
-                        children: [
-                          Icon(statusIcon, size: 16, color: statusColor),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              statusText,
-                              style: theme.textTheme.bodySmall,
+                      Semantics(
+                        liveRegion: true,
+                        label: statusText,
+                        child: Row(
+                          children: [
+                            Icon(statusIcon, size: 16, color: statusColor),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                statusText,
+                                style: theme.textTheme.bodySmall,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                       if (engine.status == EngineStatus.fallingBack)
                         // T14: one-line guidance — the user must know the
@@ -303,6 +315,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           });
                           final prefs = await SharedPreferences.getInstance();
                           await prefs.setBool(_imageOptimizerPrefKey, v);
+                        },
+                      ),
+                      const Divider(height: 24),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(l10n.netContentToggleTitle),
+                        subtitle: Text(l10n.netContentToggleSubtitle),
+                        value: NetworkContentPolicy.remoteAllowed,
+                        onChanged: (v) async {
+                          setState(() {
+                            NetworkContentPolicy.userTouched = true;
+                            NetworkContentPolicy.remoteAllowed = v;
+                          });
+                          await ConfigService().saveNetworkContent(v);
                         },
                       ),
                     ],

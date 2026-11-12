@@ -8,6 +8,7 @@ import 'export_primitives.dart';
 import 'html_export_service.dart';
 import 'html_image_loader.dart';
 import 'html_parse_codec.dart';
+import 'local_image_allowlist.dart';
 import 'image_codec.dart';
 import 'image_optimizer_service.dart';
 import 'pdf_export_service.dart';
@@ -75,10 +76,13 @@ Future<String> runPptExportInIsolate(
     // T04: N2 image optimizer snapshot (flag + quality from host).
     'optimizeImages': ImageOptimizerConfig.betaEnabled,
     'imageJpegQuality': ImageOptimizerConfig.quality,
+    'imageAllowlist': LocalImageAllowlist.exportSnapshot(),
   }, onProgress: onProgress, cancelToken: cancelToken);
   if (result['ok'] == true) {
     ImageOptimizationStats.importWorkerSummary(
         result['imageSavings'] as String?, (result['imageCount'] as num?)?.toInt() ?? 0);
+    HtmlImageLoader.importWorkerDiagnostics(
+        result['warnings'] as List?, (result['skippedImages'] as num?)?.toInt() ?? 0);
     return result['path'] as String;
   }
   throw Exception(result['error'] ?? 'PPT export failed');
@@ -102,8 +106,11 @@ Future<String> runDocxExportInIsolate(
     'includeNotes': includeNotes,
     'includeSlideList': includeSlideList,
     'engineRustPreferred': ZipEngineConfig.preferredRust,
+    'imageAllowlist': LocalImageAllowlist.exportSnapshot(),
   }, onProgress: onProgress, cancelToken: cancelToken);
   if (result['ok'] == true) {
+    HtmlImageLoader.importWorkerDiagnostics(
+        result['warnings'] as List?, (result['skippedImages'] as num?)?.toInt() ?? 0);
     return result['path'] as String;
   }
   throw Exception(result['error'] ?? 'DOCX export failed');
@@ -148,10 +155,13 @@ Future<String> runPdfExportInIsolate(
     'optimizeImages': ImageOptimizerConfig.betaEnabled,
     'imageJpegQuality': ImageOptimizerConfig.quality,
     'engineRustPreferred': ZipEngineConfig.preferredRust,
+    'imageAllowlist': LocalImageAllowlist.exportSnapshot(),
   }, onProgress: onProgress, cancelToken: cancelToken);
   if (result['ok'] == true) {
     ImageOptimizationStats.importWorkerSummary(
         result['imageSavings'] as String?, (result['imageCount'] as num?)?.toInt() ?? 0);
+    HtmlImageLoader.importWorkerDiagnostics(
+        result['warnings'] as List?, (result['skippedImages'] as num?)?.toInt() ?? 0);
     return result['path'] as String;
   }
   throw Exception(result['error'] ?? 'PDF export failed');
@@ -185,10 +195,13 @@ Future<String> runHtmlExportInIsolate(
     'optimizeImages': ImageOptimizerConfig.betaEnabled,
     'imageJpegQuality': ImageOptimizerConfig.quality,
     'engineRustPreferred': ZipEngineConfig.preferredRust,
+    'imageAllowlist': LocalImageAllowlist.exportSnapshot(),
   }, onProgress: onProgress, cancelToken: cancelToken);
   if (result['ok'] == true) {
     ImageOptimizationStats.importWorkerSummary(
         result['imageSavings'] as String?, (result['imageCount'] as num?)?.toInt() ?? 0);
+    HtmlImageLoader.importWorkerDiagnostics(
+        result['warnings'] as List?, (result['skippedImages'] as num?)?.toInt() ?? 0);
     return result['path'] as String;
   }
   throw Exception(result['error'] ?? 'HTML export failed');
@@ -452,6 +465,11 @@ Future<void> _isolateMain(SendPort initialPort) async {
         // N2: worker-side savings, invisible to the host isolate.
         'imageSavings': ImageOptimizationStats.summary(),
         'imageCount': ImageOptimizationStats.processedCount,
+        'skippedImages': HtmlImageLoader.skippedOutsideAllowlistCount,
+        'warnings': [
+          for (final w in HtmlImageLoader.warnings)
+            {'src': w.src, 'reason': w.reason},
+        ],
       });
     } on ExportCancelledException {
       replyPort.send(<String, dynamic>{
@@ -510,6 +528,11 @@ Future<String> _doExport(
     // T07 P2: JPEG re-encode quality mapped from the host's ExportQuality.
     ImageOptimizerConfig.quality =
         job['imageJpegQuality'] as int? ?? ImageOptimizerConfig.quality;
+    final allowlistSnapshot = job['imageAllowlist'];
+    if (allowlistSnapshot is Map) {
+      LocalImageAllowlist.applySnapshot(
+          Map<String, dynamic>.from(allowlistSnapshot));
+    }
 
   // Track 03: prefetch remote images into the session caches before the sync
   // generators run; failed fetches become warnings, never exceptions.

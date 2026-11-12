@@ -6,6 +6,7 @@ import '../models/slide.dart';
 import 'export_primitives.dart';
 import 'html_export_service.dart';
 import 'html_image_loader.dart';
+import 'local_image_allowlist.dart';
 import 'pdf_export_service.dart';
 import '../core/html/html_parser.dart';
 import 'ppt_generator.dart';
@@ -123,6 +124,7 @@ class ExportJob {
     // Track 03: prefetch remote images into the caches before the sync
     // generators run; failed fetches become warnings, never exceptions.
     HtmlImageLoader.clearWarnings();
+    await LocalImageAllowlist.ensureWarm();
     await HtmlImageLoader.prefetchSlides(slides);
     token?.throwIfCancelled();
 

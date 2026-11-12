@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import 'package:file_picker/file_picker.dart';
+import 'local_image_allowlist.dart';
 
 /// Image Editor Service — v1.2.0
 /// Handles image picking, editing (crop, resize, rotate, flip, filters), and base64 encoding.
@@ -16,6 +17,7 @@ class ImageEditorService {
         allowMultiple: false,
       );
       if (result != null && result.files.single.path != null) {
+        LocalImageAllowlist.registerPickedFile(result.files.single.path!);
         final file = File(result.files.single.path!);
         final bytes = await file.readAsBytes();
         final base64Str = base64Encode(bytes);

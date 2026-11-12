@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'ai_provider_manager.dart';
+import '../services/network_content_policy.dart';
 
 class ConfigService {
   static const String _providersKey = 'ai_providers_config';
@@ -242,5 +243,15 @@ class ConfigService {
   Future<String?> loadSystemPrompt() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_systemPromptKey);
+  }
+
+  Future<void> saveNetworkContent(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(NetworkContentPolicy.prefKey, enabled);
+  }
+
+  Future<bool> loadNetworkContent() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(NetworkContentPolicy.prefKey) ?? false;
   }
 }

@@ -163,8 +163,8 @@ void main() {
 
     test('build info reports the release identity', () {
       expect(BuildInfo.appVersion, '0.0.1');
-      expect(BuildInfo.channel, 'preview');
-      expect(BuildInfo.numericVersion, '0.0.1.1');
+      expect(BuildInfo.channel, 'stable');
+      expect(BuildInfo.numericVersion, '0.0.1.2');
     });
   });
 }

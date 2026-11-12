@@ -11,7 +11,7 @@ void main() {
   group('v2.0.1 stable release contract', () {
     test('central metadata has independent app, protocol and schema versions', () {
       expect(BuildInfo.appVersion, '0.0.1');
-      expect(BuildInfo.displayVersion, '0.0.1+1');
+      expect(BuildInfo.displayVersion, '0.0.1+2');
       expect(BuildInfo.coreVersion, '2.0.5-beta.3');
       expect(BuildInfo.collaborationProtocolVersion, 2);
       expect(BuildInfo.bundleSchemaVersion, 2);

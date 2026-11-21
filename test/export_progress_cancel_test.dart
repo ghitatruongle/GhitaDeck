@@ -144,7 +144,7 @@ void main() {
     File(out).writeAsStringSync('SENTINEL');
 
     final previousTimeout = ExportIsolateService.replyTimeout;
-    ExportIsolateService.replyTimeout = const Duration(milliseconds: 150);
+    ExportIsolateService.replyTimeout = const Duration(milliseconds: 20);
     addTearDown(() => ExportIsolateService.replyTimeout = previousTimeout);
 
     await expectLater(

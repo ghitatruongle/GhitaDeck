@@ -2812,6 +2812,17 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get aiTranslationApplyTitle => 'Áp dụng bản dịch?';
+
+  @override
+  String aiTranslationApplyBody(int count, int total) {
+    return 'Đã dịch $count/$total slide. Áp dụng tất cả?';
+  }
+
+  @override
+  String get aiTranslationApplyAll => 'Áp dụng tất cả';
+
+  @override
   String get m9NoMatchesNotice => 'Không tìm thấy kết quả phù hợp';
 
   @override
@@ -2898,6 +2909,10 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get recentSettingsRestoredNotice => 'Đã khôi phục cài đặt thành công!';
+
+  @override
+  String get recentSettingsRestoredKeysNotice =>
+      'Đã khôi phục cài đặt. Backup không chứa API key — nhập lại trong Cài đặt Provider.';
 
   @override
   String providerModelsUpdatedNotice(int count, String name) {
@@ -3138,7 +3153,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String restoreBackupInfo(Object exportedAt, int providerCount) {
-    return 'File backup từ $exportedAt.\nSố providers: $providerCount\n\nCài đặt hiện tại sẽ bị ghi đè. Tiếp tục?';
+    return 'Nội dung backup từ $exportedAt.\n$providerCount provider.\n\nProvider trùng ID sẽ thay thế bản hiện có; còn lại được thêm mới. Backup không chứa API key — nhập lại sau khi khôi phục. Tiếp tục?';
   }
 
   @override

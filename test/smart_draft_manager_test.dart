@@ -124,7 +124,7 @@ void main() {
           hasLength(1));
     });
 
-    test('a missing spill file degrades to an empty draft list', () async {
+    test('a missing spill file makes the draft unrecoverable', () async {
       final manager = SmartDraftManager();
       await manager.saveDraft([Slide(title: 'Big', htmlContent: 'x' * 1100000)]);
 
@@ -135,8 +135,7 @@ void main() {
       spillFile.deleteSync();
 
       expect(await manager.hasRecoverableDraft(), isFalse);
-      final draft = await manager.loadRecoverableDraft();
-      expect(draft!['slides'] as List, isEmpty);
+      expect(await manager.loadRecoverableDraft(), isNull);
     });
   });
 

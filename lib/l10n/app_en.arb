@@ -1167,6 +1167,19 @@
       }
     }
   },
+  "aiTranslationApplyTitle": "Apply translations?",
+  "aiTranslationApplyBody": "{count} of {total} slides translated. Apply all of them?",
+  "@aiTranslationApplyBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "aiTranslationApplyAll": "Apply all",
   "m9NoMatchesNotice": "No matches found",
   "m9FixesAppliedNotice": "Applied fixes.",
   "wizardProviderConfiguredNotice": "AI provider configured successfully: {name}",
@@ -1245,6 +1258,7 @@
     }
   },
   "recentSettingsRestoredNotice": "Settings restored successfully!",
+  "recentSettingsRestoredKeysNotice": "Settings restored. API keys are not in the backup — re-enter them in Provider settings.",
   "providerModelsUpdatedNotice": "✓ Updated {count} models for {name}",
   "@providerModelsUpdatedNotice": {
     "placeholders": {
@@ -1456,7 +1470,7 @@
   },
   "modelDefault": "Default",
   "restoreSettingsTitle": "Restore settings?",
-  "restoreBackupInfo": "Backup from {exportedAt}.\n{providerCount} providers.\n\nCurrent settings will be overwritten. Continue?",
+  "restoreBackupInfo": "Backup from {exportedAt}.\n{providerCount} providers.\n\nProviders with the same ID replace the current ones; the others are added. API keys are not included in backups and must be re-entered after restoring. Continue?",
   "@restoreBackupInfo": {
     "placeholders": {
       "exportedAt": {},

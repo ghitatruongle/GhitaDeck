@@ -675,14 +675,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (confirm != true || !context.mounted) return;
 
         // Restore providers
+        String? selectedId;
+        if (backup['selectedProviderId'] is String) {
+          selectedId = backup['selectedProviderId'] as String;
+        }
         if (backup['providers'] is List) {
           final providerList = (backup['providers'] as List)
               .map((m) =>
                   AIProviderConfig.fromMap(Map<String, dynamic>.from(m as Map)))
               .toList();
-          for (final p in providerList) {
-            aiManager.addProvider(p);
-          }
+          aiManager.restoreProviders(providerList, selectedId: selectedId);
         }
 
         // Restore system prompt
@@ -707,7 +709,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
 
         if (!context.mounted) return;
-        showAppSnackBar(context, context.l10n.recentSettingsRestoredNotice);
+        showAppSnackBar(context, context.l10n.recentSettingsRestoredKeysNotice);
       }
     } catch (e) {
       if (!context.mounted) return;

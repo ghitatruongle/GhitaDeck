@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.2] - 2026-11-20 — Chốt dữ liệu: không nuốt file/nháp/deck, thao tác UI trung thực
+
+- **Xuất file không còn nuốt file cũ:** promotion `.part` → đích đổi sang backup-restore: rename thất bại thì file xuất hợp lệ trước đó được phục hồi nguyên vẹn (`promotePartFile`, test B8b).
+- **Deck lớn thiếu/hỏng không còn biến thành deck rỗng âm thầm:** spill file thiếu/hỏng → lỗi hiển thị rõ qua `lastPersistenceError` + file hỏng được cách ly thành `presentation_slides.json.corrupt-<nonce>`; không ghi đè dữ liệu chưa rõ trạng thái.
+- **Nháp lớn:** spill thiếu → nháp đánh dấu không khôi phục được (`loadRecoverableDraft` trả null); spill ghi kiểu tmp+rename tránh nháp bị cắt cụt khi crash; purge dọn cả file tmp.
+- **API key xoá thật:** `updateProvider` với key rỗng xoá entry trong secure storage — hết tình trạng key cũ sống lại sau reload.
+- **Template Studio route chính áp dụng thật:** nút "Sử dụng" thay HTML slide hiện tại (hoặc thêm slide mới khi deck rỗng); không có callback → không snackbar giả.
+- **Dịch deck:** busy state giữ đúng suốt lô và luôn reset bằng `finally`; hộp thoại áp dụng dịch l10n EN/VI.
+- **Khôi phục backup minh bạch:** merge theo ID (trùng thay thế, khác thêm mới), khôi phục provider đã chọn; dialog + snackbar nói rõ backup không chứa API key.
+- **Version/docs:** `0.0.2+3` (schema 2, LAN protocol v2, Rust core không đổi); README dọn cấu trúc/What's New cũ; CHANGELOG sửa claim coverage của 0.0.1.
+- **Định dạng không đổi:** `.ghita` schema 2, LAN protocol v2 — deck cũ mở dùng tiếp; cài đè mọi bản cũ.
+
 ## [0.0.1] - 2026-11-12 — Stable đầu tiên: bảo mật LAN/nội dung + hiệu ứng thật + Rust gđ2
 
 - **Bảo mật phiên LAN (3 server):** bind đúng interface LAN (không còn 0.0.0.0) + cảnh báo "phiên chưa mã hóa"; share link chuyển sang **one-time bootstrap** (hết token dài hạn trong URL); TTL phiên 8h → 60 phút trượt theo hoạt động; session id opaque (hết leak prefix token); rate limit /join·/view·/once·/ws; so sánh token constant-time ở cả 3 service; view token 8→16 byte; /health ẩn danh tính app; kick collaborator hoạt động thật trên LAN; dọn sạch state phiên khi stop (hết token viewer/lock/revision cũ).
@@ -10,7 +22,7 @@
 - **UI/docs:** token hóa màu cứng (top-5 file), Semantics liveRegion badge engine, README cập nhật 20 template/61 hiệu ứng.
 - **Sửa bug cũ:** crash ribbon tab Design/Transitions; dialog "Go to slide" dùng controller đã dispose; 2 slide tạo cùng ms bị GlobalKey collision; overflow pane khi sidebar hẹp; **slide thêm trước hydration bị xoá** (mất dữ liệu).
 - **Review+debug tổng:** regex guard chết (nuốt nội dung slide có tag không đóng), fallback zip lệch luật, race startup toggle mạng.
-- **CI:** coverage gate 55% (đạt), full suite 1262 pass / cargo 33/33 / l10n CLEAN / analyze 0 issue.
+- **CI:** full suite 1262 pass / cargo 33/33 / l10n CLEAN / analyze 0 issue; coverage ratchet floor 47% (mục tiêu 55%).
 - **Định dạng không đổi:** `.ghita` schema 2, LAN protocol v2 — deck cũ mở dùng tiếp; cài đè được mọi bản cũ.
 
 ## [0.0.1-preview] - 2026-11-03 — Diện mạo dọn nhất quán + nền móng ổn định

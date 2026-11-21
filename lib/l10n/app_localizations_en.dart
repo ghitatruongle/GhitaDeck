@@ -2813,6 +2813,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get aiTranslationApplyTitle => 'Apply translations?';
+
+  @override
+  String aiTranslationApplyBody(int count, int total) {
+    return '$count of $total slides translated. Apply all of them?';
+  }
+
+  @override
+  String get aiTranslationApplyAll => 'Apply all';
+
+  @override
   String get m9NoMatchesNotice => 'No matches found';
 
   @override
@@ -2898,6 +2909,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get recentSettingsRestoredNotice => 'Settings restored successfully!';
+
+  @override
+  String get recentSettingsRestoredKeysNotice =>
+      'Settings restored. API keys are not in the backup — re-enter them in Provider settings.';
 
   @override
   String providerModelsUpdatedNotice(int count, String name) {
@@ -3138,7 +3153,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String restoreBackupInfo(Object exportedAt, int providerCount) {
-    return 'Backup from $exportedAt.\n$providerCount providers.\n\nCurrent settings will be overwritten. Continue?';
+    return 'Backup from $exportedAt.\n$providerCount providers.\n\nProviders with the same ID replace the current ones; the others are added. API keys are not included in backups and must be re-entered after restoring. Continue?';
   }
 
   @override

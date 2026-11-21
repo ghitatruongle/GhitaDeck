@@ -1129,6 +1129,19 @@
       }
     }
   },
+  "aiTranslationApplyTitle": "Áp dụng bản dịch?",
+  "aiTranslationApplyBody": "Đã dịch {count}/{total} slide. Áp dụng tất cả?",
+  "@aiTranslationApplyBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "aiTranslationApplyAll": "Áp dụng tất cả",
   "m9NoMatchesNotice": "Không tìm thấy kết quả phù hợp",
   "m9FixesAppliedNotice": "Đã áp dụng các sửa đổi.",
   "wizardProviderConfiguredNotice": "Đã cấu hình nhà cung cấp AI thành công: {name}",
@@ -1207,6 +1220,7 @@
     }
   },
   "recentSettingsRestoredNotice": "Đã khôi phục cài đặt thành công!",
+  "recentSettingsRestoredKeysNotice": "Đã khôi phục cài đặt. Backup không chứa API key — nhập lại trong Cài đặt Provider.",
   "providerModelsUpdatedNotice": "✓ Đã cập nhật {count} mô hình cho {name}",
   "@providerModelsUpdatedNotice": {
     "placeholders": {
@@ -1384,7 +1398,7 @@
   "modelLine": "Model: {model}",
   "modelDefault": "Mặc định",
   "restoreSettingsTitle": "Khôi phục cài đặt?",
-  "restoreBackupInfo": "File backup từ {exportedAt}.\nSố providers: {providerCount}\n\nCài đặt hiện tại sẽ bị ghi đè. Tiếp tục?",
+  "restoreBackupInfo": "Nội dung backup từ {exportedAt}.\n{providerCount} provider.\n\nProvider trùng ID sẽ thay thế bản hiện có; còn lại được thêm mới. Backup không chứa API key — nhập lại sau khi khôi phục. Tiếp tục?",
   "restoreFailed": "Không thể khôi phục dữ liệu: {error}",
   "openSlidePanelTooltip": "Mở thanh Slide",
   "collapseSlidePanelTooltip": "Thu gọn thanh Slide",

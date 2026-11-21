@@ -166,7 +166,7 @@ void main() {
       expect(state.autoAdvance, isTrue);
     });
 
-    test('missing spill pointer file degrades gracefully to an empty deck',
+    test('a missing spill file surfaces a load error instead of a silent empty deck',
         () async {
       SharedPreferences.setMockInitialValues({
         'presentation_slides_file_pointer':
@@ -179,8 +179,29 @@ void main() {
 
       expect(state.slides, isEmpty);
       expect(state.isHydrating, isFalse);
-      expect(state.lastPersistenceError, isNull,
-          reason: 'a missing spill file is handled inside loadSlides');
+      expect(state.lastPersistenceError, isNotNull);
+    });
+
+    test('a corrupt spill file is quarantined and surfaces a load error', () async {
+      final corrupt = File('${tempDir.path}${Platform.pathSeparator}deck.json');
+      await corrupt.writeAsString('{not valid json');
+      SharedPreferences.setMockInitialValues({
+        'presentation_slides_file_pointer': corrupt.path,
+      });
+
+      final state = PresentationState();
+      addTearDown(state.dispose);
+      await state.ready;
+
+      expect(state.slides, isEmpty);
+      expect(state.lastPersistenceError, isNotNull);
+      expect(corrupt.existsSync(), isTrue);
+      final quarantined = tempDir
+          .listSync()
+          .whereType<File>()
+          .where((f) => f.path.contains('.corrupt-'))
+          .toList();
+      expect(quarantined, hasLength(1));
     });
 
     test('corrupt inline JSON degrades gracefully to an empty deck',
@@ -195,7 +216,7 @@ void main() {
 
       expect(state.slides, isEmpty);
       expect(state.isHydrating, isFalse);
-      expect(state.lastPersistenceError, isNull);
+      expect(state.lastPersistenceError, isNotNull);
     });
   });
 

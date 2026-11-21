@@ -186,6 +186,7 @@ coverage/
 /tool/benchmark_results_*.md
 /tool/ram_results_*.md
 /tool/template_mockups/*.md
+/docs/superpowers/plans/
 
 # Kết quả đo hiện thời (sinh bởi harness, so với perf_baseline.json ở gate)
 /tool/perf_current.json

@@ -6,11 +6,11 @@ class BuildInfo {
   BuildInfo._();
 
   static const String productName = 'GhitaDeck';
-  static const String appVersion = '0.0.1';
+  static const String appVersion = '0.0.2';
   static const String coreVersion = '2.0.5-beta.3';
   static const String channel = 'stable';
-  static const int buildNumber = 2;
-  static const String numericVersion = '0.0.1.2';
+  static const int buildNumber = 3;
+  static const String numericVersion = '0.0.2.3';
 
   /// Version of the LAN collaboration wire protocol.
   static const int collaborationProtocolVersion = 2;

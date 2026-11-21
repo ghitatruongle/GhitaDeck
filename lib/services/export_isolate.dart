@@ -36,6 +36,32 @@ import 'zip_codec.dart';
 
 typedef _ExportJob = Map<String, dynamic>;
 
+Future<void> promotePartFile(String partPath, String finalPath) async {
+  final target = File(finalPath);
+  final backup = File('$finalPath.bak');
+  if (!target.existsSync()) {
+    await File(partPath).rename(finalPath);
+    return;
+  }
+  if (backup.existsSync()) {
+    await backup.delete();
+  }
+  await target.rename(backup.path);
+  try {
+    await File(partPath).rename(finalPath);
+  } catch (_) {
+    if (!target.existsSync() && backup.existsSync()) {
+      await backup.rename(finalPath);
+    }
+    rethrow;
+  }
+  if (backup.existsSync()) {
+    try {
+      await backup.delete();
+    } catch (_) {}
+  }
+}
+
 /// Export slides to PPTX on the background worker isolate.
 /// Returns the output file path.
 ///
@@ -620,9 +646,7 @@ Future<String> _doExport(
     // Promote the scratch: replace the target only when the job fully
     // succeeded (a pre-existing file survives every failure/cancel).
     try {
-      final target = File(finalPath);
-      if (target.existsSync()) await target.delete();
-      await File(partPath).rename(finalPath);
+      await promotePartFile(partPath, finalPath);
     } catch (e) {
       try {
         final f = File(partPath);

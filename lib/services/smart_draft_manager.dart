@@ -58,9 +58,12 @@ class SmartDraftManager {
       };
 
       if (utf8.encode(slidesJson).length > _largeDeckThreshold) {
-        // OPT 27: big deck → spill slides to their own file, keep a pointer.
         final slidesFile = await _getSlidesFile();
-        await slidesFile.writeAsString(slidesJson, flush: true);
+        final nonce = '${pid}_${DateTime.now().microsecondsSinceEpoch}';
+        final tmp = File('${slidesFile.path}.$nonce.tmp');
+        await tmp.writeAsString(slidesJson, flush: true);
+        if (await slidesFile.exists()) await slidesFile.delete();
+        await tmp.rename(slidesFile.path);
         draftData['slidesFile'] = _slidesFileName;
         draftData['slideCount'] = slides.length;
         await file.writeAsString(jsonEncode(draftData), flush: true);
@@ -122,7 +125,7 @@ class SmartDraftManager {
               final raw = await slidesFile.readAsString();
               map['slides'] = jsonDecode(raw) as List;
             } else {
-              map['slides'] = <dynamic>[];
+              return null;
             }
           }
           return map;
@@ -144,6 +147,17 @@ class SmartDraftManager {
       final slidesFile = await _getSlidesFile();
       if (await slidesFile.exists()) {
         await slidesFile.delete();
+      }
+      final stale = slidesFile.parent
+          .listSync()
+          .whereType<File>()
+          .where((f) =>
+              f.uri.pathSegments.last
+                  .startsWith('$_slidesFileName.') &&
+              f.uri.pathSegments.last.endsWith('.tmp'))
+          .toList();
+      for (final f in stale) {
+        await f.delete();
       }
       debugPrint('SmartDraftManager: Unsaved draft purged cleanly from sandbox.');
     } catch (e) {

@@ -242,7 +242,6 @@ class PresentationState with ChangeNotifier, DeckExportActions {
         _loadNetworkContent(),
         loadCustomShows(),
       ]);
-      _lastPersistenceError = null;
     } catch (error, stack) {
       _lastPersistenceError = error.toString();
       debugPrint('PresentationState initialization failed: $error');
@@ -1162,6 +1161,12 @@ class PresentationState with ChangeNotifier, DeckExportActions {
   Future<void> loadPresentation([String? title]) async {
     final data = await _configService.loadSlides();
     if (_disposed) return;
+    if (data['spillError'] == true) {
+      _lastPersistenceError =
+          'The saved deck file is missing or unreadable; the deck was not loaded.';
+      notifyListeners();
+      return;
+    }
     final loadedSlides = (data['slides'] as List)
         .map((e) => Slide.fromMap(Map<String, dynamic>.from(e as Map)))
         .toList();

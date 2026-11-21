@@ -14,22 +14,28 @@ import 'package:ghita_deck/screens/widgets/slide_preview.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('v2.0.1 Quality Gate', () {
+  group('0.0.2 Quality Gate', () {
     test('pubspec.yaml version matches the centralized release contract', () {
       final pubspecFile = File('pubspec.yaml');
       expect(pubspecFile.existsSync(), isTrue);
       final content = pubspecFile.readAsStringSync();
-      expect(content, contains('version: 0.0.1+2'));
+      expect(content, contains('version: 0.0.2+3'));
       expect(content, contains('name: ghita_deck'));
+    });
+
+    test('Template Studio on the main route is wired to apply templates', () {
+      final content = File('lib/screens/home_screen.dart').readAsStringSync();
+      expect(content, contains('onApplyTemplate: (template)'));
+      expect(content, contains('htmlContent: template.htmlContent'));
     });
 
     test('Installer definition uses the stable display version', () {
       final issFile = File('installer/ghita_deck_installer.iss');
       expect(issFile.existsSync(), isTrue);
       final content = issFile.readAsStringSync();
-      expect(content, contains('#define MyAppDisplayVersion "0.0.1+2"'));
-      expect(content, contains('#define MyAppVersion "0.0.1"'));
-      expect(content, contains('#define MyAppBuild "2"'));
+      expect(content, contains('#define MyAppDisplayVersion "0.0.2+3"'));
+      expect(content, contains('#define MyAppVersion "0.0.2"'));
+      expect(content, contains('#define MyAppBuild "3"'));
     });
 
     test('ProjectBundleService manifest uses app and schema versions',

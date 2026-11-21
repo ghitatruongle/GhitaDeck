@@ -2,16 +2,16 @@
 
 #define MyAppName "GhitaDeck"
 #ifndef MyAppVersion
-  #define MyAppVersion "0.0.1"
+  #define MyAppVersion "0.0.2"
 #endif
 #ifndef MyAppBuild
-  #define MyAppBuild "2"
+  #define MyAppBuild "3"
 #endif
 #ifndef MyAppDisplayVersion
-  #define MyAppDisplayVersion "0.0.1+2"
+  #define MyAppDisplayVersion "0.0.2+3"
 #endif
 #ifndef MyAppFileBase
-  #define MyAppFileBase "0.0.1"
+  #define MyAppFileBase "0.0.2"
 #endif
 #define MyAppPublisher "Ghita"
 #define MyAppURL "https://github.com/ghitatruongle/GhitaDeck"

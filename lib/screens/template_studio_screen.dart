@@ -276,7 +276,9 @@ class _TemplateStudioScreenState extends State<TemplateStudioScreen> {
                       icon: const Icon(Icons.add, size: 16),
                       label: const Text('Sử dụng', style: TextStyle(fontSize: 12)),
                       onPressed: () {
-                        widget.onApplyTemplate?.call(template);
+                        final cb = widget.onApplyTemplate;
+                        if (cb == null) return;
+                        cb(template);
                         showAppSnackBar(context, context.l10n.templateAppliedTemplateNotice(_localizedName(context.l10n, template)));
                       },
                     ),
@@ -385,7 +387,9 @@ class _TemplateStudioScreenState extends State<TemplateStudioScreen> {
                       label: const Text('Áp dụng Template'),
                       onPressed: () {
                         Navigator.pop(ctx);
-                        widget.onApplyTemplate?.call(template);
+                        final cb = widget.onApplyTemplate;
+                        if (cb == null) return;
+                        cb(template);
                         showAppSnackBar(context, context.l10n.templateAppliedTemplateNotice(_localizedName(context.l10n, template)));
                       },
                     ),

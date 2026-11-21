@@ -688,49 +688,47 @@ class _AiChatScreenState extends State<AiChatScreen> {
     setState(() => _isGenerating = true);
     final translated = <int, String>{};
     var done = 0;
-    for (var i = 0; i < slides.length; i++) {
-      final slide = slides[i];
-      final prompt = DeckTranslationService.buildTranslationPrompt(
-          slide.htmlContent, target);
-      try {
-        final html = await widget.aiProviderManager.generateSlideContent(prompt,
-            customPrompt: 'Translate HTML keeping tags/classes unchanged.');
-        translated[i] = html;
-        done++;
-        if (mounted) {
-          setState(() {
-            _isGenerating = false; // re-enabled below per batch
-          });
-        }
-        if (mounted) {
-          showAppSnackBar(context,
-              context.l10n.aiTranslatedNotice(done, slides.length));
-        }
-      } catch (e) {
-        if (mounted) {
-          showAppSnackBar(context, context.l10n.aiSlideErrorNotice(i + 1, '$e'));
+    try {
+      for (var i = 0; i < slides.length; i++) {
+        final slide = slides[i];
+        final prompt = DeckTranslationService.buildTranslationPrompt(
+            slide.htmlContent, target);
+        try {
+          final html = await widget.aiProviderManager.generateSlideContent(prompt,
+              customPrompt: 'Translate HTML keeping tags/classes unchanged.');
+          translated[i] = html;
+          done++;
+          if (mounted) {
+            showAppSnackBar(
+                context, context.l10n.aiTranslatedNotice(done, slides.length));
+          }
+        } catch (e) {
+          if (mounted) {
+            showAppSnackBar(
+                context, context.l10n.aiSlideErrorNotice(i + 1, '$e'));
+          }
           break;
         }
+        await Future<void>.delayed(const Duration(milliseconds: 50));
       }
-      // Keep UI responsive between slides.
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+    } finally {
+      if (mounted) setState(() => _isGenerating = false);
     }
-    if (mounted) setState(() => _isGenerating = false);
 
     if (translated.isEmpty || !mounted) return;
     final applyAll = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Apply translations?'),
-        content:
-            Text('${translated.length} slide(s) translated. Apply all?'),
+        title: Text(ctx.l10n.aiTranslationApplyTitle),
+        content: Text(ctx.l10n.aiTranslationApplyBody(
+            translated.length, slides.length)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+              child: Text(ctx.l10n.cancel)),
           FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Apply all')),
+              child: Text(ctx.l10n.aiTranslationApplyAll)),
         ],
       ),
     );

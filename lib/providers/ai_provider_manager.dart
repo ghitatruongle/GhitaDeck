@@ -440,7 +440,7 @@ class AIProviderManager with ChangeNotifier {
   }
 
   void updateProvider(AIProviderConfig updatedProvider) {
-    if (_disposed) return; // v1.2.0: guard against post-dispose notify
+    if (_disposed) return;
     final index = _providers.indexWhere((p) => p.id == updatedProvider.id);
     if (index != -1) {
       _providers[index] = updatedProvider;
@@ -450,9 +450,35 @@ class AIProviderManager with ChangeNotifier {
       unawaited(_configService.saveProviders(_providers));
       if (updatedProvider.apiKey.isNotEmpty) {
         unawaited(_configService.saveApiKey(updatedProvider.id, updatedProvider.apiKey));
+      } else {
+        unawaited(_configService.saveApiKey(updatedProvider.id, ''));
       }
       notifyListeners();
     }
+  }
+
+  void restoreProviders(List<AIProviderConfig> incoming, {String? selectedId}) {
+    if (_disposed) return;
+    for (final p in incoming) {
+      final index = _providers.indexWhere((x) => x.id == p.id);
+      if (index == -1) {
+        _providers.add(p);
+        if (p.apiKey.isNotEmpty) {
+          unawaited(_configService.saveApiKey(p.id, p.apiKey));
+        }
+      } else {
+        _providers[index] = p.copyWith(apiKey: _providers[index].apiKey);
+      }
+    }
+    if (selectedId != null && selectedId.isNotEmpty) {
+      final matches = _providers.where((x) => x.id == selectedId).toList();
+      if (matches.isNotEmpty) {
+        _selectedProvider = matches.first;
+        unawaited(_configService.saveSelectedProvider(selectedId));
+      }
+    }
+    unawaited(_configService.saveProviders(_providers));
+    notifyListeners();
   }
 
   void _patchProviderLive(

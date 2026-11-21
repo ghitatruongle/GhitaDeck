@@ -166,10 +166,11 @@ class ConfigService {
         }
         rethrow;
       }
-      if (backup != null && await backup.exists()) await backup.delete();
     } finally {
       if (await temp.exists()) await temp.delete();
-      if (backup != null && await backup.exists()) await backup.delete();
+      if (backup != null && await backup.exists() && await target.exists()) {
+        await backup.delete();
+      }
     }
   }
 
@@ -178,10 +179,11 @@ class ConfigService {
     final effectName = prefs.getString(_effectKey) ?? 'none';
     final deckMeta = prefs.getString('presentation_deck_meta') ?? '';
     List<Map<String, dynamic>> slides = [];
+    var spillError = false;
 
-    // Large-deck pointer file first (Track 65 OPT 27).
     final pointer = prefs.getString(_slidesFilePointerKey);
     if (pointer != null && pointer.isNotEmpty) {
+      var loaded = false;
       try {
         final file = File(pointer);
         if (await file.exists()) {
@@ -189,20 +191,26 @@ class ConfigService {
           final List<dynamic> list = json.decode(content);
           slides =
               list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+          loaded = true;
         } else {
           debugPrint('ConfigService: spilled deck file missing: $pointer');
         }
       } catch (e) {
-        debugPrint('Error loading spilled slides: $e');
+        debugPrint('ConfigService: spilled deck file corrupt: $e');
+        final nonce = '${pid}_${DateTime.now().microsecondsSinceEpoch}';
+        try {
+          await File(pointer).copy('$pointer.corrupt-$nonce');
+        } catch (_) {}
       }
+      spillError = !loaded;
       return {
         'slides': slides,
         'slide_effect': effectName,
         'deckMeta': deckMeta,
+        'spillError': spillError,
       };
     }
 
-    // Legacy inline storage.
     final jsonStr = prefs.getString(_slidesKey);
     if (jsonStr != null && jsonStr.isNotEmpty) {
       try {
@@ -210,9 +218,15 @@ class ConfigService {
         slides = list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
       } catch (e) {
         debugPrint('Error loading slides: $e');
+        spillError = true;
       }
     }
-    return {'slides': slides, 'slide_effect': effectName, 'deckMeta': deckMeta};
+    return {
+      'slides': slides,
+      'slide_effect': effectName,
+      'deckMeta': deckMeta,
+      'spillError': spillError,
+    };
   }
 
   // ---- Auto advance ("Timing") ----

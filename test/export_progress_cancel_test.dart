@@ -313,4 +313,40 @@ void main() {
       }
     }
   });
+
+  group('B8b: promotion failure keeps the previous output', () {
+    test('promotePartFile installs the new file and leaves no leftovers', () async {
+      final dir = Directory.systemTemp.createTempSync('n3_b8b_ok');
+      addTearDown(() => dir.delete(recursive: true));
+      final target = File('${dir.path}/deck.pptx');
+      target.writeAsStringSync('OLD');
+      final part = File('${dir.path}/deck.pptx.part');
+      part.writeAsStringSync('NEW');
+
+      await promotePartFile(part.path, target.path);
+
+      expect(target.readAsStringSync(), 'NEW');
+      expect(part.existsSync(), isFalse);
+      expect(
+          dir.listSync().whereType<File>().map((f) => f.uri.pathSegments.last),
+          ['deck.pptx']);
+    });
+
+    test('promotePartFile restores the old file when the part rename fails', () async {
+      final dir = Directory.systemTemp.createTempSync('n3_b8b_fail');
+      addTearDown(() => dir.delete(recursive: true));
+      final target = File('${dir.path}/deck.pptx');
+      target.writeAsStringSync('OLD');
+
+      await expectLater(
+        promotePartFile('${dir.path}/missing.part', target.path),
+        throwsA(isA<Exception>()),
+      );
+
+      expect(target.readAsStringSync(), 'OLD');
+      expect(
+          dir.listSync().whereType<File>().map((f) => f.uri.pathSegments.last),
+          ['deck.pptx']);
+    });
+  });
 }

@@ -560,7 +560,23 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                 children: [
                                   const EditorShell(),
                                   const RecentProjectsScreen(),
-                                  const TemplateStudioScreen(),
+                                  TemplateStudioScreen(
+                                    onApplyTemplate: (template) {
+                                      final index = ps.currentSlideIndex;
+                                      if (index < 0 ||
+                                          index >= ps.slides.length) {
+                                        ps.addSlide(Slide(
+                                            title: template.name,
+                                            htmlContent: template.htmlContent));
+                                      } else {
+                                        ps.updateSlide(
+                                            index,
+                                            ps.slides[index].copyWith(
+                                                htmlContent:
+                                                    template.htmlContent));
+                                      }
+                                    },
+                                  ),
                                   AiChatScreen(aiProviderManager: aiManager),
                                   const SettingsScreen(),
                                 ],

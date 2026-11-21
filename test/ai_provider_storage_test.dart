@@ -113,4 +113,61 @@ void main() {
     expect(manager.providers.any((p) => p.id == 'custom-1'), isFalse);
     manager.dispose();
   });
+
+  test('clearing the API key deletes it from secure storage and survives reload',
+      () async {
+    final first = AIProviderManager();
+    await first.loadProviders();
+    final target = first.providers.first;
+    first.selectProvider(target);
+    await first.saveApiKeyForSelected('sk-live-123');
+    expect(secureStore.containsKey('api_key_${target.id}'), isTrue);
+
+    first.updateProvider(target.copyWith(apiKey: ''));
+    expect(secureStore.containsKey('api_key_${target.id}'), isFalse);
+
+    final second = AIProviderManager();
+    await second.loadProviders();
+    expect(
+        second.providers.firstWhere((p) => p.id == target.id).apiKey, isEmpty);
+    first.dispose();
+    second.dispose();
+  });
+
+  test('restoreProviders merges by id and restores the selection', () async {
+    final manager = AIProviderManager();
+    await manager.loadProviders();
+    final current = manager.providers.first;
+    final incoming = current.copyWith(name: 'Renamed', apiKey: '');
+    final extra = AIProviderConfig(
+      id: 'custom_backup_extra',
+      name: 'Extra',
+      baseUrl: 'https://example.com',
+      apiKey: '',
+      availableModels: ['m'],
+      selectedModel: 'm',
+      contextWindow: 8192,
+      formatType: 'openai',
+      temperature: 0.5,
+      maxTokens: 2048,
+    );
+
+    manager.restoreProviders([incoming, extra],
+        selectedId: 'custom_backup_extra');
+    expect(manager.providers.firstWhere((x) => x.id == current.id).name,
+        'Renamed');
+    expect(manager.providers.firstWhere((x) => x.id == 'custom_backup_extra'),
+        isNotNull);
+    expect(manager.selectedProvider?.id, 'custom_backup_extra');
+    manager.dispose();
+
+    final second = AIProviderManager();
+    await second.loadProviders();
+    expect(second.providers.firstWhere((x) => x.id == current.id).name,
+        'Renamed');
+    expect(second.providers.firstWhere((x) => x.id == 'custom_backup_extra'),
+        isNotNull);
+    expect(second.selectedProvider?.id, 'custom_backup_extra');
+    second.dispose();
+  });
 }

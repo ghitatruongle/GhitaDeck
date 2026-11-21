@@ -5396,6 +5396,24 @@ abstract class AppLocalizations {
   /// **'Slide {index} error: {error}'**
   String aiSlideErrorNotice(int index, String error);
 
+  /// No description provided for @aiTranslationApplyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply translations?'**
+  String get aiTranslationApplyTitle;
+
+  /// No description provided for @aiTranslationApplyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {total} slides translated. Apply all of them?'**
+  String aiTranslationApplyBody(int count, int total);
+
+  /// No description provided for @aiTranslationApplyAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply all'**
+  String get aiTranslationApplyAll;
+
   /// No description provided for @m9NoMatchesNotice.
   ///
   /// In en, this message translates to:
@@ -5527,6 +5545,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Settings restored successfully!'**
   String get recentSettingsRestoredNotice;
+
+  /// No description provided for @recentSettingsRestoredKeysNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings restored. API keys are not in the backup — re-enter them in Provider settings.'**
+  String get recentSettingsRestoredKeysNotice;
 
   /// No description provided for @providerModelsUpdatedNotice.
   ///
@@ -5903,7 +5927,7 @@ abstract class AppLocalizations {
   /// No description provided for @restoreBackupInfo.
   ///
   /// In en, this message translates to:
-  /// **'Backup from {exportedAt}.\n{providerCount} providers.\n\nCurrent settings will be overwritten. Continue?'**
+  /// **'Backup from {exportedAt}.\n{providerCount} providers.\n\nProviders with the same ID replace the current ones; the others are added. API keys are not included in backups and must be re-entered after restoring. Continue?'**
   String restoreBackupInfo(Object exportedAt, int providerCount);
 
   /// No description provided for @restoreFailed.

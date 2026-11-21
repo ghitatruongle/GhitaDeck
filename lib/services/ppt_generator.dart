@@ -240,6 +240,8 @@ class PPTGenerator {
   // EMU geometry constants.
   static const int _emuPerPx = 9525;
 
+  static const int zipEntryTimestamp = 315532800;
+
   /// Benchmark/test-only knobs emulating the v1.6.3 ZIP encoder behavior
   /// (deflate at the fastest level, every entry compressed) so before/after
   /// timings can be measured side by side in the same process. Production
@@ -262,7 +264,8 @@ class PPTGenerator {
   /// makes PowerPoint flag the package as corrupt.
   static void _addTextFile(Archive archive, String name, String content) {
     final bytes = utf8.encode(content);
-    archive.addFile(ArchiveFile(name, bytes.length, bytes));
+    archive.addFile(ArchiveFile(name, bytes.length, bytes)
+      ..lastModTime = zipEntryTimestamp);
   }
 
   static Future<File> generatePPT(
@@ -636,7 +639,8 @@ class PPTGenerator {
         'ppt/media/${m.name}',
         m.bytes.length,
         m.bytes,
-      )..compress = !debugStoreCompressedMedia;
+      )..compress = !debugStoreCompressedMedia
+        ..lastModTime = zipEntryTimestamp;
       archive.addFile(mediaFile);
     }
 
@@ -670,7 +674,7 @@ class PPTGenerator {
           'ppt/embeddings/${entry.sheetName}',
           pkg.xlsxBytes.length,
           pkg.xlsxBytes,
-        ),
+        )..lastModTime = zipEntryTimestamp,
       );
     }
 

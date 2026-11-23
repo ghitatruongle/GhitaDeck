@@ -98,18 +98,6 @@ abstract class AppLocalizations {
     Locale('vi')
   ];
 
-  /// Application title
-  ///
-  /// In en, this message translates to:
-  /// **'GhitaDeck'**
-  String get appTitle;
-
-  /// No description provided for @homeTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Home'**
-  String get homeTitle;
-
   /// No description provided for @editorTitle.
   ///
   /// In en, this message translates to:
@@ -194,12 +182,6 @@ abstract class AppLocalizations {
   /// **'Present'**
   String get present;
 
-  /// No description provided for @presentFromCurrent.
-  ///
-  /// In en, this message translates to:
-  /// **'From Current'**
-  String get presentFromCurrent;
-
   /// No description provided for @presentation.
   ///
   /// In en, this message translates to:
@@ -217,12 +199,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Slides ({count})'**
   String slideCount(int count);
-
-  /// No description provided for @noSlidesYet.
-  ///
-  /// In en, this message translates to:
-  /// **'No slides yet'**
-  String get noSlidesYet;
 
   /// No description provided for @clickToAddSlide.
   ///
@@ -253,24 +229,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add new slide'**
   String get addSlideTooltip;
-
-  /// No description provided for @deleteSlideTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete slide'**
-  String get deleteSlideTooltip;
-
-  /// No description provided for @duplicateSlideTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Duplicate slide'**
-  String get duplicateSlideTooltip;
-
-  /// No description provided for @previewTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Preview slide'**
-  String get previewTooltip;
 
   /// No description provided for @editSlide.
   ///
@@ -350,71 +308,17 @@ abstract class AppLocalizations {
   /// **'Information'**
   String get info;
 
-  /// No description provided for @connectionError.
-  ///
-  /// In en, this message translates to:
-  /// **'Network connection error. Please check your internet.'**
-  String get connectionError;
-
-  /// No description provided for @timeoutError.
-  ///
-  /// In en, this message translates to:
-  /// **'Request timed out. Please try again.'**
-  String get timeoutError;
-
-  /// No description provided for @invalidFile.
-  ///
-  /// In en, this message translates to:
-  /// **'Invalid file format.'**
-  String get invalidFile;
-
-  /// No description provided for @fileNotFound.
-  ///
-  /// In en, this message translates to:
-  /// **'File not found.'**
-  String get fileNotFound;
-
-  /// No description provided for @permissionDenied.
-  ///
-  /// In en, this message translates to:
-  /// **'Permission denied.'**
-  String get permissionDenied;
-
   /// No description provided for @unknownError.
   ///
   /// In en, this message translates to:
   /// **'Unknown error'**
   String get unknownError;
 
-  /// No description provided for @saveSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'Saved successfully'**
-  String get saveSuccess;
-
   /// No description provided for @exportSuccess.
   ///
   /// In en, this message translates to:
   /// **'Exported successfully'**
   String get exportSuccess;
-
-  /// No description provided for @importSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'Imported successfully'**
-  String get importSuccess;
-
-  /// No description provided for @deleteSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'Deleted successfully'**
-  String get deleteSuccess;
-
-  /// No description provided for @duplicateSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'Duplicated successfully'**
-  String get duplicateSuccess;
 
   /// No description provided for @deletedWithUndo.
   ///
@@ -427,12 +331,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Undo'**
   String get undoAction;
-
-  /// No description provided for @addNewProvider.
-  ///
-  /// In en, this message translates to:
-  /// **'Add New'**
-  String get addNewProvider;
 
   /// No description provided for @details.
   ///
@@ -470,41 +368,17 @@ abstract class AppLocalizations {
   /// **'Import Configuration (JSON)'**
   String get importBackup;
 
-  /// No description provided for @saveBackup.
-  ///
-  /// In en, this message translates to:
-  /// **'Save backup'**
-  String get saveBackup;
-
   /// No description provided for @restoreSettings.
   ///
   /// In en, this message translates to:
   /// **'Restore settings?'**
   String get restoreSettings;
 
-  /// No description provided for @restoreSettingsMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Backup from {date}.\nNumber of providers: {count}\n\nCurrent settings will be overwritten. Continue?'**
-  String restoreSettingsMessage(String date, int count);
-
   /// No description provided for @restore.
   ///
   /// In en, this message translates to:
   /// **'Restore'**
   String get restore;
-
-  /// No description provided for @backupExported.
-  ///
-  /// In en, this message translates to:
-  /// **'Backup exported successfully: {filename}'**
-  String backupExported(String filename);
-
-  /// No description provided for @settingsRestored.
-  ///
-  /// In en, this message translates to:
-  /// **'Settings restored successfully!'**
-  String get settingsRestored;
 
   /// No description provided for @about.
   ///
@@ -566,12 +440,6 @@ abstract class AppLocalizations {
   /// **'System (Auto)'**
   String get systemMode;
 
-  /// No description provided for @themeSettings.
-  ///
-  /// In en, this message translates to:
-  /// **'Theme Settings'**
-  String get themeSettings;
-
   /// No description provided for @customTheme.
   ///
   /// In en, this message translates to:
@@ -584,18 +452,6 @@ abstract class AppLocalizations {
   /// **'Colors, fonts, preset themes'**
   String get customThemeSubtitle;
 
-  /// No description provided for @presetThemes.
-  ///
-  /// In en, this message translates to:
-  /// **'Preset Themes'**
-  String get presetThemes;
-
-  /// No description provided for @customColors.
-  ///
-  /// In en, this message translates to:
-  /// **'Custom Colors'**
-  String get customColors;
-
   /// No description provided for @primaryColor.
   ///
   /// In en, this message translates to:
@@ -607,12 +463,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Accent Color'**
   String get accentColor;
-
-  /// No description provided for @typography.
-  ///
-  /// In en, this message translates to:
-  /// **'Typography'**
-  String get typography;
 
   /// No description provided for @fontFamily.
   ///
@@ -638,18 +488,6 @@ abstract class AppLocalizations {
   /// **'Reset to default'**
   String get resetToDefault;
 
-  /// No description provided for @themeResetMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Theme reset to Office Blue'**
-  String get themeResetMessage;
-
-  /// No description provided for @themeAppliedMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Applied {name} preset'**
-  String themeAppliedMessage(String name);
-
   /// No description provided for @themeCopied.
   ///
   /// In en, this message translates to:
@@ -662,29 +500,11 @@ abstract class AppLocalizations {
   /// **'Theme imported successfully!'**
   String get themeImported;
 
-  /// No description provided for @themeImportFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to import theme. Invalid format.'**
-  String get themeImportFailed;
-
-  /// No description provided for @clipboardEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'Clipboard is empty'**
-  String get clipboardEmpty;
-
   /// No description provided for @pickColor.
   ///
   /// In en, this message translates to:
   /// **'Pick a color'**
   String get pickColor;
-
-  /// No description provided for @pickColorTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Pick color'**
-  String get pickColorTooltip;
 
   /// No description provided for @officeBlue.
   ///
@@ -692,23 +512,11 @@ abstract class AppLocalizations {
   /// **'Office Blue'**
   String get officeBlue;
 
-  /// No description provided for @officeBlueDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Classic Microsoft Office'**
-  String get officeBlueDesc;
-
   /// No description provided for @darkProfessional.
   ///
   /// In en, this message translates to:
   /// **'Dark Professional'**
   String get darkProfessional;
-
-  /// No description provided for @darkProfessionalDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Elegant dark theme'**
-  String get darkProfessionalDesc;
 
   /// No description provided for @lightMinimal.
   ///
@@ -716,23 +524,11 @@ abstract class AppLocalizations {
   /// **'Light Minimal'**
   String get lightMinimal;
 
-  /// No description provided for @lightMinimalDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Clean and minimal'**
-  String get lightMinimalDesc;
-
   /// No description provided for @custom.
   ///
   /// In en, this message translates to:
   /// **'Custom'**
   String get custom;
-
-  /// No description provided for @customDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Your custom theme'**
-  String get customDesc;
 
   /// No description provided for @version.
   ///
@@ -782,12 +578,6 @@ abstract class AppLocalizations {
   /// **'Information'**
   String get infoSection;
 
-  /// No description provided for @addNew.
-  ///
-  /// In en, this message translates to:
-  /// **'Add New'**
-  String get addNew;
-
   /// No description provided for @recentProjects.
   ///
   /// In en, this message translates to:
@@ -800,29 +590,11 @@ abstract class AppLocalizations {
   /// **'No projects opened recently'**
   String get noRecentProjects;
 
-  /// No description provided for @openProject.
-  ///
-  /// In en, this message translates to:
-  /// **'Open Project'**
-  String get openProject;
-
   /// No description provided for @removeFromList.
   ///
   /// In en, this message translates to:
   /// **'Remove from list'**
   String get removeFromList;
-
-  /// No description provided for @removeAll.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove All'**
-  String get removeAll;
-
-  /// No description provided for @confirmRemoveAll.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove all recent projects?'**
-  String get confirmRemoveAll;
 
   /// No description provided for @search.
   ///
@@ -854,23 +626,11 @@ abstract class AppLocalizations {
   /// **'AI Chat'**
   String get aiChat;
 
-  /// No description provided for @typeMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Type your message...'**
-  String get typeMessage;
-
   /// No description provided for @send.
   ///
   /// In en, this message translates to:
   /// **'Send'**
   String get send;
-
-  /// No description provided for @regenerate.
-  ///
-  /// In en, this message translates to:
-  /// **'Regenerate'**
-  String get regenerate;
 
   /// No description provided for @stop.
   ///
@@ -878,35 +638,11 @@ abstract class AppLocalizations {
   /// **'Stop'**
   String get stop;
 
-  /// No description provided for @clearChat.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear Chat'**
-  String get clearChat;
-
-  /// No description provided for @clearChatConfirm.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear chat history?'**
-  String get clearChatConfirm;
-
   /// No description provided for @selectProvider.
   ///
   /// In en, this message translates to:
   /// **'Select AI Provider'**
   String get selectProvider;
-
-  /// No description provided for @noProviders.
-  ///
-  /// In en, this message translates to:
-  /// **'No AI providers configured'**
-  String get noProviders;
-
-  /// No description provided for @addProviderFirst.
-  ///
-  /// In en, this message translates to:
-  /// **'Add a provider in Settings first'**
-  String get addProviderFirst;
 
   /// No description provided for @copy.
   ///
@@ -956,53 +692,11 @@ abstract class AppLocalizations {
   /// **'Strikethrough'**
   String get strikethrough;
 
-  /// No description provided for @alignLeft.
-  ///
-  /// In en, this message translates to:
-  /// **'Align Left'**
-  String get alignLeft;
-
-  /// No description provided for @alignCenter.
-  ///
-  /// In en, this message translates to:
-  /// **'Align Center'**
-  String get alignCenter;
-
-  /// No description provided for @alignRight.
-  ///
-  /// In en, this message translates to:
-  /// **'Align Right'**
-  String get alignRight;
-
-  /// No description provided for @alignJustify.
-  ///
-  /// In en, this message translates to:
-  /// **'Justify'**
-  String get alignJustify;
-
-  /// No description provided for @bulletList.
-  ///
-  /// In en, this message translates to:
-  /// **'Bullet List'**
-  String get bulletList;
-
-  /// No description provided for @numberedList.
-  ///
-  /// In en, this message translates to:
-  /// **'Numbered List'**
-  String get numberedList;
-
   /// No description provided for @indent.
   ///
   /// In en, this message translates to:
   /// **'Indent'**
   String get indent;
-
-  /// No description provided for @outdent.
-  ///
-  /// In en, this message translates to:
-  /// **'Outdent'**
-  String get outdent;
 
   /// No description provided for @link.
   ///
@@ -1046,12 +740,6 @@ abstract class AppLocalizations {
   /// **'Keyboard Shortcuts'**
   String get shortcuts;
 
-  /// No description provided for @exitPresentation.
-  ///
-  /// In en, this message translates to:
-  /// **'Exit Presentation'**
-  String get exitPresentation;
-
   /// No description provided for @nextSlide.
   ///
   /// In en, this message translates to:
@@ -1063,12 +751,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Previous Slide'**
   String get previousSlide;
-
-  /// No description provided for @firstSlide.
-  ///
-  /// In en, this message translates to:
-  /// **'First Slide'**
-  String get firstSlide;
 
   /// No description provided for @lastSlide.
   ///
@@ -1082,35 +764,11 @@ abstract class AppLocalizations {
   /// **'AI Tools'**
   String get aiTools;
 
-  /// No description provided for @improveWriting.
-  ///
-  /// In en, this message translates to:
-  /// **'Improve Writing'**
-  String get improveWriting;
-
   /// No description provided for @fixGrammar.
   ///
   /// In en, this message translates to:
   /// **'Fix Grammar'**
   String get fixGrammar;
-
-  /// No description provided for @makeShorter.
-  ///
-  /// In en, this message translates to:
-  /// **'Make Shorter'**
-  String get makeShorter;
-
-  /// No description provided for @makeLonger.
-  ///
-  /// In en, this message translates to:
-  /// **'Make Longer'**
-  String get makeLonger;
-
-  /// No description provided for @translateTo.
-  ///
-  /// In en, this message translates to:
-  /// **'Translate to {language}'**
-  String translateTo(String language);
 
   /// No description provided for @summary.
   ///
@@ -1118,23 +776,11 @@ abstract class AppLocalizations {
   /// **'Summary'**
   String get summary;
 
-  /// No description provided for @generateSlides.
-  ///
-  /// In en, this message translates to:
-  /// **'Generate Slides'**
-  String get generateSlides;
-
   /// No description provided for @fromText.
   ///
   /// In en, this message translates to:
   /// **'From Text'**
   String get fromText;
-
-  /// No description provided for @fromTopic.
-  ///
-  /// In en, this message translates to:
-  /// **'From Topic'**
-  String get fromTopic;
 
   /// No description provided for @topic.
   ///
@@ -1142,29 +788,11 @@ abstract class AppLocalizations {
   /// **'Topic'**
   String get topic;
 
-  /// No description provided for @slideCountQuestion.
-  ///
-  /// In en, this message translates to:
-  /// **'How many slides?'**
-  String get slideCountQuestion;
-
   /// No description provided for @style.
   ///
   /// In en, this message translates to:
   /// **'Style'**
   String get style;
-
-  /// No description provided for @professional.
-  ///
-  /// In en, this message translates to:
-  /// **'Professional'**
-  String get professional;
-
-  /// No description provided for @casual.
-  ///
-  /// In en, this message translates to:
-  /// **'Casual'**
-  String get casual;
 
   /// No description provided for @academic.
   ///
@@ -1184,41 +812,11 @@ abstract class AppLocalizations {
   /// **'Files'**
   String get files;
 
-  /// No description provided for @addFiles.
-  ///
-  /// In en, this message translates to:
-  /// **'Add Files'**
-  String get addFiles;
-
-  /// No description provided for @noFiles.
-  ///
-  /// In en, this message translates to:
-  /// **'No files'**
-  String get noFiles;
-
   /// No description provided for @fileName.
   ///
   /// In en, this message translates to:
   /// **'File Name'**
   String get fileName;
-
-  /// No description provided for @fileSize.
-  ///
-  /// In en, this message translates to:
-  /// **'Size'**
-  String get fileSize;
-
-  /// No description provided for @fileType.
-  ///
-  /// In en, this message translates to:
-  /// **'Type'**
-  String get fileType;
-
-  /// No description provided for @uploadedAt.
-  ///
-  /// In en, this message translates to:
-  /// **'Uploaded'**
-  String get uploadedAt;
 
   /// No description provided for @collaboration.
   ///
@@ -1226,23 +824,11 @@ abstract class AppLocalizations {
   /// **'Collaboration'**
   String get collaboration;
 
-  /// No description provided for @startSession.
-  ///
-  /// In en, this message translates to:
-  /// **'Start Session'**
-  String get startSession;
-
   /// No description provided for @joinSession.
   ///
   /// In en, this message translates to:
   /// **'Join Session'**
   String get joinSession;
-
-  /// No description provided for @sessionCode.
-  ///
-  /// In en, this message translates to:
-  /// **'Session Code'**
-  String get sessionCode;
 
   /// No description provided for @host.
   ///
@@ -1280,35 +866,11 @@ abstract class AppLocalizations {
   /// **'Stop Recording'**
   String get stopRecording;
 
-  /// No description provided for @playRecording.
-  ///
-  /// In en, this message translates to:
-  /// **'Play Recording'**
-  String get playRecording;
-
-  /// No description provided for @deleteRecording.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete Recording'**
-  String get deleteRecording;
-
-  /// No description provided for @audioRecorded.
-  ///
-  /// In en, this message translates to:
-  /// **'Audio recorded'**
-  String get audioRecorded;
-
   /// No description provided for @recordings.
   ///
   /// In en, this message translates to:
   /// **'Recordings'**
   String get recordings;
-
-  /// No description provided for @noRecordings.
-  ///
-  /// In en, this message translates to:
-  /// **'No recordings yet'**
-  String get noRecordings;
 
   /// No description provided for @advancedExport.
   ///
@@ -1676,29 +1238,11 @@ abstract class AppLocalizations {
   /// **'Shrink overflowing text so the whole deck fits its slides.'**
   String get fitContentDescription;
 
-  /// No description provided for @loadingRemoteImages.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading images from the web…'**
-  String get loadingRemoteImages;
-
-  /// An image referenced by a slide could not be downloaded.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not load image {name}'**
-  String remoteImageLoadFailed(String name);
-
   /// No description provided for @exportThemePreview.
   ///
   /// In en, this message translates to:
   /// **'Exported files will use this theme'**
   String get exportThemePreview;
-
-  /// No description provided for @exportThemePreviewDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Shows the clrScheme and fonts written into exported PPTX files.'**
-  String get exportThemePreviewDescription;
 
   /// No description provided for @layout.
   ///
@@ -1844,24 +1388,6 @@ abstract class AppLocalizations {
   /// **'Chart title'**
   String get chartTitle;
 
-  /// No description provided for @chartCategories.
-  ///
-  /// In en, this message translates to:
-  /// **'Categories (comma separated)'**
-  String get chartCategories;
-
-  /// No description provided for @chartSeriesName.
-  ///
-  /// In en, this message translates to:
-  /// **'Series name'**
-  String get chartSeriesName;
-
-  /// No description provided for @chartSeriesValues.
-  ///
-  /// In en, this message translates to:
-  /// **'Values (comma separated)'**
-  String get chartSeriesValues;
-
   /// No description provided for @chartLegend.
   ///
   /// In en, this message translates to:
@@ -1903,12 +1429,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Chart updated'**
   String get chartUpdated;
-
-  /// No description provided for @chartAddSeries.
-  ///
-  /// In en, this message translates to:
-  /// **'Add series'**
-  String get chartAddSeries;
 
   /// No description provided for @chartUpdate.
   ///
@@ -2083,12 +1603,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add node'**
   String get smartartAddNode;
-
-  /// No description provided for @smartartRemoveNode.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove node'**
-  String get smartartRemoveNode;
 
   /// No description provided for @smartartColorTheme.
   ///
@@ -3236,12 +2750,6 @@ abstract class AppLocalizations {
   /// **'Transparency'**
   String get shapeTransparency;
 
-  /// No description provided for @shapeShadow.
-  ///
-  /// In en, this message translates to:
-  /// **'Shadow'**
-  String get shapeShadow;
-
   /// No description provided for @shapeGradient.
   ///
   /// In en, this message translates to:
@@ -3806,18 +3314,6 @@ abstract class AppLocalizations {
   /// **'Bevel / 3D preset'**
   String get fxBevel;
 
-  /// No description provided for @fxRot3d.
-  ///
-  /// In en, this message translates to:
-  /// **'3D rotation (X/Y/Z)'**
-  String get fxRot3d;
-
-  /// No description provided for @fxPresets.
-  ///
-  /// In en, this message translates to:
-  /// **'Quick presets'**
-  String get fxPresets;
-
   /// No description provided for @fxPresetNone.
   ///
   /// In en, this message translates to:
@@ -4316,18 +3812,6 @@ abstract class AppLocalizations {
   /// **'View-only link'**
   String get collabViewLink;
 
-  /// No description provided for @collabViewLinkHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Anyone with this link can watch but not edit.'**
-  String get collabViewLinkHint;
-
-  /// No description provided for @collabCopyViewLink.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy view link'**
-  String get collabCopyViewLink;
-
   /// No description provided for @collabRole.
   ///
   /// In en, this message translates to:
@@ -4382,24 +3866,6 @@ abstract class AppLocalizations {
   /// **'Editing…'**
   String get collabLockSlide;
 
-  /// No description provided for @collabHistory.
-  ///
-  /// In en, this message translates to:
-  /// **'Sync history'**
-  String get collabHistory;
-
-  /// No description provided for @collabHistoryEntry.
-  ///
-  /// In en, this message translates to:
-  /// **'{name} edited slide {slide}'**
-  String collabHistoryEntry(Object name, Object slide);
-
-  /// No description provided for @collabReconnecting.
-  ///
-  /// In en, this message translates to:
-  /// **'Reconnecting… (attempt {attempt})'**
-  String collabReconnecting(Object attempt);
-
   /// No description provided for @collabReconnected.
   ///
   /// In en, this message translates to:
@@ -4417,12 +3883,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This slide is being edited by {name}'**
   String collabLockedBy(Object name);
-
-  /// No description provided for @collabConflictDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'{name} changed slide {slide} at {time}'**
-  String collabConflictDetail(Object name, Object slide, Object time);
 
   /// No description provided for @comments.
   ///
@@ -4466,24 +3926,6 @@ abstract class AppLocalizations {
   /// **'Delete'**
   String get commentsDelete;
 
-  /// No description provided for @commentsMentionHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Type @ to mention a collaborator'**
-  String get commentsMentionHint;
-
-  /// No description provided for @commentsNewChip.
-  ///
-  /// In en, this message translates to:
-  /// **'New comments'**
-  String get commentsNewChip;
-
-  /// No description provided for @commentsExportNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Discussion notes'**
-  String get commentsExportNote;
-
   /// No description provided for @profileTitle.
   ///
   /// In en, this message translates to:
@@ -4507,12 +3949,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save profile'**
   String get profileSave;
-
-  /// No description provided for @profileSaved.
-  ///
-  /// In en, this message translates to:
-  /// **'Profile saved.'**
-  String get profileSaved;
 
   /// No description provided for @profileAuthorHint.
   ///
@@ -4574,12 +4010,6 @@ abstract class AppLocalizations {
   /// **'Synced.'**
   String get cloudSynced;
 
-  /// No description provided for @cloudConflictSaved.
-  ///
-  /// In en, this message translates to:
-  /// **'Conflict saved as .conflict'**
-  String get cloudConflictSaved;
-
   /// No description provided for @cloudNoAccount.
   ///
   /// In en, this message translates to:
@@ -4628,83 +4058,11 @@ abstract class AppLocalizations {
   /// **'Designer'**
   String get designerTitle;
 
-  /// No description provided for @designerSelectSlide.
-  ///
-  /// In en, this message translates to:
-  /// **'Select a slide to see design ideas'**
-  String get designerSelectSlide;
-
-  /// No description provided for @designerUndo.
-  ///
-  /// In en, this message translates to:
-  /// **'Undo design'**
-  String get designerUndo;
-
-  /// No description provided for @designerDark.
-  ///
-  /// In en, this message translates to:
-  /// **'Dark'**
-  String get designerDark;
-
-  /// No description provided for @designerApply.
-  ///
-  /// In en, this message translates to:
-  /// **'Apply'**
-  String get designerApply;
-
-  /// No description provided for @reusePasteHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Paste a .ghita bundle (JSON) or plain text/HTML. Slides split on --- or h1/h2.'**
-  String get reusePasteHint;
-
-  /// No description provided for @reuseKeepOriginal.
-  ///
-  /// In en, this message translates to:
-  /// **'Keep original formatting'**
-  String get reuseKeepOriginal;
-
-  /// No description provided for @reuseParse.
-  ///
-  /// In en, this message translates to:
-  /// **'Parse'**
-  String get reuseParse;
-
-  /// No description provided for @reuseCompare.
-  ///
-  /// In en, this message translates to:
-  /// **'Compare / Merge'**
-  String get reuseCompare;
-
   /// No description provided for @reuseInserted.
   ///
   /// In en, this message translates to:
   /// **'Inserted slide(s)'**
   String get reuseInserted;
-
-  /// No description provided for @compareVersionA.
-  ///
-  /// In en, this message translates to:
-  /// **'Version A (.ghita JSON)'**
-  String get compareVersionA;
-
-  /// No description provided for @compareVersionB.
-  ///
-  /// In en, this message translates to:
-  /// **'Version B (.ghita JSON)'**
-  String get compareVersionB;
-
-  /// No description provided for @compareRun.
-  ///
-  /// In en, this message translates to:
-  /// **'Compare'**
-  String get compareRun;
-
-  /// No description provided for @compareMergeIntoDeck.
-  ///
-  /// In en, this message translates to:
-  /// **'Merge into deck'**
-  String get compareMergeIntoDeck;
 
   /// No description provided for @copilotCreateDeck.
   ///
@@ -4729,18 +4087,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dictation'**
   String get dictationMic;
-
-  /// No description provided for @dictationListening.
-  ///
-  /// In en, this message translates to:
-  /// **'Listening…'**
-  String get dictationListening;
-
-  /// No description provided for @dictationStop.
-  ///
-  /// In en, this message translates to:
-  /// **'Stop dictation'**
-  String get dictationStop;
 
   /// No description provided for @translateDeck.
   ///
@@ -4808,23 +4154,11 @@ abstract class AppLocalizations {
   /// **'Reading view'**
   String get viewReading;
 
-  /// No description provided for @outlineView.
-  ///
-  /// In en, this message translates to:
-  /// **'Outline view'**
-  String get outlineView;
-
   /// No description provided for @spellcheck.
   ///
   /// In en, this message translates to:
   /// **'Spell check'**
   String get spellcheck;
-
-  /// No description provided for @templateOnline.
-  ///
-  /// In en, this message translates to:
-  /// **'Online templates'**
-  String get templateOnline;
 
   /// No description provided for @versionsRestored.
   ///
@@ -5456,18 +4790,6 @@ abstract class AppLocalizations {
   /// **'Deleted {count} slides'**
   String sorterDeletedSlidesNotice(int count);
 
-  /// No description provided for @recentNewProjectNotice.
-  ///
-  /// In en, this message translates to:
-  /// **'New project created!'**
-  String get recentNewProjectNotice;
-
-  /// No description provided for @recentUndoAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Undo'**
-  String get recentUndoAction;
-
   /// No description provided for @wizardCompleteStepsNotice.
   ///
   /// In en, this message translates to:
@@ -5485,12 +4807,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Testing connection…'**
   String get providerTestingNotice;
-
-  /// No description provided for @templateAppliedPreviewNotice.
-  ///
-  /// In en, this message translates to:
-  /// **'Applied template: {name}'**
-  String templateAppliedPreviewNotice(String name);
 
   /// No description provided for @templateAppliedTemplateNotice.
   ///
@@ -5539,12 +4855,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Backup exported successfully: {name}'**
   String recentBackupExportedNotice(String name);
-
-  /// No description provided for @recentSettingsRestoredNotice.
-  ///
-  /// In en, this message translates to:
-  /// **'Settings restored successfully!'**
-  String get recentSettingsRestoredNotice;
 
   /// No description provided for @recentSettingsRestoredKeysNotice.
   ///
@@ -5606,12 +4916,6 @@ abstract class AppLocalizations {
   /// **'Deleted {name}'**
   String providerDeletedNotice(String name);
 
-  /// No description provided for @effectsAppliedNotice.
-  ///
-  /// In en, this message translates to:
-  /// **'Applied \"{effect}\" effect!'**
-  String effectsAppliedNotice(String effect);
-
   /// No description provided for @aiTranslationHintNotice.
   ///
   /// In en, this message translates to:
@@ -5629,12 +4933,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'\"{name}\" already exists.'**
   String aiNameExistsNotice(String name);
-
-  /// No description provided for @dictationViMissingNotice.
-  ///
-  /// In en, this message translates to:
-  /// **'Vietnamese speech not found on this machine — using English.'**
-  String get dictationViMissingNotice;
 
   /// No description provided for @homeOffice365StyleNotice.
   ///
@@ -6169,12 +5467,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Allow slides to load remote (https) images and media while presenting. Off keeps the presentation fully offline (embedded data only). Links in Present mode are always disabled.'**
   String get netContentToggleSubtitle;
-
-  /// No description provided for @exportImagesSkipped.
-  ///
-  /// In en, this message translates to:
-  /// **'{n} image(s) skipped — outside allowed folders'**
-  String exportImagesSkipped(int n);
 
   /// No description provided for @lanShareNewLink.
   ///

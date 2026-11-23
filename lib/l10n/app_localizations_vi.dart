@@ -9,12 +9,6 @@ class AppLocalizationsVi extends AppLocalizations {
   AppLocalizationsVi([String locale = 'vi']) : super(locale);
 
   @override
-  String get appTitle => 'GhitaDeck';
-
-  @override
-  String get homeTitle => 'Trang Chủ';
-
-  @override
   String get editorTitle => 'Trình Soạn Thảo';
 
   @override
@@ -57,9 +51,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get present => 'Trình chiếu';
 
   @override
-  String get presentFromCurrent => 'Từ Slide Hiện Tại';
-
-  @override
   String get presentation => 'Bài Thuyết Trình';
 
   @override
@@ -69,9 +60,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String slideCount(int count) {
     return 'Slides ($count)';
   }
-
-  @override
-  String get noSlidesYet => 'Chưa có slide nào';
 
   @override
   String get clickToAddSlide => 'Bấm + để thêm slide mới';
@@ -87,15 +75,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get addSlideTooltip => 'Thêm slide mới';
-
-  @override
-  String get deleteSlideTooltip => 'Xóa slide';
-
-  @override
-  String get duplicateSlideTooltip => 'Nhân bản slide';
-
-  @override
-  String get previewTooltip => 'Xem trước slide';
 
   @override
   String get editSlide => 'Sửa Slide';
@@ -137,37 +116,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get info => 'Thông Tin';
 
   @override
-  String get connectionError => 'Lỗi kết nối mạng. Vui lòng kiểm tra internet.';
-
-  @override
-  String get timeoutError => 'Yêu cầu hết thời gian. Vui lòng thử lại.';
-
-  @override
-  String get invalidFile => 'Định dạng file không hợp lệ.';
-
-  @override
-  String get fileNotFound => 'Không tìm thấy file.';
-
-  @override
-  String get permissionDenied => 'Bị từ chối quyền truy cập.';
-
-  @override
   String get unknownError => 'Lỗi không xác định';
 
   @override
-  String get saveSuccess => 'Đã lưu thành công';
-
-  @override
   String get exportSuccess => 'Đã xuất thành công';
-
-  @override
-  String get importSuccess => 'Đã nhập thành công';
-
-  @override
-  String get deleteSuccess => 'Đã xóa thành công';
-
-  @override
-  String get duplicateSuccess => 'Đã nhân bản thành công';
 
   @override
   String deletedWithUndo(String title) {
@@ -176,9 +128,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get undoAction => 'Hoàn Tác';
-
-  @override
-  String get addNewProvider => 'Thêm Mới';
 
   @override
   String get details => 'Chi Tiết';
@@ -201,26 +150,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get importBackup => 'Nhập Cấu Hình (JSON)';
 
   @override
-  String get saveBackup => 'Lưu backup';
-
-  @override
   String get restoreSettings => 'Khôi phục cài đặt?';
 
   @override
-  String restoreSettingsMessage(String date, int count) {
-    return 'File backup từ $date.\nSố providers: $count\n\nCài đặt hiện tại sẽ bị ghi đè. Tiếp tục?';
-  }
-
-  @override
   String get restore => 'Khôi Phục';
-
-  @override
-  String backupExported(String filename) {
-    return 'Đã xuất backup thành công: $filename';
-  }
-
-  @override
-  String get settingsRestored => 'Đã khôi phục cài đặt thành công!';
 
   @override
   String get about => 'Thông Tin';
@@ -255,28 +188,16 @@ class AppLocalizationsVi extends AppLocalizations {
   String get systemMode => 'Hệ Thống (Auto)';
 
   @override
-  String get themeSettings => 'Cài Đặt Theme';
-
-  @override
   String get customTheme => 'Tùy Chỉnh Theme';
 
   @override
   String get customThemeSubtitle => 'Màu sắc, font chữ, preset themes';
 
   @override
-  String get presetThemes => 'Preset Themes';
-
-  @override
-  String get customColors => 'Màu Tùy Chỉnh';
-
-  @override
   String get primaryColor => 'Màu Chính';
 
   @override
   String get accentColor => 'Màu Phụ';
-
-  @override
-  String get typography => 'Phông Chữ';
 
   @override
   String get fontFamily => 'Font Chữ';
@@ -291,55 +212,25 @@ class AppLocalizationsVi extends AppLocalizations {
   String get resetToDefault => 'Khôi phục mặc định';
 
   @override
-  String get themeResetMessage => 'Đã khôi phục theme về Office Blue';
-
-  @override
-  String themeAppliedMessage(String name) {
-    return 'Đã áp dụng preset $name';
-  }
-
-  @override
   String get themeCopied => 'Đã sao chép theme vào clipboard!';
 
   @override
   String get themeImported => 'Đã nhập theme thành công!';
 
   @override
-  String get themeImportFailed =>
-      'Không thể nhập theme. Định dạng không hợp lệ.';
-
-  @override
-  String get clipboardEmpty => 'Clipboard trống';
-
-  @override
   String get pickColor => 'Chọn màu';
-
-  @override
-  String get pickColorTooltip => 'Chọn màu';
 
   @override
   String get officeBlue => 'Office Blue';
 
   @override
-  String get officeBlueDesc => 'Microsoft Office cổ điển';
-
-  @override
   String get darkProfessional => 'Dark Professional';
-
-  @override
-  String get darkProfessionalDesc => 'Theme tối thanh lịch';
 
   @override
   String get lightMinimal => 'Light Minimal';
 
   @override
-  String get lightMinimalDesc => 'Sạch sẽ và tối giản';
-
-  @override
   String get custom => 'Tùy Chỉnh';
-
-  @override
-  String get customDesc => 'Theme của bạn';
 
   @override
   String get version => 'Phiên Bản';
@@ -368,25 +259,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get infoSection => 'Thông Tin';
 
   @override
-  String get addNew => 'Thêm mới';
-
-  @override
   String get recentProjects => 'Dự Án Gần Đây';
 
   @override
   String get noRecentProjects => 'Chưa có dự án nào được mở gần đây';
 
   @override
-  String get openProject => 'Mở Dự Án';
-
-  @override
   String get removeFromList => 'Xóa khỏi danh sách';
-
-  @override
-  String get removeAll => 'Xóa Tất Cả';
-
-  @override
-  String get confirmRemoveAll => 'Xóa tất cả dự án gần đây?';
 
   @override
   String get search => 'Tìm Kiếm';
@@ -404,31 +283,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get aiChat => 'Chat AI';
 
   @override
-  String get typeMessage => 'Nhập tin nhắn của bạn...';
-
-  @override
   String get send => 'Gửi';
-
-  @override
-  String get regenerate => 'Tạo Lại';
 
   @override
   String get stop => 'Dừng';
 
   @override
-  String get clearChat => 'Xóa Chat';
-
-  @override
-  String get clearChatConfirm => 'Xóa lịch sử chat?';
-
-  @override
   String get selectProvider => 'Chọn AI Provider';
-
-  @override
-  String get noProviders => 'Chưa cấu hình AI provider nào';
-
-  @override
-  String get addProviderFirst => 'Thêm provider trong Cài đặt trước';
 
   @override
   String get copy => 'Sao Chép';
@@ -455,28 +316,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get strikethrough => 'Gạch Ngang';
 
   @override
-  String get alignLeft => 'Căn Trái';
-
-  @override
-  String get alignCenter => 'Căn Giữa';
-
-  @override
-  String get alignRight => 'Căn Phải';
-
-  @override
-  String get alignJustify => 'Căn Đều';
-
-  @override
-  String get bulletList => 'Danh Sách Dấu Đầu Dòng';
-
-  @override
-  String get numberedList => 'Danh Sách Đánh Số';
-
-  @override
   String get indent => 'Thụt Lề Vào';
-
-  @override
-  String get outdent => 'Thụt Lề Ra';
 
   @override
   String get link => 'Liên Kết';
@@ -500,16 +340,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get shortcuts => 'Phím Tắt';
 
   @override
-  String get exitPresentation => 'Thoát Trình Chiếu';
-
-  @override
   String get nextSlide => 'Slide Tiếp Theo';
 
   @override
   String get previousSlide => 'Slide Trước';
-
-  @override
-  String get firstSlide => 'Slide Đầu Tiên';
 
   @override
   String get lastSlide => 'Slide Cuối Cùng';
@@ -518,48 +352,19 @@ class AppLocalizationsVi extends AppLocalizations {
   String get aiTools => 'Công Cụ AI';
 
   @override
-  String get improveWriting => 'Cải Thiện Văn Phong';
-
-  @override
   String get fixGrammar => 'Sửa Ngữ Pháp';
-
-  @override
-  String get makeShorter => 'Rút Gọn';
-
-  @override
-  String get makeLonger => 'Mở Rộng';
-
-  @override
-  String translateTo(String language) {
-    return 'Dịch sang $language';
-  }
 
   @override
   String get summary => 'Tóm Tắt';
 
   @override
-  String get generateSlides => 'Tạo Slides';
-
-  @override
   String get fromText => 'Từ Văn Bản';
-
-  @override
-  String get fromTopic => 'Từ Chủ Đề';
 
   @override
   String get topic => 'Chủ Đề';
 
   @override
-  String get slideCountQuestion => 'Bao nhiêu slide?';
-
-  @override
   String get style => 'Phong Cách';
-
-  @override
-  String get professional => 'Chuyên Nghiệp';
-
-  @override
-  String get casual => 'Thân Mật';
 
   @override
   String get academic => 'Học Thuật';
@@ -571,34 +376,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get files => 'Tệp';
 
   @override
-  String get addFiles => 'Thêm Tệp';
-
-  @override
-  String get noFiles => 'Chưa có tệp nào';
-
-  @override
   String get fileName => 'Tên Tệp';
-
-  @override
-  String get fileSize => 'Kích Thước';
-
-  @override
-  String get fileType => 'Loại';
-
-  @override
-  String get uploadedAt => 'Đã Tải Lên';
 
   @override
   String get collaboration => 'Cộng Tác';
 
   @override
-  String get startSession => 'Bắt Đầu Phiên';
-
-  @override
   String get joinSession => 'Tham Gia Phiên';
-
-  @override
-  String get sessionCode => 'Mã Phiên';
 
   @override
   String get host => 'Máy Chủ';
@@ -619,19 +403,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get stopRecording => 'Dừng Ghi';
 
   @override
-  String get playRecording => 'Phát Bản Ghi';
-
-  @override
-  String get deleteRecording => 'Xóa Bản Ghi';
-
-  @override
-  String get audioRecorded => 'Đã ghi âm';
-
-  @override
   String get recordings => 'Bản Ghi';
-
-  @override
-  String get noRecordings => 'Chưa có bản ghi nào';
 
   @override
   String get advancedExport => 'Xuất nâng cao';
@@ -847,19 +619,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Thu nhỏ chữ khi tràn để nội dung vừa với slide.';
 
   @override
-  String get loadingRemoteImages => 'Đang tải ảnh từ web…';
-
-  @override
-  String remoteImageLoadFailed(String name) {
-    return 'Không tải được ảnh $name';
-  }
-
-  @override
   String get exportThemePreview => 'File xuất sẽ dùng theme này';
-
-  @override
-  String get exportThemePreviewDescription =>
-      'Hiển thị clrScheme và font sẽ được ghi vào file PPTX xuất ra.';
 
   @override
   String get layout => 'Bố cục';
@@ -936,15 +696,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get chartTitle => 'Tiêu đề biểu đồ';
 
   @override
-  String get chartCategories => 'Nhãn (phân cách dấu phẩy)';
-
-  @override
-  String get chartSeriesName => 'Tên chuỗi';
-
-  @override
-  String get chartSeriesValues => 'Giá trị (phân cách dấu phẩy)';
-
-  @override
   String get chartLegend => 'Chú giải';
 
   @override
@@ -964,9 +715,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get chartUpdated => 'Đã cập nhật biểu đồ';
-
-  @override
-  String get chartAddSeries => 'Thêm chuỗi';
 
   @override
   String get chartUpdate => 'Cập nhật biểu đồ';
@@ -1054,9 +802,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get smartartAddNode => 'Thêm mục';
-
-  @override
-  String get smartartRemoveNode => 'Xóa mục';
 
   @override
   String get smartartColorTheme => 'Chủ đề màu';
@@ -1648,9 +1393,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get shapeTransparency => 'Trong suốt';
 
   @override
-  String get shapeShadow => 'Đổ bóng';
-
-  @override
   String get shapeGradient => 'Tô chuyển sắc';
 
   @override
@@ -1936,12 +1678,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get fxBevel => 'Bevel / 3D';
 
   @override
-  String get fxRot3d => 'Xoay 3D (X/Y/Z)';
-
-  @override
-  String get fxPresets => 'Preset nhanh';
-
-  @override
   String get fxPresetNone => 'Không hiệu ứng';
 
   @override
@@ -2198,13 +1934,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get collabViewLink => 'Link xem (chỉ đọc)';
 
   @override
-  String get collabViewLinkHint =>
-      'Ai có link này chỉ xem được, không sửa được.';
-
-  @override
-  String get collabCopyViewLink => 'Sao chép link xem';
-
-  @override
   String get collabRole => 'Vai trò';
 
   @override
@@ -2232,19 +1961,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get collabLockSlide => 'Đang sửa…';
 
   @override
-  String get collabHistory => 'Lịch sử đồng bộ';
-
-  @override
-  String collabHistoryEntry(Object name, Object slide) {
-    return '$name sửa slide $slide';
-  }
-
-  @override
-  String collabReconnecting(Object attempt) {
-    return 'Đang nối lại… (lần $attempt)';
-  }
-
-  @override
   String get collabReconnected => 'Đã nối lại.';
 
   @override
@@ -2253,11 +1969,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String collabLockedBy(Object name) {
     return 'Slide này đang được $name sửa';
-  }
-
-  @override
-  String collabConflictDetail(Object name, Object slide, Object time) {
-    return '$name đổi slide $slide lúc $time';
   }
 
   @override
@@ -2282,15 +1993,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get commentsDelete => 'Xóa';
 
   @override
-  String get commentsMentionHint => 'Gõ @ để nhắc người cộng tác';
-
-  @override
-  String get commentsNewChip => 'Bình luận mới';
-
-  @override
-  String get commentsExportNote => 'Ghi chú thảo luận';
-
-  @override
   String get profileTitle => 'Hồ sơ của bạn';
 
   @override
@@ -2301,9 +2003,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get profileSave => 'Lưu hồ sơ';
-
-  @override
-  String get profileSaved => 'Đã lưu hồ sơ.';
 
   @override
   String get profileAuthorHint =>
@@ -2337,9 +2036,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get cloudSynced => 'Đã đồng bộ.';
 
   @override
-  String get cloudConflictSaved => 'Xung đột được lưu thành .conflict';
-
-  @override
   String get cloudNoAccount => 'Chưa cấu hình tài khoản đám mây.';
 
   @override
@@ -2364,44 +2060,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get designerTitle => 'Designer';
 
   @override
-  String get designerSelectSlide => 'Chọn slide để xem gợi ý thiết kế';
-
-  @override
-  String get designerUndo => 'Hoàn tác thiết kế';
-
-  @override
-  String get designerDark => 'Tối';
-
-  @override
-  String get designerApply => 'Áp dụng';
-
-  @override
-  String get reusePasteHint =>
-      'Dán bundle .ghita (JSON) hoặc text/HTML. Slide tách theo --- hoặc h1/h2.';
-
-  @override
-  String get reuseKeepOriginal => 'Giữ định dạng gốc';
-
-  @override
-  String get reuseParse => 'Phân tích';
-
-  @override
-  String get reuseCompare => 'So sánh / Trộn';
-
-  @override
   String get reuseInserted => 'Đã chèn slide';
-
-  @override
-  String get compareVersionA => 'Phiên bản A (.ghita JSON)';
-
-  @override
-  String get compareVersionB => 'Phiên bản B (.ghita JSON)';
-
-  @override
-  String get compareRun => 'So sánh';
-
-  @override
-  String get compareMergeIntoDeck => 'Trộn vào deck';
 
   @override
   String get copilotCreateDeck => 'Tạo bài thuyết trình';
@@ -2414,12 +2073,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get dictationMic => 'Đọc chính tả';
-
-  @override
-  String get dictationListening => 'Đang nghe…';
-
-  @override
-  String get dictationStop => 'Dừng đọc chính tả';
 
   @override
   String get translateDeck => 'Dịch toàn deck';
@@ -2455,13 +2108,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get viewReading => 'Chế độ đọc';
 
   @override
-  String get outlineView => 'Chế độ dàn ý';
-
-  @override
   String get spellcheck => 'Kiểm tra chính tả';
-
-  @override
-  String get templateOnline => 'Template trực tuyến';
 
   @override
   String get versionsRestored => 'Đã khôi phục phiên bản.';
@@ -2852,12 +2499,6 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get recentNewProjectNotice => 'Đã tạo dự án mới!';
-
-  @override
-  String get recentUndoAction => 'Hoàn tác';
-
-  @override
   String get wizardCompleteStepsNotice =>
       'Vui lòng hoàn thành tất cả các bước trước khi tiếp tục.';
 
@@ -2867,11 +2508,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get providerTestingNotice => 'Đang kiểm tra kết nối...';
-
-  @override
-  String templateAppliedPreviewNotice(String name) {
-    return 'Đã áp dụng template: $name';
-  }
 
   @override
   String templateAppliedTemplateNotice(String name) {
@@ -2906,9 +2542,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String recentBackupExportedNotice(String name) {
     return 'Đã xuất backup thành công: $name';
   }
-
-  @override
-  String get recentSettingsRestoredNotice => 'Đã khôi phục cài đặt thành công!';
 
   @override
   String get recentSettingsRestoredKeysNotice =>
@@ -2956,11 +2589,6 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String effectsAppliedNotice(String effect) {
-    return 'Đã áp dụng hiệu ứng \"$effect\"!';
-  }
-
-  @override
   String get aiTranslationHintNotice =>
       'Bản dịch dùng AI provider — mỗi slide một prompt.';
 
@@ -2971,10 +2599,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String aiNameExistsNotice(String name) {
     return '\"$name\" đã tồn tại.';
   }
-
-  @override
-  String get dictationViMissingNotice =>
-      'Không tìm thấy giọng đọc tiếng Việt trên máy này — dùng tiếng Anh.';
 
   @override
   String homeOffice365StyleNotice(String name, String version) {
@@ -3289,11 +2913,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get netContentToggleSubtitle =>
       'Cho phép slide tải ảnh và media từ mạng (https) khi trình chiếu. Tắt để trình chiếu hoàn toàn ngoại tuyến (chỉ dữ liệu nhúng). Liên kết trong chế độ Trình chiếu luôn bị vô hiệu hóa.';
-
-  @override
-  String exportImagesSkipped(int n) {
-    return 'Đã bỏ qua $n ảnh — nằm ngoài thư mục được phép';
-  }
 
   @override
   String get lanShareNewLink => 'Tạo liên kết chia sẻ mới';

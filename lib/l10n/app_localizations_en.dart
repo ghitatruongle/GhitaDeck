@@ -9,12 +9,6 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'GhitaDeck';
-
-  @override
-  String get homeTitle => 'Home';
-
-  @override
   String get editorTitle => 'Editor';
 
   @override
@@ -57,9 +51,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get present => 'Present';
 
   @override
-  String get presentFromCurrent => 'From Current';
-
-  @override
   String get presentation => 'Presentation';
 
   @override
@@ -69,9 +60,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String slideCount(int count) {
     return 'Slides ($count)';
   }
-
-  @override
-  String get noSlidesYet => 'No slides yet';
 
   @override
   String get clickToAddSlide => 'Click + to add a slide';
@@ -87,15 +75,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addSlideTooltip => 'Add new slide';
-
-  @override
-  String get deleteSlideTooltip => 'Delete slide';
-
-  @override
-  String get duplicateSlideTooltip => 'Duplicate slide';
-
-  @override
-  String get previewTooltip => 'Preview slide';
 
   @override
   String get editSlide => 'Edit Slide';
@@ -137,38 +116,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get info => 'Information';
 
   @override
-  String get connectionError =>
-      'Network connection error. Please check your internet.';
-
-  @override
-  String get timeoutError => 'Request timed out. Please try again.';
-
-  @override
-  String get invalidFile => 'Invalid file format.';
-
-  @override
-  String get fileNotFound => 'File not found.';
-
-  @override
-  String get permissionDenied => 'Permission denied.';
-
-  @override
   String get unknownError => 'Unknown error';
 
   @override
-  String get saveSuccess => 'Saved successfully';
-
-  @override
   String get exportSuccess => 'Exported successfully';
-
-  @override
-  String get importSuccess => 'Imported successfully';
-
-  @override
-  String get deleteSuccess => 'Deleted successfully';
-
-  @override
-  String get duplicateSuccess => 'Duplicated successfully';
 
   @override
   String deletedWithUndo(String title) {
@@ -177,9 +128,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get undoAction => 'Undo';
-
-  @override
-  String get addNewProvider => 'Add New';
 
   @override
   String get details => 'Details';
@@ -202,26 +150,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importBackup => 'Import Configuration (JSON)';
 
   @override
-  String get saveBackup => 'Save backup';
-
-  @override
   String get restoreSettings => 'Restore settings?';
 
   @override
-  String restoreSettingsMessage(String date, int count) {
-    return 'Backup from $date.\nNumber of providers: $count\n\nCurrent settings will be overwritten. Continue?';
-  }
-
-  @override
   String get restore => 'Restore';
-
-  @override
-  String backupExported(String filename) {
-    return 'Backup exported successfully: $filename';
-  }
-
-  @override
-  String get settingsRestored => 'Settings restored successfully!';
 
   @override
   String get about => 'About';
@@ -256,28 +188,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get systemMode => 'System (Auto)';
 
   @override
-  String get themeSettings => 'Theme Settings';
-
-  @override
   String get customTheme => 'Customize Theme';
 
   @override
   String get customThemeSubtitle => 'Colors, fonts, preset themes';
 
   @override
-  String get presetThemes => 'Preset Themes';
-
-  @override
-  String get customColors => 'Custom Colors';
-
-  @override
   String get primaryColor => 'Primary Color';
 
   @override
   String get accentColor => 'Accent Color';
-
-  @override
-  String get typography => 'Typography';
 
   @override
   String get fontFamily => 'Font Family';
@@ -292,54 +212,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get resetToDefault => 'Reset to default';
 
   @override
-  String get themeResetMessage => 'Theme reset to Office Blue';
-
-  @override
-  String themeAppliedMessage(String name) {
-    return 'Applied $name preset';
-  }
-
-  @override
   String get themeCopied => 'Theme copied to clipboard!';
 
   @override
   String get themeImported => 'Theme imported successfully!';
 
   @override
-  String get themeImportFailed => 'Failed to import theme. Invalid format.';
-
-  @override
-  String get clipboardEmpty => 'Clipboard is empty';
-
-  @override
   String get pickColor => 'Pick a color';
-
-  @override
-  String get pickColorTooltip => 'Pick color';
 
   @override
   String get officeBlue => 'Office Blue';
 
   @override
-  String get officeBlueDesc => 'Classic Microsoft Office';
-
-  @override
   String get darkProfessional => 'Dark Professional';
-
-  @override
-  String get darkProfessionalDesc => 'Elegant dark theme';
 
   @override
   String get lightMinimal => 'Light Minimal';
 
   @override
-  String get lightMinimalDesc => 'Clean and minimal';
-
-  @override
   String get custom => 'Custom';
-
-  @override
-  String get customDesc => 'Your custom theme';
 
   @override
   String get version => 'Version';
@@ -368,25 +259,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get infoSection => 'Information';
 
   @override
-  String get addNew => 'Add New';
-
-  @override
   String get recentProjects => 'Recent Projects';
 
   @override
   String get noRecentProjects => 'No projects opened recently';
 
   @override
-  String get openProject => 'Open Project';
-
-  @override
   String get removeFromList => 'Remove from list';
-
-  @override
-  String get removeAll => 'Remove All';
-
-  @override
-  String get confirmRemoveAll => 'Remove all recent projects?';
 
   @override
   String get search => 'Search';
@@ -404,31 +283,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiChat => 'AI Chat';
 
   @override
-  String get typeMessage => 'Type your message...';
-
-  @override
   String get send => 'Send';
-
-  @override
-  String get regenerate => 'Regenerate';
 
   @override
   String get stop => 'Stop';
 
   @override
-  String get clearChat => 'Clear Chat';
-
-  @override
-  String get clearChatConfirm => 'Clear chat history?';
-
-  @override
   String get selectProvider => 'Select AI Provider';
-
-  @override
-  String get noProviders => 'No AI providers configured';
-
-  @override
-  String get addProviderFirst => 'Add a provider in Settings first';
 
   @override
   String get copy => 'Copy';
@@ -455,28 +316,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get strikethrough => 'Strikethrough';
 
   @override
-  String get alignLeft => 'Align Left';
-
-  @override
-  String get alignCenter => 'Align Center';
-
-  @override
-  String get alignRight => 'Align Right';
-
-  @override
-  String get alignJustify => 'Justify';
-
-  @override
-  String get bulletList => 'Bullet List';
-
-  @override
-  String get numberedList => 'Numbered List';
-
-  @override
   String get indent => 'Indent';
-
-  @override
-  String get outdent => 'Outdent';
 
   @override
   String get link => 'Link';
@@ -500,16 +340,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shortcuts => 'Keyboard Shortcuts';
 
   @override
-  String get exitPresentation => 'Exit Presentation';
-
-  @override
   String get nextSlide => 'Next Slide';
 
   @override
   String get previousSlide => 'Previous Slide';
-
-  @override
-  String get firstSlide => 'First Slide';
 
   @override
   String get lastSlide => 'Last Slide';
@@ -518,48 +352,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiTools => 'AI Tools';
 
   @override
-  String get improveWriting => 'Improve Writing';
-
-  @override
   String get fixGrammar => 'Fix Grammar';
-
-  @override
-  String get makeShorter => 'Make Shorter';
-
-  @override
-  String get makeLonger => 'Make Longer';
-
-  @override
-  String translateTo(String language) {
-    return 'Translate to $language';
-  }
 
   @override
   String get summary => 'Summary';
 
   @override
-  String get generateSlides => 'Generate Slides';
-
-  @override
   String get fromText => 'From Text';
-
-  @override
-  String get fromTopic => 'From Topic';
 
   @override
   String get topic => 'Topic';
 
   @override
-  String get slideCountQuestion => 'How many slides?';
-
-  @override
   String get style => 'Style';
-
-  @override
-  String get professional => 'Professional';
-
-  @override
-  String get casual => 'Casual';
 
   @override
   String get academic => 'Academic';
@@ -571,34 +376,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get files => 'Files';
 
   @override
-  String get addFiles => 'Add Files';
-
-  @override
-  String get noFiles => 'No files';
-
-  @override
   String get fileName => 'File Name';
-
-  @override
-  String get fileSize => 'Size';
-
-  @override
-  String get fileType => 'Type';
-
-  @override
-  String get uploadedAt => 'Uploaded';
 
   @override
   String get collaboration => 'Collaboration';
 
   @override
-  String get startSession => 'Start Session';
-
-  @override
   String get joinSession => 'Join Session';
-
-  @override
-  String get sessionCode => 'Session Code';
 
   @override
   String get host => 'Host';
@@ -619,19 +403,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stopRecording => 'Stop Recording';
 
   @override
-  String get playRecording => 'Play Recording';
-
-  @override
-  String get deleteRecording => 'Delete Recording';
-
-  @override
-  String get audioRecorded => 'Audio recorded';
-
-  @override
   String get recordings => 'Recordings';
-
-  @override
-  String get noRecordings => 'No recordings yet';
 
   @override
   String get advancedExport => 'Advanced Export';
@@ -846,19 +618,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Shrink overflowing text so the whole deck fits its slides.';
 
   @override
-  String get loadingRemoteImages => 'Loading images from the web…';
-
-  @override
-  String remoteImageLoadFailed(String name) {
-    return 'Could not load image $name';
-  }
-
-  @override
   String get exportThemePreview => 'Exported files will use this theme';
-
-  @override
-  String get exportThemePreviewDescription =>
-      'Shows the clrScheme and fonts written into exported PPTX files.';
 
   @override
   String get layout => 'Layout';
@@ -935,15 +695,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chartTitle => 'Chart title';
 
   @override
-  String get chartCategories => 'Categories (comma separated)';
-
-  @override
-  String get chartSeriesName => 'Series name';
-
-  @override
-  String get chartSeriesValues => 'Values (comma separated)';
-
-  @override
   String get chartLegend => 'Legend';
 
   @override
@@ -963,9 +714,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chartUpdated => 'Chart updated';
-
-  @override
-  String get chartAddSeries => 'Add series';
 
   @override
   String get chartUpdate => 'Update chart';
@@ -1053,9 +801,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get smartartAddNode => 'Add node';
-
-  @override
-  String get smartartRemoveNode => 'Remove node';
 
   @override
   String get smartartColorTheme => 'Color theme';
@@ -1649,9 +1394,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shapeTransparency => 'Transparency';
 
   @override
-  String get shapeShadow => 'Shadow';
-
-  @override
   String get shapeGradient => 'Gradient fill';
 
   @override
@@ -1938,12 +1680,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fxBevel => 'Bevel / 3D preset';
 
   @override
-  String get fxRot3d => '3D rotation (X/Y/Z)';
-
-  @override
-  String get fxPresets => 'Quick presets';
-
-  @override
   String get fxPresetNone => 'No effect';
 
   @override
@@ -2200,13 +1936,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collabViewLink => 'View-only link';
 
   @override
-  String get collabViewLinkHint =>
-      'Anyone with this link can watch but not edit.';
-
-  @override
-  String get collabCopyViewLink => 'Copy view link';
-
-  @override
   String get collabRole => 'Role';
 
   @override
@@ -2234,19 +1963,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get collabLockSlide => 'Editing…';
 
   @override
-  String get collabHistory => 'Sync history';
-
-  @override
-  String collabHistoryEntry(Object name, Object slide) {
-    return '$name edited slide $slide';
-  }
-
-  @override
-  String collabReconnecting(Object attempt) {
-    return 'Reconnecting… (attempt $attempt)';
-  }
-
-  @override
   String get collabReconnected => 'Connection restored.';
 
   @override
@@ -2255,11 +1971,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String collabLockedBy(Object name) {
     return 'This slide is being edited by $name';
-  }
-
-  @override
-  String collabConflictDetail(Object name, Object slide, Object time) {
-    return '$name changed slide $slide at $time';
   }
 
   @override
@@ -2284,15 +1995,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commentsDelete => 'Delete';
 
   @override
-  String get commentsMentionHint => 'Type @ to mention a collaborator';
-
-  @override
-  String get commentsNewChip => 'New comments';
-
-  @override
-  String get commentsExportNote => 'Discussion notes';
-
-  @override
   String get profileTitle => 'Your profile';
 
   @override
@@ -2303,9 +2005,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileSave => 'Save profile';
-
-  @override
-  String get profileSaved => 'Profile saved.';
 
   @override
   String get profileAuthorHint => 'Used as comment author and export metadata.';
@@ -2338,9 +2037,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cloudSynced => 'Synced.';
 
   @override
-  String get cloudConflictSaved => 'Conflict saved as .conflict';
-
-  @override
   String get cloudNoAccount => 'No cloud account configured.';
 
   @override
@@ -2365,44 +2061,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designerTitle => 'Designer';
 
   @override
-  String get designerSelectSlide => 'Select a slide to see design ideas';
-
-  @override
-  String get designerUndo => 'Undo design';
-
-  @override
-  String get designerDark => 'Dark';
-
-  @override
-  String get designerApply => 'Apply';
-
-  @override
-  String get reusePasteHint =>
-      'Paste a .ghita bundle (JSON) or plain text/HTML. Slides split on --- or h1/h2.';
-
-  @override
-  String get reuseKeepOriginal => 'Keep original formatting';
-
-  @override
-  String get reuseParse => 'Parse';
-
-  @override
-  String get reuseCompare => 'Compare / Merge';
-
-  @override
   String get reuseInserted => 'Inserted slide(s)';
-
-  @override
-  String get compareVersionA => 'Version A (.ghita JSON)';
-
-  @override
-  String get compareVersionB => 'Version B (.ghita JSON)';
-
-  @override
-  String get compareRun => 'Compare';
-
-  @override
-  String get compareMergeIntoDeck => 'Merge into deck';
 
   @override
   String get copilotCreateDeck => 'Create presentation';
@@ -2415,12 +2074,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dictationMic => 'Dictation';
-
-  @override
-  String get dictationListening => 'Listening…';
-
-  @override
-  String get dictationStop => 'Stop dictation';
 
   @override
   String get translateDeck => 'Translate deck';
@@ -2456,13 +2109,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get viewReading => 'Reading view';
 
   @override
-  String get outlineView => 'Outline view';
-
-  @override
   String get spellcheck => 'Spell check';
-
-  @override
-  String get templateOnline => 'Online templates';
 
   @override
   String get versionsRestored => 'Version restored.';
@@ -2852,12 +2499,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get recentNewProjectNotice => 'New project created!';
-
-  @override
-  String get recentUndoAction => 'Undo';
-
-  @override
   String get wizardCompleteStepsNotice =>
       'Please complete all steps before continuing.';
 
@@ -2867,11 +2508,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get providerTestingNotice => 'Testing connection…';
-
-  @override
-  String templateAppliedPreviewNotice(String name) {
-    return 'Applied template: $name';
-  }
 
   @override
   String templateAppliedTemplateNotice(String name) {
@@ -2906,9 +2542,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String recentBackupExportedNotice(String name) {
     return 'Backup exported successfully: $name';
   }
-
-  @override
-  String get recentSettingsRestoredNotice => 'Settings restored successfully!';
 
   @override
   String get recentSettingsRestoredKeysNotice =>
@@ -2956,11 +2589,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String effectsAppliedNotice(String effect) {
-    return 'Applied \"$effect\" effect!';
-  }
-
-  @override
   String get aiTranslationHintNotice =>
       'Translation uses the AI provider — one prompt per slide.';
 
@@ -2971,10 +2599,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String aiNameExistsNotice(String name) {
     return '\"$name\" already exists.';
   }
-
-  @override
-  String get dictationViMissingNotice =>
-      'Vietnamese speech not found on this machine — using English.';
 
   @override
   String homeOffice365StyleNotice(String name, String version) {
@@ -3289,11 +2913,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get netContentToggleSubtitle =>
       'Allow slides to load remote (https) images and media while presenting. Off keeps the presentation fully offline (embedded data only). Links in Present mode are always disabled.';
-
-  @override
-  String exportImagesSkipped(int n) {
-    return '$n image(s) skipped — outside allowed folders';
-  }
 
   @override
   String get lanShareNewLink => 'New share link';

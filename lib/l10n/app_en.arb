@@ -1,10 +1,5 @@
 {
   "@@locale": "en",
-  "appTitle": "GhitaDeck",
-  "@appTitle": {
-    "description": "Application title"
-  },
-  "homeTitle": "Home",
   "editorTitle": "Editor",
   "projectsTitle": "Projects",
   "templatesTitle": "Templates",
@@ -19,7 +14,6 @@
   "undo": "Undo",
   "redo": "Redo",
   "present": "Present",
-  "presentFromCurrent": "From Current",
   "presentation": "Presentation",
   "slides": "Slides",
   "slideCount": "Slides ({count})",
@@ -30,15 +24,11 @@
       }
     }
   },
-  "noSlidesYet": "No slides yet",
   "clickToAddSlide": "Click + to add a slide",
   "title": "Title",
   "content": "Content",
   "notes": "Notes",
   "addSlideTooltip": "Add new slide",
-  "deleteSlideTooltip": "Delete slide",
-  "duplicateSlideTooltip": "Duplicate slide",
-  "previewTooltip": "Preview slide",
   "editSlide": "Edit Slide",
   "preview": "Preview",
   "cancel": "Cancel",
@@ -52,17 +42,8 @@
   "success": "Success",
   "warning": "Warning",
   "info": "Information",
-  "connectionError": "Network connection error. Please check your internet.",
-  "timeoutError": "Request timed out. Please try again.",
-  "invalidFile": "Invalid file format.",
-  "fileNotFound": "File not found.",
-  "permissionDenied": "Permission denied.",
   "unknownError": "Unknown error",
-  "saveSuccess": "Saved successfully",
   "exportSuccess": "Exported successfully",
-  "importSuccess": "Imported successfully",
-  "deleteSuccess": "Deleted successfully",
-  "duplicateSuccess": "Duplicated successfully",
   "deletedWithUndo": "Deleted \"{title}\"",
   "@deletedWithUndo": {
     "placeholders": {
@@ -72,7 +53,6 @@
     }
   },
   "undoAction": "Undo",
-  "addNewProvider": "Add New",
   "details": "Details",
   "apiKeySaved": "API Key saved for {name}",
   "@apiKeySaved": {
@@ -86,29 +66,8 @@
   "saveApiKeyTooltip": "Save API Key",
   "exportBackup": "Export Configuration (JSON)",
   "importBackup": "Import Configuration (JSON)",
-  "saveBackup": "Save backup",
   "restoreSettings": "Restore settings?",
-  "restoreSettingsMessage": "Backup from {date}.\nNumber of providers: {count}\n\nCurrent settings will be overwritten. Continue?",
-  "@restoreSettingsMessage": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      },
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "restore": "Restore",
-  "backupExported": "Backup exported successfully: {filename}",
-  "@backupExported": {
-    "placeholders": {
-      "filename": {
-        "type": "String"
-      }
-    }
-  },
-  "settingsRestored": "Settings restored successfully!",
   "about": "About",
   "appearance": "Appearance",
   "interfaceMode": "Interface Mode",
@@ -126,41 +85,21 @@
   "lightModeFull": "Light Mode",
   "darkModeFull": "Dark Mode",
   "systemMode": "System (Auto)",
-  "themeSettings": "Theme Settings",
   "customTheme": "Customize Theme",
   "customThemeSubtitle": "Colors, fonts, preset themes",
-  "presetThemes": "Preset Themes",
-  "customColors": "Custom Colors",
   "primaryColor": "Primary Color",
   "accentColor": "Accent Color",
-  "typography": "Typography",
   "fontFamily": "Font Family",
   "exportTheme": "Export theme",
   "importTheme": "Import theme",
   "resetToDefault": "Reset to default",
-  "themeResetMessage": "Theme reset to Office Blue",
-  "themeAppliedMessage": "Applied {name} preset",
-  "@themeAppliedMessage": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "themeCopied": "Theme copied to clipboard!",
   "themeImported": "Theme imported successfully!",
-  "themeImportFailed": "Failed to import theme. Invalid format.",
-  "clipboardEmpty": "Clipboard is empty",
   "pickColor": "Pick a color",
-  "pickColorTooltip": "Pick color",
   "officeBlue": "Office Blue",
-  "officeBlueDesc": "Classic Microsoft Office",
   "darkProfessional": "Dark Professional",
-  "darkProfessionalDesc": "Elegant dark theme",
   "lightMinimal": "Light Minimal",
-  "lightMinimalDesc": "Clean and minimal",
   "custom": "Custom",
-  "customDesc": "Your custom theme",
   "version": "Version",
   "versionInfo": "{version} • Build {year}",
   "@versionInfo": {
@@ -179,27 +118,17 @@
   "aiProvider": "API Key & AI Provider",
   "backupRestore": "Backup & Restore",
   "infoSection": "Information",
-  "addNew": "Add New",
   "recentProjects": "Recent Projects",
   "noRecentProjects": "No projects opened recently",
-  "openProject": "Open Project",
   "removeFromList": "Remove from list",
-  "removeAll": "Remove All",
-  "confirmRemoveAll": "Remove all recent projects?",
   "search": "Search",
   "templates": "Templates",
   "noTemplates": "No templates available",
   "useTemplate": "Use Template",
   "aiChat": "AI Chat",
-  "typeMessage": "Type your message...",
   "send": "Send",
-  "regenerate": "Regenerate",
   "stop": "Stop",
-  "clearChat": "Clear Chat",
-  "clearChatConfirm": "Clear chat history?",
   "selectProvider": "Select AI Provider",
-  "noProviders": "No AI providers configured",
-  "addProviderFirst": "Add a provider in Settings first",
   "copy": "Copy",
   "paste": "Paste",
   "cut": "Cut",
@@ -208,14 +137,7 @@
   "italic": "Italic",
   "underline": "Underline",
   "strikethrough": "Strikethrough",
-  "alignLeft": "Align Left",
-  "alignCenter": "Align Center",
-  "alignRight": "Align Right",
-  "alignJustify": "Justify",
-  "bulletList": "Bullet List",
-  "numberedList": "Numbered List",
   "indent": "Indent",
-  "outdent": "Outdent",
   "link": "Link",
   "image": "Image",
   "table": "Table",
@@ -223,57 +145,28 @@
   "format": "Format",
   "help": "Help",
   "shortcuts": "Keyboard Shortcuts",
-  "exitPresentation": "Exit Presentation",
   "nextSlide": "Next Slide",
   "previousSlide": "Previous Slide",
-  "firstSlide": "First Slide",
   "lastSlide": "Last Slide",
   "aiTools": "AI Tools",
-  "improveWriting": "Improve Writing",
   "fixGrammar": "Fix Grammar",
-  "makeShorter": "Make Shorter",
-  "makeLonger": "Make Longer",
-  "translateTo": "Translate to {language}",
-  "@translateTo": {
-    "placeholders": {
-      "language": {
-        "type": "String"
-      }
-    }
-  },
   "summary": "Summary",
-  "generateSlides": "Generate Slides",
   "fromText": "From Text",
-  "fromTopic": "From Topic",
   "topic": "Topic",
-  "slideCountQuestion": "How many slides?",
   "style": "Style",
-  "professional": "Professional",
-  "casual": "Casual",
   "academic": "Academic",
   "creative": "Creative",
   "files": "Files",
-  "addFiles": "Add Files",
-  "noFiles": "No files",
   "fileName": "File Name",
-  "fileSize": "Size",
-  "fileType": "Type",
-  "uploadedAt": "Uploaded",
   "collaboration": "Collaboration",
-  "startSession": "Start Session",
   "joinSession": "Join Session",
-  "sessionCode": "Session Code",
   "host": "Host",
   "join": "Join",
   "leave": "Leave",
   "audio": "Audio",
   "startRecording": "Start Recording",
   "stopRecording": "Stop Recording",
-  "playRecording": "Play Recording",
-  "deleteRecording": "Delete Recording",
-  "audioRecorded": "Audio recorded",
   "recordings": "Recordings",
-  "noRecordings": "No recordings yet",
   "advancedExport": "Advanced Export",
   "exportFormat": "Export Format",
   "aspectRatio": "Aspect Ratio",
@@ -405,18 +298,7 @@
   "exportCancelled": "Export cancelled.",
   "fitContent": "Fit content on slides",
   "fitContentDescription": "Shrink overflowing text so the whole deck fits its slides.",
-  "loadingRemoteImages": "Loading images from the web…",
-  "remoteImageLoadFailed": "Could not load image {name}",
-  "@remoteImageLoadFailed": {
-    "description": "An image referenced by a slide could not be downloaded.",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "exportThemePreview": "Exported files will use this theme",
-  "exportThemePreviewDescription": "Shows the clrScheme and fonts written into exported PPTX files.",
   "layout": "Layout",
   "layoutBlank": "Blank",
   "layoutTitleSlide": "Title Slide",
@@ -449,9 +331,6 @@
   "insertChart": "Insert chart",
   "editChart": "Edit chart",
   "chartTitle": "Chart title",
-  "chartCategories": "Categories (comma separated)",
-  "chartSeriesName": "Series name",
-  "chartSeriesValues": "Values (comma separated)",
   "chartLegend": "Legend",
   "chartDataLabels": "Data labels",
   "chartStacked": "Stacked",
@@ -459,7 +338,6 @@
   "chartPreview": "Preview",
   "chartInserted": "Chart inserted",
   "chartUpdated": "Chart updated",
-  "chartAddSeries": "Add series",
   "chartUpdate": "Update chart",
   "chartColumn": "Column",
   "chartBar": "Bar",
@@ -489,7 +367,6 @@
   "smartartNodes": "Text pane",
   "smartartNode": "Node",
   "smartartAddNode": "Add node",
-  "smartartRemoveNode": "Remove node",
   "smartartColorTheme": "Color theme",
   "smartartExisting": "SmartArt in this slide",
   "smartartInserted": "SmartArt inserted",
@@ -681,7 +558,6 @@
   "shapePropertiesUpdated": "Shape properties updated",
   "shapeNoSelection": "No shape selected",
   "shapeTransparency": "Transparency",
-  "shapeShadow": "Shadow",
   "shapeGradient": "Gradient fill",
   "shapeGradientStart": "Gradient start",
   "shapeGradientEnd": "Gradient end",
@@ -776,8 +652,6 @@
   "fxGlowSize": "Glow size",
   "fxSoftEdge": "Soft edge",
   "fxBevel": "Bevel / 3D preset",
-  "fxRot3d": "3D rotation (X/Y/Z)",
-  "fxPresets": "Quick presets",
   "fxPresetNone": "No effect",
   "fxPresetSoft": "Soft",
   "fxPresetHard": "Hard",
@@ -861,8 +735,6 @@
   "m6ApplyPassword": "Đặt mật khẩu chống sửa",
   "m6PptFallback": "Cần LibreOffice trên máy để xuất .ppt — dùng .pptx và Save As từ PowerPoint.",
   "collabViewLink": "View-only link",
-  "collabViewLinkHint": "Anyone with this link can watch but not edit.",
-  "collabCopyViewLink": "Copy view link",
   "collabRole": "Role",
   "collabRoleHost": "Host",
   "collabRoleEditor": "Editor",
@@ -872,13 +744,9 @@
   "collabLockSession": "Lock session (refuse new joins)",
   "collabUnlockSession": "Unlock session",
   "collabLockSlide": "Editing…",
-  "collabHistory": "Sync history",
-  "collabHistoryEntry": "{name} edited slide {slide}",
-  "collabReconnecting": "Reconnecting… (attempt {attempt})",
   "collabReconnected": "Connection restored.",
   "collabConnectionLost": "Connection lost — retrying…",
   "collabLockedBy": "This slide is being edited by {name}",
-  "collabConflictDetail": "{name} changed slide {slide} at {time}",
   "comments": "Comments",
   "commentsAdd": "Add comment",
   "commentsEmpty": "No comments on this slide yet.",
@@ -886,14 +754,10 @@
   "commentsUnresolve": "Reopen",
   "commentsReply": "Reply",
   "commentsDelete": "Delete",
-  "commentsMentionHint": "Type @ to mention a collaborator",
-  "commentsNewChip": "New comments",
-  "commentsExportNote": "Discussion notes",
   "profileTitle": "Your profile",
   "profileName": "Display name",
   "profileAvatar": "Avatar",
   "profileSave": "Save profile",
-  "profileSaved": "Profile saved.",
   "profileAuthorHint": "Used as comment author and export metadata.",
   "cloudTitle": "Cloud sync",
   "cloudUrl": "WebDAV server URL",
@@ -904,7 +768,6 @@
   "cloudSyncNow": "Sync now",
   "cloudSyncing": "Syncing…",
   "cloudSynced": "Synced.",
-  "cloudConflictSaved": "Conflict saved as .conflict",
   "cloudNoAccount": "No cloud account configured.",
   "versions": "Versions",
   "versionsRestore": "Restore",
@@ -913,25 +776,11 @@
   "versionsMax": "Up to 20 versions kept per project",
   "reuseTitle": "Reuse slides",
   "designerTitle": "Designer",
-  "designerSelectSlide": "Select a slide to see design ideas",
-  "designerUndo": "Undo design",
-  "designerDark": "Dark",
-  "designerApply": "Apply",
-  "reusePasteHint": "Paste a .ghita bundle (JSON) or plain text/HTML. Slides split on --- or h1/h2.",
-  "reuseKeepOriginal": "Keep original formatting",
-  "reuseParse": "Parse",
-  "reuseCompare": "Compare / Merge",
   "reuseInserted": "Inserted slide(s)",
-  "compareVersionA": "Version A (.ghita JSON)",
-  "compareVersionB": "Version B (.ghita JSON)",
-  "compareRun": "Compare",
-  "compareMergeIntoDeck": "Merge into deck",
   "copilotCreateDeck": "Create presentation",
   "copilotSummarize": "Summarize deck",
   "copilotAskDeck": "Ask about deck",
   "dictationMic": "Dictation",
-  "dictationListening": "Listening…",
-  "dictationStop": "Stop dictation",
   "translateDeck": "Translate deck",
   "aiContextToggle": "AI uses deck context",
   "findReplace": "Find / Replace",
@@ -943,9 +792,7 @@
   "viewSorter": "Slide Sorter",
   "viewNotes": "Notes",
   "viewReading": "Reading view",
-  "outlineView": "Outline view",
   "spellcheck": "Spell check",
-  "templateOnline": "Online templates",
   "versionsRestored": "Version restored.",
   "deckEmpty": "Deck is empty — add slides first.",
   "summarySlideAdded": "Summary slide added.",
@@ -1208,19 +1055,9 @@
       }
     }
   },
-  "recentNewProjectNotice": "New project created!",
-  "recentUndoAction": "Undo",
   "wizardCompleteStepsNotice": "Please complete all steps before continuing.",
   "wizardProviderFieldsNotice": "Please enter the provider name and Base URL",
   "providerTestingNotice": "Testing connection…",
-  "templateAppliedPreviewNotice": "Applied template: {name}",
-  "@templateAppliedPreviewNotice": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "templateAppliedTemplateNotice": "Applied template: {name}",
   "@templateAppliedTemplateNotice": {
     "placeholders": {
@@ -1257,7 +1094,6 @@
       }
     }
   },
-  "recentSettingsRestoredNotice": "Settings restored successfully!",
   "recentSettingsRestoredKeysNotice": "Settings restored. API keys are not in the backup — re-enter them in Provider settings.",
   "providerModelsUpdatedNotice": "✓ Updated {count} models for {name}",
   "@providerModelsUpdatedNotice": {
@@ -1309,14 +1145,6 @@
       }
     }
   },
-  "effectsAppliedNotice": "Applied \"{effect}\" effect!",
-  "@effectsAppliedNotice": {
-    "placeholders": {
-      "effect": {
-        "type": "String"
-      }
-    }
-  },
   "aiTranslationHintNotice": "Translation uses the AI provider — one prompt per slide.",
   "aiDeckTranslatedNotice": "Deck translated.",
   "aiNameExistsNotice": "\"{name}\" already exists.",
@@ -1327,7 +1155,6 @@
       }
     }
   },
-  "dictationViMissingNotice": "Vietnamese speech not found on this machine — using English.",
   "homeOffice365StyleNotice": "{name} v{version} — Office 365 Style",
   "@homeOffice365StyleNotice": {
     "placeholders": {
@@ -1538,14 +1365,6 @@
   "lanWarnLocalOnly": "Local only — no LAN address available, other devices cannot connect",
   "netContentToggleTitle": "Network content in presentation",
   "netContentToggleSubtitle": "Allow slides to load remote (https) images and media while presenting. Off keeps the presentation fully offline (embedded data only). Links in Present mode are always disabled.",
-  "exportImagesSkipped": "{n} image(s) skipped — outside allowed folders",
-  "@exportImagesSkipped": {
-    "placeholders": {
-      "n": {
-        "type": "int"
-      }
-    }
-  },
   "lanShareNewLink": "New share link",
   "transTitle": "Transitions",
   "transEffect": "Effect",
